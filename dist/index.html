@@ -5308,16 +5308,34 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ── Cloud Storage (Supabase) ──
+function isValidUUID(str) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
 function cloudSaveProject(projectId, projectName, data) {
   if (!currentUser || !supaClient) return Promise.resolve(null);
+  // If projectId is not a valid UUID, generate a new one and update local
+  var cloudId = projectId;
+  if (!isValidUUID(cloudId)) {
+    cloudId = generateUUID();
+    // Update local project with new UUID
+    var oldId = currentProjectId;
+    currentProjectId = cloudId;
+    dbGet('projects', oldId).then(function(old) {
+      if (old) {
+        old.id = cloudId;
+        dbPut('projects', old).then(function() { dbDelete('projects', oldId); });
+      }
+    });
+  }
   var row = {
-    id: projectId,
+    id: cloudId,
     user_id: currentUser.id,
     name: projectName,
     data: data,
     updated_at: new Date().toISOString()
   };
-  console.log('Cloud save:', projectId, projectName);
+  console.log('Cloud save:', cloudId, projectName);
   return supaClient.from('projects').upsert(row, { onConflict: 'id' }).then(function(res) {
     if (res.error) {
       console.error('Cloud save error:', res.error.message, res.error);
