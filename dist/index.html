@@ -5310,14 +5310,21 @@ document.addEventListener('DOMContentLoaded', function() {
 // ── Cloud Storage (Supabase) ──
 function cloudSaveProject(projectId, projectName, data) {
   if (!currentUser || !supaClient) return Promise.resolve(null);
-  return supaClient.from('projects').upsert({
+  var row = {
     id: projectId,
     user_id: currentUser.id,
     name: projectName,
     data: data,
     updated_at: new Date().toISOString()
-  }, { onConflict: 'id' }).then(function(res) {
-    if (res.error) { console.error('Cloud save error:', res.error); return null; }
+  };
+  console.log('Cloud save:', projectId, projectName);
+  return supaClient.from('projects').upsert(row, { onConflict: 'id' }).then(function(res) {
+    if (res.error) {
+      console.error('Cloud save error:', res.error.message, res.error);
+      toast('☁ Eroare cloud: ' + res.error.message, '');
+      return null;
+    }
+    console.log('Cloud save OK');
     return res;
   });
 }
@@ -5370,6 +5377,15 @@ function closeExportMenuOutside(e) {
   if (m.style.display === 'flex' && !m.parentElement.contains(e.target)) {
     m.style.display = 'none';
   }
+}
+
+// ── Generate UUID for project IDs (compatible with Supabase) ──
+function generateUUID() {
+  if (crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
 }
 
 var currentProjectId = null;
@@ -5489,9 +5505,13 @@ function saveProjectToDB(projectId, projectName) {
   });
   // Also save to cloud if logged in
   if (currentUser && supaClient) {
-    cloudSaveProject(projectId, projectName, projData).then(function() {
-      updateAutoSaveIndicator('cloud sync OK');
-    }).catch(function(e) { console.warn('Cloud sync failed:', e); });
+    cloudSaveProject(projectId, projectName, projData).then(function(res) {
+      if (res) updateAutoSaveIndicator('☁ cloud sync OK');
+      else updateAutoSaveIndicator('☁ cloud sync EROARE');
+    }).catch(function(e) {
+      console.error('Cloud sync failed:', e);
+      updateAutoSaveIndicator('☁ sync eroare');
+    });
   }
   return localSave;
 }
@@ -5552,7 +5572,7 @@ save = function() {
   } else {
     // First save — ask for name
     showNameDialog(function(name) {
-      currentProjectId = 'proj_' + Date.now();
+      currentProjectId = generateUUID();
       currentProjectName = name;
       updateProjectNameUI();
       saveProjectToDB(currentProjectId, currentProjectName).then(function() {
@@ -5568,7 +5588,7 @@ save = function() {
 function saveAsNew() {
   if (window.__TAURI__) { _browserOrigSave(); return; }
   showNameDialog(function(name) {
-    currentProjectId = 'proj_' + Date.now();
+    currentProjectId = generateUUID();
     currentProjectName = name;
     updateProjectNameUI();
     saveProjectToDB(currentProjectId, currentProjectName).then(function() {
