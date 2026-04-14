@@ -1828,6 +1828,7 @@ function updateProps(){
         <option value="existent">✔ Existent</option>
         <option value="proiectat_racordare" style="color:#ef4444">🔴 Proiectat — Tarif Racordare</option>
         <option value="proiectat_intarire" style="color:#a855f7">🟣 Proiectat — Tarif Întărire</option>
+        <option value="coexistenta" style="color:#eab308">🟡 Lucrări Coexistență</option>
       </select></div>
     </div>`;
     
@@ -1914,7 +1915,7 @@ function updateProps(){
         const v = ev.target.value;
         if (!v) return;
         saveState('stare multiplă');
-        const colorMap = { proiectat_racordare: '#ef4444', proiectat_intarire: '#a855f7' };
+        const colorMap = { proiectat_racordare: '#ef4444', proiectat_intarire: '#a855f7', coexistenta: '#eab308' };
         multiSel.forEach(id => {
             const el = EL.find(e => e.id === id);
             if (el) { el.stare = v; if (colorMap[v]) el.color = colorMap[v]; }
@@ -2208,10 +2209,11 @@ function updateProps(){
       <div class="psec">
         <div class="psh">Identificare & Dimensiuni</div>
         <div class="pr"><div class="pl">Etichetă</div><textarea class="pi" id="p-lbl" rows="2">${el.label||''}</textarea></div>
-        <div class="pr"><div class="pl">Stare</div><select class="pi" id="p-stare" style="font-weight:700;color:${stareVal==='proiectat_racordare'?'#ef4444':stareVal==='proiectat_intarire'?'#a855f7':'var(--text)'}">
+        <div class="pr"><div class="pl">Stare</div><select class="pi" id="p-stare" style="font-weight:700;color:${stareVal==='proiectat_racordare'?'#ef4444':stareVal==='proiectat_intarire'?'#a855f7':stareVal==='coexistenta'?'#eab308':'var(--text)'}">
           <option value="existent" ${stareVal==='existent'?'selected':''}>✔ Existent</option>
           <option value="proiectat_racordare" ${stareVal==='proiectat_racordare'?'selected':''} style="color:#ef4444">🔴 Proiectat — Tarif Racordare</option>
           <option value="proiectat_intarire" ${stareVal==='proiectat_intarire'?'selected':''} style="color:#a855f7">🟣 Proiectat — Tarif Întărire</option>
+          <option value="coexistenta" ${stareVal==='coexistenta'?'selected':''} style="color:#eab308">🟡 Lucrări Coexistență</option>
         </select></div>
         ${el.type==='meter'?`<div class="pr"><div class="pl">Text BMPT</div><input class="pi" id="p-bmpt" value="${el.bmptText||''}"></div>`:''}
         ${el.type!=='polyline' && el.type!=='text' && el.type!=='rect' && el.type!=='circle' && el.type!=='busbar' ? `<div class="pr"><div class="pl">Scară (Mărime)</div><input class="pi" type="number" id="p-scale" step="0.1" min="0.1" max="10" value="${el.scale||1}"></div>` : ''}
@@ -2230,11 +2232,13 @@ function updateProps(){
         // Auto-set color based on stare
         if(v === 'proiectat_racordare') { el.color = '#ef4444'; }
         else if(v === 'proiectat_intarire') { el.color = '#a855f7'; }
+        else if(v === 'coexistenta') { el.color = '#eab308'; }
         // Also update connected cables
         CN.forEach(cn => {
             if(cn.fromElId === el.id || cn.toElId === el.id) {
                 if(v === 'proiectat_racordare') cn.color = '#ef4444';
                 else if(v === 'proiectat_intarire') cn.color = '#a855f7';
+                else if(v === 'coexistenta') cn.color = '#eab308';
             }
         });
         render(); updateProps();
@@ -2336,10 +2340,11 @@ function updateProps(){
     pb.innerHTML=`
       <div class="psec"><div class="psh">📐 Identificare & Rute</div>
         <div class="pr"><div class="pl">Etichetă Cablu</div><input class="pi" id="p-cl" value="${cn.label||''}"></div>
-        <div class="pr"><div class="pl">Stare</div><select class="pi" id="p-cn-stare" style="font-weight:700;color:${cnStare==='proiectat_racordare'?'#ef4444':cnStare==='proiectat_intarire'?'#a855f7':'var(--text)'}">
+        <div class="pr"><div class="pl">Stare</div><select class="pi" id="p-cn-stare" style="font-weight:700;color:${cnStare==='proiectat_racordare'?'#ef4444':cnStare==='proiectat_intarire'?'#a855f7':cnStare==='coexistenta'?'#eab308':'var(--text)'}">
           <option value="existent" ${cnStare==='existent'?'selected':''}>✔ Existent</option>
           <option value="proiectat_racordare" ${cnStare==='proiectat_racordare'?'selected':''} style="color:#ef4444">🔴 Proiectat — Tarif Racordare</option>
           <option value="proiectat_intarire" ${cnStare==='proiectat_intarire'?'selected':''} style="color:#a855f7">🟣 Proiectat — Tarif Întărire</option>
+          <option value="coexistenta" ${cnStare==='coexistenta'?'selected':''} style="color:#eab308">🟡 Lucrări Coexistență</option>
         </select></div>
         <div class="pr"><div class="pl">Grup Circuit (pt. stâlpi comuni)</div><input class="pi" id="p-cgroup" value="${cn.circuitGroup||''}" placeholder="Ex: C3, Iluminat..."><div style="font-size:7px;color:var(--text3);margin-top:2px">Dacă este completat, căderea de tensiune va urmări doar cablurile din același grup.</div></div>
         <div class="pr"><div class="pl">Lungime tronson (m)</div><div style="display:flex;gap:4px"><input class="pi" type="number" id="p-len" value="${cn.length||''}" style="flex:1"><button class="t2" style="height:23px;padding:0 6px;min-width:auto;border-color:var(--border2);background:var(--bg3);color:var(--accent)" onclick="updSel('length', parseFloat((calcPathLen(CN.find(x=>x.id===${cn.id}).path)/pxPerMeter).toFixed(1)))" title="Recalculează distanța din desen">📐 Auto</button></div></div>
@@ -2368,6 +2373,7 @@ function updateProps(){
         cn.stare = v;
         if(v === 'proiectat_racordare') cn.color = '#ef4444';
         else if(v === 'proiectat_intarire') cn.color = '#a855f7';
+        else if(v === 'coexistenta') cn.color = '#eab308';
         render(); updateProps();
     });
     document.getElementById('p-cgroup')?.addEventListener('input',ev=>updSel('circuitGroup',ev.target.value));
