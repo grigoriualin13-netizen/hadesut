@@ -5467,7 +5467,6 @@ function checkUserApproval() {
 function showPendingScreen() {
   hideAuthScreen();
   hideProjectScreen();
-  // Show a message overlay
   var screen = document.getElementById('project-screen');
   screen.classList.remove('hidden');
   var listEl = document.getElementById('ps-list');
@@ -5478,12 +5477,21 @@ function showPendingScreen() {
     'Administratorul va fi notificat și vei primi acces în curând.</div>' +
     '</div>';
   document.getElementById('ps-recovery').style.display = 'none';
-  // Hide normal actions, show only logout and local
   var actionsEl = document.querySelector('.ps-actions');
   if (actionsEl) {
-    actionsEl.innerHTML = '<button class="ps-btn secondary" onclick="authLogout();location.reload()">Deconectare</button>' +
+    actionsEl.innerHTML = '<button class="ps-btn secondary" onclick="pendingLogout()">Deconectare</button>' +
       '<button class="ps-btn" onclick="authSkip();hideProjectScreen()">Continuă fără cont (local)</button>';
   }
+}
+
+function pendingLogout() {
+  supaClient.auth.signOut().then(function() {
+    currentUser = null;
+    currentProfile = null;
+    updateUserBar();
+    hideProjectScreen();
+    showAuthScreen();
+  });
 }
 
 function openAdminPanel() {
