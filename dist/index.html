@@ -9,6 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/svg2pdf.js/2.2.3/svg2pdf.umd.min.js"></script>
 <script src="https://unpkg.com/docx@9.6.1/dist/index.iife.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <style>
 :root{
@@ -35,6 +36,30 @@ html[data-theme="light"]{
   --cvs:#e2eaf5;
   --grid1:rgba(100,130,180,.38);--grid2:rgba(100,130,180,.18);
 }
+/* AUTH SCREEN */
+#auth-screen{position:fixed;inset:0;z-index:10001;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column}
+#auth-screen.hidden{display:none}
+.auth-box{background:var(--panel);border:1px solid var(--border2);border-radius:16px;padding:36px;min-width:380px;max-width:420px;display:flex;flex-direction:column;gap:16px;box-shadow:0 12px 48px var(--shadow)}
+.auth-title{font-size:28px;font-weight:800;color:var(--accent);text-align:center;letter-spacing:1px}
+.auth-subtitle{font-size:12px;color:var(--text3);text-align:center;margin-top:-10px}
+.auth-input{height:42px;padding:0 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:14px;outline:none;width:100%}
+.auth-input:focus{border-color:var(--accent);box-shadow:0 0 8px rgba(0,207,255,.2)}
+.auth-btn{height:42px;border-radius:8px;border:none;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;width:100%;letter-spacing:.5px}
+.auth-btn.primary{background:linear-gradient(135deg,var(--accent),var(--accentg));color:#000}
+.auth-btn.primary:hover{opacity:.9;transform:scale(1.01)}
+.auth-btn.secondary{background:var(--bg3);border:1px solid var(--border2);color:var(--text2)}
+.auth-btn.secondary:hover{border-color:var(--accent);color:var(--accent)}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.auth-toggle{font-size:12px;color:var(--text3);text-align:center;cursor:pointer}
+.auth-toggle span{color:var(--accent);font-weight:700}
+.auth-toggle span:hover{text-decoration:underline}
+.auth-error{font-size:11px;color:var(--danger);text-align:center;min-height:16px}
+.auth-divider{display:flex;align-items:center;gap:12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.auth-user-bar{position:absolute;top:10px;right:10px;z-index:41;display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border2);border-radius:8px;padding:4px 10px;font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.auth-user-bar .user-email{color:var(--accent);font-weight:600}
+.auth-user-bar button{height:24px;padding:0 10px;border-radius:5px;border:1px solid var(--border);background:var(--bg3);color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:9px;cursor:pointer;transition:all .15s}
+.auth-user-bar button:hover{border-color:var(--danger);color:var(--danger)}
 /* FLOATING SAVE BUTTONS */
 #save-float{position:absolute;bottom:32px;right:16px;z-index:45;display:flex;gap:8px;align-items:center}
 .sf-btn{height:38px;padding:0 16px;border-radius:10px;border:none;font-family:'Barlow Condensed',sans-serif;
@@ -5129,6 +5154,204 @@ async function generateFS() {
 // INDEXEDDB PROJECT STORAGE + AUTO-SAVE + PROJECT MANAGER
 // ═══════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════
+// SUPABASE AUTH + CLOUD STORAGE
+// ═══════════════════════════════════════════════════════
+var SUPABASE_URL = 'https://fmvcwdopsugwqiodwtxm.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtdmN3ZG9wc3Vnd3Fpb2R3dHhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNDMzODYsImV4cCI6MjA5MTcxOTM4Nn0.rkmhhzzaGHa0d_P7RSph0X74oDLYID_c4IZGPLstJD0';
+
+var supaClient = null;
+var currentUser = null;
+var authMode = 'login'; // 'login' or 'register'
+
+function initSupabase() {
+  try {
+    if (window.supabase && window.supabase.createClient) {
+      supaClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      console.log('Supabase initialized');
+      return true;
+    }
+  } catch(e) { console.warn('Supabase init failed:', e); }
+  return false;
+}
+
+// ── Auth UI ──
+function showAuthScreen() {
+  document.getElementById('auth-screen').classList.remove('hidden');
+  document.getElementById('auth-email').focus();
+}
+
+function hideAuthScreen() {
+  document.getElementById('auth-screen').classList.add('hidden');
+}
+
+function toggleAuthMode() {
+  authMode = authMode === 'login' ? 'register' : 'login';
+  var btn = document.getElementById('auth-submit-btn');
+  var toggle = document.getElementById('auth-toggle-text');
+  var label = document.getElementById('auth-mode-label');
+  var nameRow = document.getElementById('auth-name-row');
+  if (authMode === 'register') {
+    btn.textContent = 'CREEAZĂ CONT';
+    toggle.innerHTML = 'Ai deja cont? <span onclick="toggleAuthMode()">Conectează-te</span>';
+    label.textContent = 'Creează un cont nou';
+    nameRow.style.display = 'block';
+  } else {
+    btn.textContent = 'INTRĂ';
+    toggle.innerHTML = 'Nu ai cont? <span onclick="toggleAuthMode()">Creează unul</span>';
+    label.textContent = 'Conectează-te pentru a salva proiectele în cloud';
+    nameRow.style.display = 'none';
+  }
+  document.getElementById('auth-error').textContent = '';
+}
+
+function authSubmit() {
+  var email = document.getElementById('auth-email').value.trim();
+  var pass = document.getElementById('auth-pass').value;
+  var errEl = document.getElementById('auth-error');
+  var btn = document.getElementById('auth-submit-btn');
+  errEl.textContent = '';
+
+  if (!email || !pass) { errEl.textContent = 'Completează email și parola'; return; }
+  if (pass.length < 6) { errEl.textContent = 'Parola trebuie să aibă minim 6 caractere'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Se procesează...';
+
+  if (authMode === 'register') {
+    var displayName = document.getElementById('auth-name').value.trim();
+    supaClient.auth.signUp({
+      email: email,
+      password: pass,
+      options: { data: { display_name: displayName || email.split('@')[0] } }
+    }).then(function(res) {
+      btn.disabled = false;
+      if (res.error) {
+        errEl.textContent = translateAuthError(res.error.message);
+        btn.textContent = 'CREEAZĂ CONT';
+      } else if (res.data.user && !res.data.session) {
+        errEl.style.color = 'var(--accentg)';
+        errEl.textContent = 'Cont creat! Verifică email-ul pentru confirmare, apoi conectează-te.';
+        btn.textContent = 'CREEAZĂ CONT';
+        authMode = 'login';
+        setTimeout(toggleAuthMode, 2000);
+      } else {
+        onAuthSuccess(res.data.user);
+      }
+    });
+  } else {
+    supaClient.auth.signInWithPassword({
+      email: email,
+      password: pass
+    }).then(function(res) {
+      btn.disabled = false;
+      if (res.error) {
+        errEl.textContent = translateAuthError(res.error.message);
+        btn.textContent = 'INTRĂ';
+      } else {
+        onAuthSuccess(res.data.user);
+      }
+    });
+  }
+}
+
+function translateAuthError(msg) {
+  if (msg.includes('Invalid login')) return 'Email sau parolă incorectă';
+  if (msg.includes('already registered')) return 'Acest email este deja înregistrat';
+  if (msg.includes('valid email')) return 'Adresă de email invalidă';
+  if (msg.includes('Email not confirmed')) return 'Email-ul nu a fost confirmat. Verifică inbox-ul.';
+  if (msg.includes('rate limit')) return 'Prea multe încercări. Așteaptă câteva minute.';
+  return msg;
+}
+
+function onAuthSuccess(user) {
+  currentUser = user;
+  hideAuthScreen();
+  updateUserBar();
+  toast('Conectat: ' + user.email, 'ok');
+  showProjectManagerAfterAuth();
+}
+
+function updateUserBar() {
+  var bar = document.getElementById('user-bar');
+  var emailEl = document.getElementById('user-email-display');
+  if (currentUser) {
+    bar.style.display = 'flex';
+    emailEl.textContent = currentUser.email;
+  } else {
+    bar.style.display = 'none';
+    emailEl.textContent = '';
+  }
+}
+
+function authLogout() {
+  if (!confirm('Vrei să te deconectezi?')) return;
+  supaClient.auth.signOut().then(function() {
+    currentUser = null;
+    updateUserBar();
+    toast('Deconectat', 'ok');
+  });
+}
+
+function authSkip() {
+  currentUser = null;
+  hideAuthScreen();
+  updateUserBar();
+}
+
+// Listen for Enter in auth inputs
+document.addEventListener('DOMContentLoaded', function() {
+  ['auth-email', 'auth-pass', 'auth-name'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('keydown', function(e) { if (e.key === 'Enter') authSubmit(); });
+  });
+});
+
+// ── Cloud Storage (Supabase) ──
+function cloudSaveProject(projectId, projectName, data) {
+  if (!currentUser || !supaClient) return Promise.resolve(null);
+  return supaClient.from('projects').upsert({
+    id: projectId,
+    user_id: currentUser.id,
+    name: projectName,
+    data: data,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'id' }).then(function(res) {
+    if (res.error) { console.error('Cloud save error:', res.error); return null; }
+    return res;
+  });
+}
+
+function cloudLoadProjects() {
+  if (!currentUser || !supaClient) return Promise.resolve([]);
+  return supaClient.from('projects')
+    .select('id, name, data, created_at, updated_at')
+    .eq('user_id', currentUser.id)
+    .order('updated_at', { ascending: false })
+    .then(function(res) {
+      if (res.error) { console.error('Cloud load error:', res.error); return []; }
+      return res.data || [];
+    });
+}
+
+function cloudDeleteProject(projectId) {
+  if (!currentUser || !supaClient) return Promise.resolve();
+  return supaClient.from('projects').delete().eq('id', projectId).eq('user_id', currentUser.id);
+}
+
+function cloudGetProject(projectId) {
+  if (!currentUser || !supaClient) return Promise.resolve(null);
+  return supaClient.from('projects')
+    .select('*')
+    .eq('id', projectId)
+    .eq('user_id', currentUser.id)
+    .single()
+    .then(function(res) {
+      if (res.error) return null;
+      return res.data;
+    });
+}
+
 // ── Export dropdown ──
 function toggleExportMenu() {
   var m = document.getElementById('export-menu');
@@ -5250,18 +5473,27 @@ function updateAutoSaveIndicator(text) {
 // ── Save project to IndexedDB ──
 function saveProjectToDB(projectId, projectName) {
   var now = Date.now();
+  var projData = getProjectData();
   var data = {
     id: projectId,
     name: projectName,
-    data: getProjectData(),
-    createdAt: null, // will be set on first save
+    data: projData,
+    createdAt: null,
     updatedAt: now
   };
-  return dbGet('projects', projectId).then(function(existing) {
+  // Save to IndexedDB (local)
+  var localSave = dbGet('projects', projectId).then(function(existing) {
     if (existing) data.createdAt = existing.createdAt;
     else data.createdAt = now;
     return dbPut('projects', data);
   });
+  // Also save to cloud if logged in
+  if (currentUser && supaClient) {
+    cloudSaveProject(projectId, projectName, projData).then(function() {
+      updateAutoSaveIndicator('cloud sync OK');
+    }).catch(function(e) { console.warn('Cloud sync failed:', e); });
+  }
+  return localSave;
 }
 
 // ── Auto-save to separate store ──
@@ -5434,9 +5666,31 @@ function refreshProjectList() {
     }
   }).catch(function() { recoveryEl.style.display = 'none'; });
 
-  // Load project list
-  dbGetAll('projects').then(function(projects) {
+  // Load project list — merge local + cloud
+  var localPromise = dbGetAll('projects');
+  var cloudPromise = (currentUser && supaClient) ? cloudLoadProjects() : Promise.resolve([]);
+
+  Promise.all([localPromise, cloudPromise]).then(function(results) {
+    var localProjects = results[0] || [];
+    var cloudProjects = results[1] || [];
+
+    // Merge: cloud projects override local if same id, add new ones
+    var merged = {};
+    localProjects.forEach(function(p) {
+      merged[p.id] = { id: p.id, name: p.name, data: p.data, updatedAt: p.updatedAt, source: 'local' };
+    });
+    cloudProjects.forEach(function(p) {
+      var cloudTime = new Date(p.updated_at).getTime();
+      if (!merged[p.id] || cloudTime > merged[p.id].updatedAt) {
+        merged[p.id] = { id: p.id, name: p.name, data: p.data, updatedAt: cloudTime, source: 'cloud' };
+      } else {
+        merged[p.id].source = 'both';
+      }
+    });
+
+    var projects = Object.values(merged);
     projects.sort(function(a, b) { return b.updatedAt - a.updatedAt; });
+
     if (projects.length === 0) {
       listEl.innerHTML = '<div class="ps-empty">Niciun proiect salvat încă.<br>Creează un proiect nou sau încarcă un fișier JSON.</div>';
       return;
@@ -5448,38 +5702,49 @@ function refreshProjectList() {
       var elCount = p.data && p.data.EL ? p.data.EL.length : 0;
       var cnCount = p.data && p.data.CN ? p.data.CN.length : 0;
       var isCurrent = p.id === currentProjectId;
+      var sourceIcon = p.source === 'cloud' ? ' ☁' : p.source === 'both' ? ' ☁💾' : ' 💾';
 
       var div = document.createElement('div');
       div.className = 'ps-item';
       if (isCurrent) div.style.borderColor = 'var(--accent)';
       div.innerHTML = '<div class="ps-item-info">' +
-        '<div class="ps-item-name">' + p.name + (isCurrent ? ' (deschis)' : '') + '</div>' +
+        '<div class="ps-item-name">' + p.name + sourceIcon + (isCurrent ? ' (deschis)' : '') + '</div>' +
         '<div class="ps-item-meta">' + dateStr + '  |  ' + elCount + ' elem, ' + cnCount + ' conn</div>' +
         '</div>' +
         '<button class="ps-item-del" onclick="event.stopPropagation();renameProject(\'' + p.id + '\',\'' + p.name.replace(/'/g, "\\'") + '\')" title="Redenumește">✏</button>' +
         '<button class="ps-item-del" onclick="event.stopPropagation();deleteProject(\'' + p.id + '\')" title="Șterge proiectul">✕</button>';
-      div.onclick = function() { openProject(p.id); };
+      div.onclick = function() { openProject(p.id, p.source); };
       listEl.appendChild(div);
     });
   });
 }
 
-function openProject(projectId) {
-  dbGet('projects', projectId).then(function(p) {
+function openProject(projectId, source) {
+  // Try local first, then cloud
+  var loadLocal = dbGet('projects', projectId);
+  var loadCloud = (source === 'cloud' && currentUser && supaClient) ? cloudGetProject(projectId) : Promise.resolve(null);
+
+  Promise.all([loadLocal, loadCloud]).then(function(results) {
+    var p = results[1] || results[0]; // prefer cloud if available
     if (!p) { toast('Proiectul nu a fost găsit!', ''); return; }
-    loadProjectData(p.data);
-    currentProjectId = p.id;
-    currentProjectName = p.name;
+    var pData = p.data;
+    var pName = p.name;
+    loadProjectData(pData);
+    currentProjectId = projectId;
+    currentProjectName = pName;
     updateProjectNameUI();
     clearAutoSave();
     hideProjectScreen();
-    toast('Proiect deschis: ' + p.name, 'ok');
+    toast('Proiect deschis: ' + pName, 'ok');
   });
 }
 
 function deleteProject(projectId) {
-  if (!confirm('Ești sigur că vrei să ștergi acest proiect din browser?')) return;
-  dbDelete('projects', projectId).then(function() {
+  if (!confirm('Ești sigur că vrei să ștergi acest proiect?')) return;
+  // Delete from both local and cloud
+  var promises = [dbDelete('projects', projectId)];
+  if (currentUser && supaClient) promises.push(cloudDeleteProject(projectId));
+  Promise.all(promises).then(function() {
     if (currentProjectId === projectId) {
       currentProjectId = null;
       currentProjectName = null;
@@ -5549,27 +5814,61 @@ window.addEventListener('beforeunload', function(e) {
   }
 });
 
-// ── Init: check for recovery and show start screen ──
+// ── Init: check auth, recovery, show start screen ──
 var _origInit = init;
 init = function() {
   _origInit();
   if (window.__TAURI__) return; // Tauri handles its own init
   startAutoSave();
 
-  // Check if there are any projects or auto-save to show start screen
+  // Initialize Supabase
+  var hasSupabase = initSupabase();
+
+  if (hasSupabase) {
+    // Check if user is already logged in (session persists)
+    supaClient.auth.getSession().then(function(res) {
+      if (res.data.session && res.data.session.user) {
+        currentUser = res.data.session.user;
+        updateUserBar();
+        showProjectManagerAfterAuth();
+      } else {
+        // Show auth screen
+        showAuthScreen();
+      }
+    }).catch(function() {
+      showAuthScreen();
+    });
+
+    // Listen for auth state changes
+    supaClient.auth.onAuthStateChange(function(event, session) {
+      if (event === 'SIGNED_IN' && session) {
+        currentUser = session.user;
+        updateUserBar();
+      } else if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        updateUserBar();
+      }
+    });
+  } else {
+    // No Supabase — go straight to project manager
+    showProjectManagerAfterAuth();
+  }
+};
+
+function showProjectManagerAfterAuth() {
   Promise.all([dbGetAll('projects'), dbGet('autosave', 'current_autosave')]).then(function(results) {
     var projects = results[0];
     var autoSave = results[1];
     var hasProjects = projects && projects.length > 0;
     var hasRecovery = autoSave && autoSave.data && (autoSave.data.EL && autoSave.data.EL.length > 0);
 
-    if (hasProjects || hasRecovery) {
+    if (hasProjects || hasRecovery || currentUser) {
       showProjectManager();
     }
   }).catch(function(e) {
     console.warn('DB init check failed:', e);
   });
-};
+}
 
 window.onload = init;
 </script>
@@ -5863,6 +6162,32 @@ window.onload = init;
   }
 })();
 </script>
+<!-- AUTH SCREEN -->
+<div id="auth-screen" class="hidden">
+  <div class="auth-box">
+    <div class="auth-title">ElectroCAD Pro</div>
+    <div class="auth-subtitle" id="auth-mode-label">Conectează-te pentru a salva proiectele în cloud</div>
+    <div class="auth-error" id="auth-error"></div>
+    <input class="auth-input" id="auth-email" type="email" placeholder="Email" autocomplete="email">
+    <input class="auth-input" id="auth-pass" type="password" placeholder="Parola (min. 6 caractere)" autocomplete="current-password">
+    <div id="auth-name-row" style="display:none">
+      <input class="auth-input" id="auth-name" type="text" placeholder="Numele tău (opțional)" autocomplete="name">
+    </div>
+    <button class="auth-btn primary" id="auth-submit-btn" onclick="authSubmit()">INTRĂ</button>
+    <div class="auth-toggle" id="auth-toggle-text">
+      Nu ai cont? <span onclick="toggleAuthMode()">Creează unul</span>
+    </div>
+    <div class="auth-divider">sau</div>
+    <button class="auth-btn secondary" onclick="authSkip()">Continuă fără cont (doar local)</button>
+  </div>
+</div>
+
+<!-- USER BAR (shown when logged in) -->
+<div id="user-bar" class="auth-user-bar" style="display:none">
+  <span class="user-email" id="user-email-display"></span>
+  <button onclick="authLogout()">DECONECTARE</button>
+</div>
+
 <!-- PROJECT MANAGER SCREEN -->
 <div id="project-screen" class="hidden">
   <div class="ps-container">

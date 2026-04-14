@@ -9,6 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/svg2pdf.js/2.2.3/svg2pdf.umd.min.js"></script>
 <script src="https://unpkg.com/docx@9.6.1/dist/index.iife.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <style>
 :root{
@@ -35,6 +36,72 @@ html[data-theme="light"]{
   --cvs:#e2eaf5;
   --grid1:rgba(100,130,180,.38);--grid2:rgba(100,130,180,.18);
 }
+/* AUTH SCREEN */
+#auth-screen{position:fixed;inset:0;z-index:10001;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column}
+#auth-screen.hidden{display:none}
+.auth-box{background:var(--panel);border:1px solid var(--border2);border-radius:16px;padding:36px;min-width:380px;max-width:420px;display:flex;flex-direction:column;gap:16px;box-shadow:0 12px 48px var(--shadow)}
+.auth-title{font-size:28px;font-weight:800;color:var(--accent);text-align:center;letter-spacing:1px}
+.auth-subtitle{font-size:12px;color:var(--text3);text-align:center;margin-top:-10px}
+.auth-input{height:42px;padding:0 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:14px;outline:none;width:100%}
+.auth-input:focus{border-color:var(--accent);box-shadow:0 0 8px rgba(0,207,255,.2)}
+.auth-btn{height:42px;border-radius:8px;border:none;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;width:100%;letter-spacing:.5px}
+.auth-btn.primary{background:linear-gradient(135deg,var(--accent),var(--accentg));color:#000}
+.auth-btn.primary:hover{opacity:.9;transform:scale(1.01)}
+.auth-btn.secondary{background:var(--bg3);border:1px solid var(--border2);color:var(--text2)}
+.auth-btn.secondary:hover{border-color:var(--accent);color:var(--accent)}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.auth-toggle{font-size:12px;color:var(--text3);text-align:center;cursor:pointer}
+.auth-toggle span{color:var(--accent);font-weight:700}
+.auth-toggle span:hover{text-decoration:underline}
+.auth-error{font-size:11px;color:var(--danger);text-align:center;min-height:16px}
+.auth-divider{display:flex;align-items:center;gap:12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.auth-user-bar{position:absolute;top:10px;right:10px;z-index:41;display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border2);border-radius:8px;padding:4px 10px;font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.auth-user-bar .user-email{color:var(--accent);font-weight:600}
+.auth-user-bar button{height:24px;padding:0 10px;border-radius:5px;border:1px solid var(--border);background:var(--bg3);color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:9px;cursor:pointer;transition:all .15s}
+.auth-user-bar button:hover{border-color:var(--danger);color:var(--danger)}
+/* FLOATING SAVE BUTTONS */
+#save-float{position:absolute;bottom:32px;right:16px;z-index:45;display:flex;gap:8px;align-items:center}
+.sf-btn{height:38px;padding:0 16px;border-radius:10px;border:none;font-family:'Barlow Condensed',sans-serif;
+  font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:6px;
+  box-shadow:0 4px 16px var(--shadow);letter-spacing:.3px}
+.sf-btn:hover{transform:translateY(-1px);box-shadow:0 6px 24px var(--shadow)}
+.sf-btn.primary{background:linear-gradient(135deg,var(--accent),var(--accentg));color:#000}
+.sf-btn.primary:hover{opacity:.92}
+.sf-btn.secondary{background:var(--panel);border:1px solid var(--border2);color:var(--text2)}
+.sf-btn.secondary:hover{border-color:var(--accent);color:var(--accent)}
+/* EXPORT DROPDOWN */
+#export-menu{display:flex}
+/* PROJECT MANAGER / START SCREEN */
+#project-screen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column}
+#project-screen.hidden{display:none}
+.ps-container{background:var(--panel);border:1px solid var(--border2);border-radius:16px;padding:32px;min-width:500px;max-width:600px;max-height:80vh;display:flex;flex-direction:column;gap:20px;box-shadow:0 12px 48px var(--shadow)}
+.ps-title{font-size:28px;font-weight:800;color:var(--accent);text-align:center;letter-spacing:1px}
+.ps-subtitle{font-size:12px;color:var(--text3);text-align:center;margin-top:-12px}
+.ps-list{display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:400px;padding-right:4px}
+.ps-item{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s}
+.ps-item:hover{border-color:var(--accent);background:var(--panel2);box-shadow:0 0 12px rgba(0,207,255,.1)}
+.ps-item-info{flex:1;display:flex;flex-direction:column;gap:2px}
+.ps-item-name{font-size:14px;font-weight:700;color:var(--text)}
+.ps-item-meta{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.ps-item-del{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.ps-item-del:hover{color:var(--danger);border-color:var(--danger);background:rgba(255,61,113,.1)}
+.ps-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.ps-btn{height:38px;padding:0 20px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px}
+.ps-btn:hover{background:var(--panel2);border-color:var(--accent);color:var(--accent)}
+.ps-btn.primary{background:linear-gradient(135deg,var(--accent),var(--accentg));color:#000;border:none}
+.ps-btn.primary:hover{opacity:.9;transform:scale(1.02)}
+.ps-empty{text-align:center;color:var(--text3);font-size:12px;padding:24px 0}
+.ps-recovery{background:rgba(255,159,67,.08);border:1px solid rgba(255,159,67,.3);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.ps-recovery-text{flex:1;font-size:12px;color:var(--warn)}
+.ps-recovery-btn{height:32px;padding:0 14px;border-radius:6px;border:1px solid rgba(255,159,67,.4);background:rgba(255,159,67,.12);color:var(--warn);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s}
+.ps-recovery-btn:hover{background:rgba(255,159,67,.25)}
+/* PROJECT NAME INPUT MODAL */
+#project-name-modal{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center}
+#project-name-modal.show{display:flex}
+.pn-box{background:var(--panel);border:1px solid var(--border2);border-radius:12px;padding:24px;min-width:380px;display:flex;flex-direction:column;gap:16px;box-shadow:0 8px 32px var(--shadow)}
+.pn-box input{height:38px;padding:0 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:14px;outline:none}
+.pn-box input:focus{border-color:var(--accent);box-shadow:0 0 8px rgba(0,207,255,.2)}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Barlow Condensed',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden}
 body.conn-active{cursor:crosshair}
@@ -392,15 +459,21 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
     <button class="t2 g" onclick="toggleBgPanel()">🗺️ FUNDAL</button>
     <button class="t2" id="btn-flow" onclick="toggleFlowAnim()" title="Animație flux putere pe cabluri">⚡ FLUX</button>
     <div class="ts"></div>
-    <button class="t2 g" onclick="startExport('png')">📷 PNG</button>
-    <button class="t2 g" onclick="startExport('svg')">📐 SVG</button>
-    <button class="t2 g" onclick="startExport('pdf')">📄 PDF Vector</button>
-    <button class="t2 g" onclick="startExport('dxf')" title="Export AutoCAD/LibreCAD/QCAD">📐 DXF</button>
-    <div class="ts"></div>
+    <div style="position:relative;display:inline-block">
+      <button class="t2 g" onclick="toggleExportMenu()">📦 EXPORT ▾</button>
+      <div id="export-menu" style="display:none;position:absolute;top:32px;left:0;background:var(--panel);border:1px solid var(--border2);border-radius:8px;padding:6px;z-index:100;box-shadow:0 8px 24px var(--shadow);min-width:160px;flex-direction:column;gap:3px">
+        <button class="t2 g" style="width:100%;justify-content:flex-start" onclick="startExport('png');closeExportMenu()">📷 PNG Imagine</button>
+        <button class="t2 g" style="width:100%;justify-content:flex-start" onclick="startExport('svg');closeExportMenu()">📐 SVG Vectorial</button>
+        <button class="t2 g" style="width:100%;justify-content:flex-start" onclick="startExport('pdf');closeExportMenu()">📄 PDF Vector</button>
+        <button class="t2 g" style="width:100%;justify-content:flex-start" onclick="startExport('dxf');closeExportMenu()">📐 DXF AutoCAD</button>
+        <div style="height:1px;background:var(--border);margin:3px 0"></div>
+        <button class="t2" style="width:100%;justify-content:flex-start" onclick="exportJSON();closeExportMenu()">📥 Export JSON</button>
+      </div>
+    </div>
     <button class="t2" style="color:#ff9f43;border-color:rgba(255,159,67,.4);background:rgba(255,159,67,.08)" onclick="openFSModal()" title="Generare Fișă de Soluție DOCX">📄 FIȘĂ SOLUȚIE</button>
     <div class="ts"></div>
-    <button class="t2" onclick="save()">💾 SALVEAZĂ</button>
     <label class="t2" style="cursor:pointer">📂 ÎNCARCĂ<input type="file" accept=".json" style="display:none" onchange="load(this)"></label>
+    <button class="t2 g" onclick="showProjectManager()">📁 PROIECTE</button>
     <div class="ts"></div>
     <button class="t2 w" onclick="clearAll()">🗑 ȘTERGE</button>
     <div class="ts"></div>
@@ -427,11 +500,20 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
     </g>
   </svg>
 
+  <!-- FLOATING SAVE BUTTONS -->
+  <div id="save-float">
+    <button class="sf-btn secondary" onclick="saveAsNew()" title="Ctrl+Shift+S">💾 SALVEAZĂ CA...</button>
+    <button class="sf-btn primary" onclick="save()" title="Ctrl+S">💾 SALVEAZĂ</button>
+  </div>
+
   <div id="sbar">
     <div style="display:flex;align-items:center;gap:5px"><div class="sd g"></div><span id="stm">SELECT</span></div>
     <div style="display:flex;align-items:center;gap:5px"><div class="sd b"></div><span id="ste">0 elem</span></div>
     <span id="stc">0 conn</span>
     <span id="stxy">X:0 Y:0</span>
+    <div class="ts" style="height:12px"></div>
+    <span id="project-name-bar" style="color:var(--accent);cursor:pointer" onclick="showProjectManager()" title="Click pentru a gestiona proiecte">Proiect Nou</span>
+    <span id="autosave-indicator" style="color:var(--text3)"></span>
     <div style="flex:1"></div>
     <span style="color:var(--accent);font-weight:700;letter-spacing:0.5px">© Made by Grigoriu Alin-Florin</span>
   </div>
@@ -3936,6 +4018,7 @@ window.addEventListener('keydown',e=>{
     if(e.key==='y'){e.preventDefault();redo();return;}
     if(e.key==='c'){e.preventDefault();copyEl();return;}
     if(e.key==='v'){e.preventDefault();pasteEl();return;}
+    if(e.key==='s'&&e.shiftKey){e.preventDefault();saveAsNew();return;}
     if(e.key==='s'){e.preventDefault();save();return;}
   }
   if(!inp){
@@ -5067,6 +5150,726 @@ async function generateFS() {
   });
 }
 
+// ═══════════════════════════════════════════════════════
+// INDEXEDDB PROJECT STORAGE + AUTO-SAVE + PROJECT MANAGER
+// ═══════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════
+// SUPABASE AUTH + CLOUD STORAGE
+// ═══════════════════════════════════════════════════════
+var SUPABASE_URL = 'https://fmvcwdopsugwqiodwtxm.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtdmN3ZG9wc3Vnd3Fpb2R3dHhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNDMzODYsImV4cCI6MjA5MTcxOTM4Nn0.rkmhhzzaGHa0d_P7RSph0X74oDLYID_c4IZGPLstJD0';
+
+var supaClient = null;
+var currentUser = null;
+var authMode = 'login'; // 'login' or 'register'
+
+function initSupabase() {
+  try {
+    if (window.supabase && window.supabase.createClient) {
+      supaClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      console.log('Supabase initialized');
+      return true;
+    }
+  } catch(e) { console.warn('Supabase init failed:', e); }
+  return false;
+}
+
+// ── Auth UI ──
+function showAuthScreen() {
+  document.getElementById('auth-screen').classList.remove('hidden');
+  document.getElementById('auth-email').focus();
+}
+
+function hideAuthScreen() {
+  document.getElementById('auth-screen').classList.add('hidden');
+}
+
+function toggleAuthMode() {
+  authMode = authMode === 'login' ? 'register' : 'login';
+  var btn = document.getElementById('auth-submit-btn');
+  var toggle = document.getElementById('auth-toggle-text');
+  var label = document.getElementById('auth-mode-label');
+  var nameRow = document.getElementById('auth-name-row');
+  if (authMode === 'register') {
+    btn.textContent = 'CREEAZĂ CONT';
+    toggle.innerHTML = 'Ai deja cont? <span onclick="toggleAuthMode()">Conectează-te</span>';
+    label.textContent = 'Creează un cont nou';
+    nameRow.style.display = 'block';
+  } else {
+    btn.textContent = 'INTRĂ';
+    toggle.innerHTML = 'Nu ai cont? <span onclick="toggleAuthMode()">Creează unul</span>';
+    label.textContent = 'Conectează-te pentru a salva proiectele în cloud';
+    nameRow.style.display = 'none';
+  }
+  document.getElementById('auth-error').textContent = '';
+}
+
+function authSubmit() {
+  var email = document.getElementById('auth-email').value.trim();
+  var pass = document.getElementById('auth-pass').value;
+  var errEl = document.getElementById('auth-error');
+  var btn = document.getElementById('auth-submit-btn');
+  errEl.textContent = '';
+
+  if (!email || !pass) { errEl.textContent = 'Completează email și parola'; return; }
+  if (pass.length < 6) { errEl.textContent = 'Parola trebuie să aibă minim 6 caractere'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Se procesează...';
+
+  if (authMode === 'register') {
+    var displayName = document.getElementById('auth-name').value.trim();
+    supaClient.auth.signUp({
+      email: email,
+      password: pass,
+      options: { data: { display_name: displayName || email.split('@')[0] } }
+    }).then(function(res) {
+      btn.disabled = false;
+      if (res.error) {
+        errEl.textContent = translateAuthError(res.error.message);
+        btn.textContent = 'CREEAZĂ CONT';
+      } else if (res.data.user && !res.data.session) {
+        errEl.style.color = 'var(--accentg)';
+        errEl.textContent = 'Cont creat! Verifică email-ul pentru confirmare, apoi conectează-te.';
+        btn.textContent = 'CREEAZĂ CONT';
+        authMode = 'login';
+        setTimeout(toggleAuthMode, 2000);
+      } else {
+        onAuthSuccess(res.data.user);
+      }
+    });
+  } else {
+    supaClient.auth.signInWithPassword({
+      email: email,
+      password: pass
+    }).then(function(res) {
+      btn.disabled = false;
+      if (res.error) {
+        errEl.textContent = translateAuthError(res.error.message);
+        btn.textContent = 'INTRĂ';
+      } else {
+        onAuthSuccess(res.data.user);
+      }
+    });
+  }
+}
+
+function translateAuthError(msg) {
+  if (msg.includes('Invalid login')) return 'Email sau parolă incorectă';
+  if (msg.includes('already registered')) return 'Acest email este deja înregistrat';
+  if (msg.includes('valid email')) return 'Adresă de email invalidă';
+  if (msg.includes('Email not confirmed')) return 'Email-ul nu a fost confirmat. Verifică inbox-ul.';
+  if (msg.includes('rate limit')) return 'Prea multe încercări. Așteaptă câteva minute.';
+  return msg;
+}
+
+function onAuthSuccess(user) {
+  currentUser = user;
+  hideAuthScreen();
+  updateUserBar();
+  toast('Conectat: ' + user.email, 'ok');
+  showProjectManagerAfterAuth();
+}
+
+function updateUserBar() {
+  var bar = document.getElementById('user-bar');
+  var emailEl = document.getElementById('user-email-display');
+  if (currentUser) {
+    bar.style.display = 'flex';
+    emailEl.textContent = currentUser.email;
+  } else {
+    bar.style.display = 'none';
+    emailEl.textContent = '';
+  }
+}
+
+function authLogout() {
+  if (!confirm('Vrei să te deconectezi?')) return;
+  supaClient.auth.signOut().then(function() {
+    currentUser = null;
+    updateUserBar();
+    toast('Deconectat', 'ok');
+  });
+}
+
+function authSkip() {
+  currentUser = null;
+  hideAuthScreen();
+  updateUserBar();
+}
+
+// Listen for Enter in auth inputs
+document.addEventListener('DOMContentLoaded', function() {
+  ['auth-email', 'auth-pass', 'auth-name'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('keydown', function(e) { if (e.key === 'Enter') authSubmit(); });
+  });
+});
+
+// ── Cloud Storage (Supabase) ──
+function cloudSaveProject(projectId, projectName, data) {
+  if (!currentUser || !supaClient) return Promise.resolve(null);
+  return supaClient.from('projects').upsert({
+    id: projectId,
+    user_id: currentUser.id,
+    name: projectName,
+    data: data,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'id' }).then(function(res) {
+    if (res.error) { console.error('Cloud save error:', res.error); return null; }
+    return res;
+  });
+}
+
+function cloudLoadProjects() {
+  if (!currentUser || !supaClient) return Promise.resolve([]);
+  return supaClient.from('projects')
+    .select('id, name, data, created_at, updated_at')
+    .eq('user_id', currentUser.id)
+    .order('updated_at', { ascending: false })
+    .then(function(res) {
+      if (res.error) { console.error('Cloud load error:', res.error); return []; }
+      return res.data || [];
+    });
+}
+
+function cloudDeleteProject(projectId) {
+  if (!currentUser || !supaClient) return Promise.resolve();
+  return supaClient.from('projects').delete().eq('id', projectId).eq('user_id', currentUser.id);
+}
+
+function cloudGetProject(projectId) {
+  if (!currentUser || !supaClient) return Promise.resolve(null);
+  return supaClient.from('projects')
+    .select('*')
+    .eq('id', projectId)
+    .eq('user_id', currentUser.id)
+    .single()
+    .then(function(res) {
+      if (res.error) return null;
+      return res.data;
+    });
+}
+
+// ── Export dropdown ──
+function toggleExportMenu() {
+  var m = document.getElementById('export-menu');
+  var isOpen = m.style.display === 'flex';
+  m.style.display = isOpen ? 'none' : 'flex';
+  if (!isOpen) {
+    // Close on outside click
+    setTimeout(function() {
+      document.addEventListener('click', closeExportMenuOutside, { once: true });
+    }, 10);
+  }
+}
+function closeExportMenu() { document.getElementById('export-menu').style.display = 'none'; }
+function closeExportMenuOutside(e) {
+  var m = document.getElementById('export-menu');
+  if (m.style.display === 'flex' && !m.parentElement.contains(e.target)) {
+    m.style.display = 'none';
+  }
+}
+
+var currentProjectId = null;
+var currentProjectName = null;
+var autoSaveTimer = null;
+var autoSaveInterval = 60000; // 60 secunde
+var lastAutoSave = 0;
+var hasUnsavedChanges = false;
+
+// ── IndexedDB helpers ──
+var ecDB = null;
+function openDB() {
+  return new Promise(function(resolve, reject) {
+    if (ecDB) { resolve(ecDB); return; }
+    var req = indexedDB.open('ElectroCAD_Projects', 1);
+    req.onupgradeneeded = function(e) {
+      var db = e.target.result;
+      if (!db.objectStoreNames.contains('projects')) {
+        var store = db.createObjectStore('projects', { keyPath: 'id' });
+        store.createIndex('updatedAt', 'updatedAt', { unique: false });
+      }
+      if (!db.objectStoreNames.contains('autosave')) {
+        db.createObjectStore('autosave', { keyPath: 'key' });
+      }
+    };
+    req.onsuccess = function(e) { ecDB = e.target.result; resolve(ecDB); };
+    req.onerror = function(e) { reject(e.target.error); };
+  });
+}
+
+function dbPut(storeName, data) {
+  return openDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(storeName, 'readwrite');
+      tx.objectStore(storeName).put(data);
+      tx.oncomplete = function() { resolve(); };
+      tx.onerror = function(e) { reject(e.target.error); };
+    });
+  });
+}
+
+function dbGet(storeName, key) {
+  return openDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(storeName, 'readonly');
+      var req = tx.objectStore(storeName).get(key);
+      req.onsuccess = function() { resolve(req.result); };
+      req.onerror = function(e) { reject(e.target.error); };
+    });
+  });
+}
+
+function dbGetAll(storeName) {
+  return openDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(storeName, 'readonly');
+      var req = tx.objectStore(storeName).getAll();
+      req.onsuccess = function() { resolve(req.result || []); };
+      req.onerror = function(e) { reject(e.target.error); };
+    });
+  });
+}
+
+function dbDelete(storeName, key) {
+  return openDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(storeName, 'readwrite');
+      tx.objectStore(storeName).delete(key);
+      tx.oncomplete = function() { resolve(); };
+      tx.onerror = function(e) { reject(e.target.error); };
+    });
+  });
+}
+
+// ── Project data helpers ──
+function getProjectData() {
+  return { EL: EL, CN: CN, bgData: bgData.url ? bgData : null };
+}
+
+function loadProjectData(data) {
+  EL = data.EL || []; CN = data.CN || [];
+  if (data.bgData) bgData = data.bgData; else bgData = { url: null, x: 0, y: 0, w: 0, h: 0, op: 0.5, locked: true };
+  sel = null; multiSel.clear(); undoStack = []; redoStack = [];
+  render(); renderBg(); updateProps(); updateStat();
+}
+
+function updateProjectNameUI() {
+  var el = document.getElementById('project-name-bar');
+  if (el) el.textContent = currentProjectName || 'Proiect Nou';
+  // Update document title in browser
+  if (!window.__TAURI__) {
+    document.title = (currentProjectName || 'Proiect Nou') + ' — ElectroCAD Pro v12';
+  }
+}
+
+function updateAutoSaveIndicator(text) {
+  var el = document.getElementById('autosave-indicator');
+  if (el) { el.textContent = text; setTimeout(function() { el.textContent = ''; }, 4000); }
+}
+
+// ── Save project to IndexedDB ──
+function saveProjectToDB(projectId, projectName) {
+  var now = Date.now();
+  var projData = getProjectData();
+  var data = {
+    id: projectId,
+    name: projectName,
+    data: projData,
+    createdAt: null,
+    updatedAt: now
+  };
+  // Save to IndexedDB (local)
+  var localSave = dbGet('projects', projectId).then(function(existing) {
+    if (existing) data.createdAt = existing.createdAt;
+    else data.createdAt = now;
+    return dbPut('projects', data);
+  });
+  // Also save to cloud if logged in
+  if (currentUser && supaClient) {
+    cloudSaveProject(projectId, projectName, projData).then(function() {
+      updateAutoSaveIndicator('cloud sync OK');
+    }).catch(function(e) { console.warn('Cloud sync failed:', e); });
+  }
+  return localSave;
+}
+
+// ── Auto-save to separate store ──
+function doAutoSave() {
+  if (!hasUnsavedChanges && currentProjectId) return;
+  var asData = {
+    key: 'current_autosave',
+    projectId: currentProjectId,
+    projectName: currentProjectName,
+    data: getProjectData(),
+    savedAt: Date.now()
+  };
+  dbPut('autosave', asData).then(function() {
+    lastAutoSave = Date.now();
+    hasUnsavedChanges = false;
+    var timeStr = new Date().toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+    updateAutoSaveIndicator('auto-save ' + timeStr);
+  }).catch(function(e) {
+    console.warn('Auto-save failed:', e);
+  });
+}
+
+function startAutoSave() {
+  if (autoSaveTimer) clearInterval(autoSaveTimer);
+  autoSaveTimer = setInterval(doAutoSave, autoSaveInterval);
+}
+
+function clearAutoSave() {
+  dbDelete('autosave', 'current_autosave').catch(function() {});
+}
+
+function markDirty() {
+  hasUnsavedChanges = true;
+}
+
+// Hook into saveState to track changes
+var _origSaveState = saveState;
+saveState = function(lbl) {
+  _origSaveState(lbl);
+  markDirty();
+};
+
+// ── SAVE: quick save to IndexedDB ──
+var _browserOrigSave = save;
+save = function() {
+  if (window.__TAURI__) { _browserOrigSave(); return; }
+  if (currentProjectId) {
+    // Quick save — overwrite in IndexedDB
+    saveProjectToDB(currentProjectId, currentProjectName).then(function() {
+      hasUnsavedChanges = false;
+      clearAutoSave();
+      toast('Proiect salvat: ' + currentProjectName, 'ok');
+    }).catch(function(e) {
+      toast('Eroare salvare: ' + e, '');
+    });
+  } else {
+    // First save — ask for name
+    showNameDialog(function(name) {
+      currentProjectId = 'proj_' + Date.now();
+      currentProjectName = name;
+      updateProjectNameUI();
+      saveProjectToDB(currentProjectId, currentProjectName).then(function() {
+        hasUnsavedChanges = false;
+        clearAutoSave();
+        toast('Proiect salvat: ' + currentProjectName, 'ok');
+      });
+    });
+  }
+};
+
+// ── SAVE AS: new project or rename ──
+function saveAsNew() {
+  if (window.__TAURI__) { _browserOrigSave(); return; }
+  showNameDialog(function(name) {
+    currentProjectId = 'proj_' + Date.now();
+    currentProjectName = name;
+    updateProjectNameUI();
+    saveProjectToDB(currentProjectId, currentProjectName).then(function() {
+      hasUnsavedChanges = false;
+      clearAutoSave();
+      toast('Proiect salvat ca: ' + currentProjectName, 'ok');
+    });
+  }, currentProjectName ? currentProjectName + ' (copie)' : '');
+}
+
+// ── EXPORT JSON: classic download (original behavior) ──
+function exportJSON() {
+  var data = { EL: EL, CN: CN, bgData: bgData.url ? bgData : null };
+  var blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  var fname = (currentProjectName || 'proiect_electro').replace(/[^a-zA-Z0-9_\-\s]/g, '').replace(/\s+/g, '_') + '.json';
+  a.href = url; a.download = fname; a.click();
+  URL.revokeObjectURL(url);
+  toast('JSON exportat: ' + fname, 'ok');
+}
+
+// ── Override load to also set project context ──
+var _browserOrigLoad = load;
+load = function(inp) {
+  var f = inp.files[0]; if (!f) return;
+  var r = new FileReader();
+  r.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      loadProjectData(data);
+      // Set as new unnamed project (imported from file)
+      currentProjectId = null;
+      currentProjectName = f.name.replace('.json', '').replace(/_/g, ' ');
+      updateProjectNameUI();
+      hideProjectScreen();
+      toast('Proiect incărcat din fișier: ' + f.name, 'ok');
+    } catch (err) { toast('Eroare la încărcare — fișier corupt!', 'danger'); }
+  };
+  r.readAsText(f);
+  inp.value = '';
+};
+
+// ── Name dialog ──
+function showNameDialog(callback, defaultName) {
+  var modal = document.getElementById('project-name-modal');
+  var input = document.getElementById('pn-input');
+  input.value = defaultName || '';
+  modal.classList.add('show');
+  input.focus();
+  input.select();
+
+  function doSave() {
+    var name = input.value.trim();
+    if (!name) { input.style.borderColor = 'var(--danger)'; return; }
+    modal.classList.remove('show');
+    input.removeEventListener('keydown', onKey);
+    callback(name);
+  }
+  function onKey(e) { if (e.key === 'Enter') doSave(); if (e.key === 'Escape') { modal.classList.remove('show'); input.removeEventListener('keydown', onKey); } }
+  input.addEventListener('keydown', onKey);
+  document.getElementById('pn-save-btn').onclick = doSave;
+  document.getElementById('pn-cancel-btn').onclick = function() { modal.classList.remove('show'); input.removeEventListener('keydown', onKey); };
+}
+
+// ── Project Manager Screen ──
+function showProjectManager() {
+  var screen = document.getElementById('project-screen');
+  screen.classList.remove('hidden');
+  refreshProjectList();
+}
+
+function hideProjectScreen() {
+  document.getElementById('project-screen').classList.add('hidden');
+}
+
+function refreshProjectList() {
+  var listEl = document.getElementById('ps-list');
+  var recoveryEl = document.getElementById('ps-recovery');
+
+  // Check for auto-save recovery
+  dbGet('autosave', 'current_autosave').then(function(as) {
+    if (as && as.data && (as.data.EL && as.data.EL.length > 0 || as.data.CN && as.data.CN.length > 0)) {
+      var aDate = new Date(as.savedAt);
+      var timeAgo = Math.round((Date.now() - as.savedAt) / 60000);
+      var timeStr = timeAgo < 1 ? 'acum câteva secunde' : timeAgo < 60 ? timeAgo + ' min în urmă' : Math.round(timeAgo/60) + 'h în urmă';
+      recoveryEl.style.display = 'flex';
+      recoveryEl.innerHTML = '<span class="ps-recovery-text">Sesiune nesalvată găsită' +
+        (as.projectName ? ' (' + as.projectName + ')' : '') +
+        ' — ' + timeStr + ', ' + (as.data.EL ? as.data.EL.length : 0) + ' elemente</span>' +
+        '<button class="ps-recovery-btn" onclick="recoverAutoSave()">Recuperează</button>' +
+        '<button class="ps-recovery-btn" onclick="dismissRecovery()" style="color:var(--text3);border-color:var(--border)">Ignoră</button>';
+    } else {
+      recoveryEl.style.display = 'none';
+    }
+  }).catch(function() { recoveryEl.style.display = 'none'; });
+
+  // Load project list — merge local + cloud
+  var localPromise = dbGetAll('projects');
+  var cloudPromise = (currentUser && supaClient) ? cloudLoadProjects() : Promise.resolve([]);
+
+  Promise.all([localPromise, cloudPromise]).then(function(results) {
+    var localProjects = results[0] || [];
+    var cloudProjects = results[1] || [];
+
+    // Merge: cloud projects override local if same id, add new ones
+    var merged = {};
+    localProjects.forEach(function(p) {
+      merged[p.id] = { id: p.id, name: p.name, data: p.data, updatedAt: p.updatedAt, source: 'local' };
+    });
+    cloudProjects.forEach(function(p) {
+      var cloudTime = new Date(p.updated_at).getTime();
+      if (!merged[p.id] || cloudTime > merged[p.id].updatedAt) {
+        merged[p.id] = { id: p.id, name: p.name, data: p.data, updatedAt: cloudTime, source: 'cloud' };
+      } else {
+        merged[p.id].source = 'both';
+      }
+    });
+
+    var projects = Object.values(merged);
+    projects.sort(function(a, b) { return b.updatedAt - a.updatedAt; });
+
+    if (projects.length === 0) {
+      listEl.innerHTML = '<div class="ps-empty">Niciun proiect salvat încă.<br>Creează un proiect nou sau încarcă un fișier JSON.</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    projects.forEach(function(p) {
+      var date = new Date(p.updatedAt);
+      var dateStr = date.toLocaleDateString('ro-RO') + ' ' + date.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+      var elCount = p.data && p.data.EL ? p.data.EL.length : 0;
+      var cnCount = p.data && p.data.CN ? p.data.CN.length : 0;
+      var isCurrent = p.id === currentProjectId;
+      var sourceIcon = p.source === 'cloud' ? ' ☁' : p.source === 'both' ? ' ☁💾' : ' 💾';
+
+      var div = document.createElement('div');
+      div.className = 'ps-item';
+      if (isCurrent) div.style.borderColor = 'var(--accent)';
+      div.innerHTML = '<div class="ps-item-info">' +
+        '<div class="ps-item-name">' + p.name + sourceIcon + (isCurrent ? ' (deschis)' : '') + '</div>' +
+        '<div class="ps-item-meta">' + dateStr + '  |  ' + elCount + ' elem, ' + cnCount + ' conn</div>' +
+        '</div>' +
+        '<button class="ps-item-del" onclick="event.stopPropagation();renameProject(\'' + p.id + '\',\'' + p.name.replace(/'/g, "\\'") + '\')" title="Redenumește">✏</button>' +
+        '<button class="ps-item-del" onclick="event.stopPropagation();deleteProject(\'' + p.id + '\')" title="Șterge proiectul">✕</button>';
+      div.onclick = function() { openProject(p.id, p.source); };
+      listEl.appendChild(div);
+    });
+  });
+}
+
+function openProject(projectId, source) {
+  // Try local first, then cloud
+  var loadLocal = dbGet('projects', projectId);
+  var loadCloud = (source === 'cloud' && currentUser && supaClient) ? cloudGetProject(projectId) : Promise.resolve(null);
+
+  Promise.all([loadLocal, loadCloud]).then(function(results) {
+    var p = results[1] || results[0]; // prefer cloud if available
+    if (!p) { toast('Proiectul nu a fost găsit!', ''); return; }
+    var pData = p.data;
+    var pName = p.name;
+    loadProjectData(pData);
+    currentProjectId = projectId;
+    currentProjectName = pName;
+    updateProjectNameUI();
+    clearAutoSave();
+    hideProjectScreen();
+    toast('Proiect deschis: ' + pName, 'ok');
+  });
+}
+
+function deleteProject(projectId) {
+  if (!confirm('Ești sigur că vrei să ștergi acest proiect?')) return;
+  // Delete from both local and cloud
+  var promises = [dbDelete('projects', projectId)];
+  if (currentUser && supaClient) promises.push(cloudDeleteProject(projectId));
+  Promise.all(promises).then(function() {
+    if (currentProjectId === projectId) {
+      currentProjectId = null;
+      currentProjectName = null;
+      updateProjectNameUI();
+    }
+    refreshProjectList();
+    toast('Proiect șters', 'ok');
+  });
+}
+
+function renameProject(projectId, oldName) {
+  showNameDialog(function(newName) {
+    dbGet('projects', projectId).then(function(p) {
+      if (!p) return;
+      p.name = newName;
+      return dbPut('projects', p);
+    }).then(function() {
+      if (currentProjectId === projectId) {
+        currentProjectName = newName;
+        updateProjectNameUI();
+      }
+      refreshProjectList();
+      toast('Proiect redenumit: ' + newName, 'ok');
+    });
+  }, oldName);
+}
+
+function recoverAutoSave() {
+  dbGet('autosave', 'current_autosave').then(function(as) {
+    if (!as || !as.data) return;
+    loadProjectData(as.data);
+    currentProjectId = as.projectId || null;
+    currentProjectName = as.projectName || null;
+    updateProjectNameUI();
+    hideProjectScreen();
+    toast('Sesiune recuperată cu succes!', 'ok');
+  });
+}
+
+function dismissRecovery() {
+  clearAutoSave();
+  document.getElementById('ps-recovery').style.display = 'none';
+}
+
+function newProject() {
+  if (EL.length > 0 || CN.length > 0) {
+    if (!confirm('Ai un proiect deschis. Vrei să continui? (modificările nesalvate se pierd)')) return;
+  }
+  EL = []; CN = []; sel = null; multiSel.clear(); undoStack = []; redoStack = [];
+  bgData = { url: null, x: 0, y: 0, w: 0, h: 0, op: 0.5, locked: true };
+  Object.keys(counters).forEach(function(k) { delete counters[k]; });
+  vdResults = null;
+  currentProjectId = null;
+  currentProjectName = null;
+  updateProjectNameUI();
+  render(); renderBg(); updateProps(); updateStat();
+  hideProjectScreen();
+  toast('Proiect nou creat', 'ok');
+}
+
+// ── Warn on close with unsaved changes ──
+window.addEventListener('beforeunload', function(e) {
+  if (hasUnsavedChanges && (EL.length > 0 || CN.length > 0)) {
+    doAutoSave(); // last-resort save
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+// ── Init: check auth, recovery, show start screen ──
+var _origInit = init;
+init = function() {
+  _origInit();
+  if (window.__TAURI__) return; // Tauri handles its own init
+  startAutoSave();
+
+  // Initialize Supabase
+  var hasSupabase = initSupabase();
+
+  if (hasSupabase) {
+    // Check if user is already logged in (session persists)
+    supaClient.auth.getSession().then(function(res) {
+      if (res.data.session && res.data.session.user) {
+        currentUser = res.data.session.user;
+        updateUserBar();
+        showProjectManagerAfterAuth();
+      } else {
+        // Show auth screen
+        showAuthScreen();
+      }
+    }).catch(function() {
+      showAuthScreen();
+    });
+
+    // Listen for auth state changes
+    supaClient.auth.onAuthStateChange(function(event, session) {
+      if (event === 'SIGNED_IN' && session) {
+        currentUser = session.user;
+        updateUserBar();
+      } else if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        updateUserBar();
+      }
+    });
+  } else {
+    // No Supabase — go straight to project manager
+    showProjectManagerAfterAuth();
+  }
+};
+
+function showProjectManagerAfterAuth() {
+  Promise.all([dbGetAll('projects'), dbGet('autosave', 'current_autosave')]).then(function(results) {
+    var projects = results[0];
+    var autoSave = results[1];
+    var hasProjects = projects && projects.length > 0;
+    var hasRecovery = autoSave && autoSave.data && (autoSave.data.EL && autoSave.data.EL.length > 0);
+
+    if (hasProjects || hasRecovery || currentUser) {
+      showProjectManager();
+    }
+  }).catch(function(e) {
+    console.warn('DB init check failed:', e);
+  });
+}
+
 window.onload = init;
 </script>
 
@@ -5359,5 +6162,58 @@ window.onload = init;
   }
 })();
 </script>
+<!-- AUTH SCREEN -->
+<div id="auth-screen" class="hidden">
+  <div class="auth-box">
+    <div class="auth-title">ElectroCAD Pro</div>
+    <div class="auth-subtitle" id="auth-mode-label">Conectează-te pentru a salva proiectele în cloud</div>
+    <div class="auth-error" id="auth-error"></div>
+    <input class="auth-input" id="auth-email" type="email" placeholder="Email" autocomplete="email">
+    <input class="auth-input" id="auth-pass" type="password" placeholder="Parola (min. 6 caractere)" autocomplete="current-password">
+    <div id="auth-name-row" style="display:none">
+      <input class="auth-input" id="auth-name" type="text" placeholder="Numele tău (opțional)" autocomplete="name">
+    </div>
+    <button class="auth-btn primary" id="auth-submit-btn" onclick="authSubmit()">INTRĂ</button>
+    <div class="auth-toggle" id="auth-toggle-text">
+      Nu ai cont? <span onclick="toggleAuthMode()">Creează unul</span>
+    </div>
+    <div class="auth-divider">sau</div>
+    <button class="auth-btn secondary" onclick="authSkip()">Continuă fără cont (doar local)</button>
+  </div>
+</div>
+
+<!-- USER BAR (shown when logged in) -->
+<div id="user-bar" class="auth-user-bar" style="display:none">
+  <span class="user-email" id="user-email-display"></span>
+  <button onclick="authLogout()">DECONECTARE</button>
+</div>
+
+<!-- PROJECT MANAGER SCREEN -->
+<div id="project-screen" class="hidden">
+  <div class="ps-container">
+    <div class="ps-title">ElectroCAD Pro</div>
+    <div class="ps-subtitle">Selectează un proiect sau creează unul nou</div>
+    <div id="ps-recovery" style="display:none" class="ps-recovery"></div>
+    <div id="ps-list" class="ps-list"></div>
+    <div class="ps-actions">
+      <button class="ps-btn primary" onclick="newProject()">+ Proiect Nou</button>
+      <label class="ps-btn" style="cursor:pointer">📂 Încarcă JSON<input type="file" accept=".json" style="display:none" onchange="load(this)"></label>
+      <button class="ps-btn" onclick="hideProjectScreen()">Continuă fără proiect</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECT NAME DIALOG -->
+<div id="project-name-modal">
+  <div class="pn-box">
+    <div style="font-size:16px;font-weight:700;color:var(--text)">Numele proiectului</div>
+    <input id="pn-input" type="text" placeholder="ex: PTAB Galata str. Rozelor" maxlength="100">
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="ps-btn" id="pn-cancel-btn">Anulează</button>
+      <button class="ps-btn primary" id="pn-save-btn">Salvează</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
