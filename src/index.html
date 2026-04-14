@@ -2762,10 +2762,15 @@ function calcNetworkVD(cdElId, Pc_abonat, tipAmplasare, forceKs){
         const cables = CN.filter(cn => cn.fromElId===elId || cn.toElId===elId || cn.from===elId);
 
         cables.forEach(cn => {
-          // MODIFICARE CRUCIALĂ: Permitem prelungirile de tronsoane chiar dacă au "circuitGroup" vizual diferit
+          // Permitem prelungirile de tronsoane chiar dacă au "circuitGroup" vizual diferit
+          // Blocăm DOAR cablurile direct din CD/Tablou care aparțin altui circuit
           if (cn.circuitGroup && cn.circuitGroup !== traceGroup && cn.circuitGroup !== circ.toString()) {
-              // Blocăm doar dacă pleacă DIRECT din Tablou/CD pe o clemă separată. În restul rețelei, curentul merge pe fir.
-              if (cn.fromElId === cdElId || cn.toElId === cdElId) return; 
+              if (cn.fromElId === cdElId || cn.toElId === cdElId) return;
+              // În rețeaua de firide, permitem trecerea între circuite (cabluri comune)
+              const fromEl = EL.find(x => x.id === cn.fromElId);
+              const toEl = EL.find(x => x.id === cn.toElId);
+              const isFireChain = (fromEl && fromEl.type.startsWith('firida_')) || (toEl && toEl.type.startsWith('firida_'));
+              if (!isFireChain) return;
           }
           if ((cn.fromElId === cdElId && cn.fromCircuit !== circ) || (cn.toElId === cdElId && cn.toCircuit !== circ)) return;
 
