@@ -2657,7 +2657,7 @@ function calcNetworkVD_ptab2t(cdElId, Pc_abonat, tipAmplasare, forceKs, tdNum) {
         node.duNod = pNode.duNod + node.duTronson;
       }
       if (node.children.length === 0) node.isEnd = true;
-      allResults.set(nId, node);
+      allResults.set(traceGroup + '_' + nId, node);
     });
   }
   return allResults;
@@ -2717,7 +2717,7 @@ function calcNetworkVD(cdElId, Pc_abonat, tipAmplasare, forceKs){
         const P_eff2=nrCons*Pc_abonat*(forceKs||getKs(nrCons,tipAmplasare));
         const du2=calcDU_tronson(L,P_eff2,cn.tipRetea||'Trifazat',sec);
         const nd2={elId:childId,label:childEl2.label||'?',children:[],nrCons,P_cablu:parseFloat(cn.putereConc)||0,L,L_cumulat:L,circKey:traceGroup,P_total_branch:P_eff2,duNod:du2,duTronson:du2,path:[childEl2.label||'?'],P_eff:P_eff2,r0:r0v,tipConductor:tipC,sectiune:sec,tipRetea:cn.tipRetea||'Trifazat',R_cum:R_cum2,X_cum:X_cum2,Isc:Isc2,active_fuse:rootFuse,totalDownstreamCons:nrCons,totalDownstreamPcablu:parseFloat(cn.putereConc)||0};
-        nodes.set(childId,nd2); allResults.set(childId,nd2);
+        nodes.set(childId,nd2); allResults.set(traceGroup+'_'+childId,nd2);
         queue.push({elId:childId,path:[childEl2.label||'?'],L_cum:L});
       });
       while(queue.length>0){
@@ -2736,7 +2736,7 @@ function calcNetworkVD(cdElId, Pc_abonat, tipAmplasare, forceKs){
           const P_eff3=nrC*Pc_abonat*(forceKs||getKs(nrC,tipAmplasare));
           const du3=calcDU_tronson(L,P_eff3,cn.tipRetea||'Trifazat',sec);
           const nd3={elId:childId2,label:childEl3.label||'?',children:[],nrCons:nrC,P_cablu:parseFloat(cn.putereConc)||0,L,L_cumulat:parentNode2.L_cumulat+L,circKey:traceGroup,P_total_branch:P_eff3,duNod:parentNode2.duNod+du3,duTronson:du3,path:[...path,childEl3.label||'?'],P_eff:P_eff3,r0:r0v,tipConductor:tipC,sectiune:sec,tipRetea:cn.tipRetea||'Trifazat',R_cum:R_cum3,X_cum:X_cum3,Isc:Isc3,active_fuse:parentNode2.active_fuse,totalDownstreamCons:nrC,totalDownstreamPcablu:parseFloat(cn.putereConc)||0};
-          nodes.set(childId2,nd3); allResults.set(childId2,nd3);
+          nodes.set(childId2,nd3); allResults.set(traceGroup+'_'+childId2,nd3);
           queue.push({elId:childId2,path:[...path,childEl3.label||'?'],L_cum:parentNode2.L_cumulat+L});
         });
       }
@@ -2913,7 +2913,7 @@ function calcNetworkVD(cdElId, Pc_abonat, tipAmplasare, forceKs){
             node.duNod = pNode.duNod + node.duTronson;
         }
         if (node.children.length === 0) node.isEnd = true;
-        allResults.set(nId, node);
+        allResults.set(traceGroup + '_' + nId, node);
       });
   }
   return allResults;
