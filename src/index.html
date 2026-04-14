@@ -4635,14 +4635,20 @@ async function generateFS() {
       const extensionLen = cabluriCircuit.reduce((s, cn) => s + (parseFloat(cn.length) || 0), 0);
       const circDescs = describeCableGroup(cabluriCircuit);
 
-      // Describe stalpi by their labels from schema
-      const stalpLabels = stalpiProiectati.map(st => st.label || st.type).join(', ');
+      // Group stalpi by type prefix (e.g. SC10002, SE4, SE10)
+      const stalpGroups = {};
+      stalpiProiectati.forEach(st => {
+        const prefix = (st.label || '').replace(/\/\d+$/, '') || { stalp_sc10002:'SC10002', stalp_sc10005:'SC10005', stalp_se4:'SE4', stalp_se10:'SE10', stalp_rotund:'SR', stalp_rotund_special:'SRS', stalp_cs:'SCS' }[st.type] || st.type;
+        if (!stalpGroups[prefix]) stalpGroups[prefix] = 0;
+        stalpGroups[prefix]++;
+      });
+      const stalpTypeText = Object.entries(stalpGroups).map(([name, cnt]) => `${cnt}x${name}`).join(' si ');
 
       // Find last proiectat stalp (the one before BMPT)
       const lastStalp = lastElBeforeBMPT && lastElBeforeBMPT.type.startsWith('stalp_') ? lastElBeforeBMPT : stalpiProiectati[stalpiProiectati.length - 1];
       const lastStalpLabel = lastStalp ? (lastStalp.label || 'ultimul stalp') : 'ultimul stalp';
 
-      let text = `Alimentarea cu energie electrica a obiectivului se va realiza prin extinderea circuitului ${existCircuit} existent de la stalpul ${srcLabel} pe o lungime de ${extensionLen.toFixed(0)} m pe stalpi noi proiectati ${stalpLabels}`;
+      let text = `Alimentarea cu energie electrica a obiectivului se va realiza prin extinderea circuitului ${existCircuit} existent de la stalpul ${srcLabel} pe o lungime de ${extensionLen.toFixed(0)} m pe stalpi noi proiectati de tip ${stalpTypeText}`;
 
       // Bransament
       const branDescs = describeCableGroup(cabluriBransament);
