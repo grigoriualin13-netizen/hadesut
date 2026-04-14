@@ -2215,6 +2215,14 @@ function updateProps(){
           <option value="proiectat_intarire" ${stareVal==='proiectat_intarire'?'selected':''} style="color:#a855f7">🟣 Proiectat — Tarif Întărire</option>
           <option value="coexistenta" ${stareVal==='coexistenta'?'selected':''} style="color:#eab308">🟡 Lucrări Coexistență</option>
         </select></div>
+        ${stareVal==='coexistenta' && el.type.startsWith('stalp_') ? `<div class="pr" style="border-left:3px solid #eab308;padding-left:8px"><div class="pl" style="color:#eab308">Înlocuire cu tip stâlp</div><select class="pi" id="p-coex-replace" style="color:#eab308;font-weight:700">
+          <option value="">— Selectează —</option>
+          <option value="SE4" ${(el.coexReplace||'')==='SE4'?'selected':''}>SE4</option>
+          <option value="SE10" ${(el.coexReplace||'')==='SE10'?'selected':''}>SE10</option>
+          <option value="SC10002" ${(el.coexReplace||'')==='SC10002'?'selected':''}>SC10002</option>
+          <option value="SC10005" ${(el.coexReplace||'')==='SC10005'?'selected':''}>SC10005</option>
+          <option value="Stâlp Rotund" ${(el.coexReplace||'')==='Stâlp Rotund'?'selected':''}>Stâlp Rotund</option>
+        </select></div>` : ''}
         ${el.type==='meter'?`<div class="pr"><div class="pl">Text BMPT</div><input class="pi" id="p-bmpt" value="${el.bmptText||''}"></div>`:''}
         ${el.type!=='polyline' && el.type!=='text' && el.type!=='rect' && el.type!=='circle' && el.type!=='busbar' ? `<div class="pr"><div class="pl">Scară (Mărime)</div><input class="pi" type="number" id="p-scale" step="0.1" min="0.1" max="10" value="${el.scale||1}"></div>` : ''}
         ${el.type==='text' ? `<div class="pr"><div class="pl">Dimensiune Text (px)</div><input class="pi" type="number" id="p-fsize" min="5" max="100" value="${el.fontSize||15}"></div>` : ''}
@@ -2233,16 +2241,18 @@ function updateProps(){
         if(v === 'proiectat_racordare') { el.color = '#ef4444'; }
         else if(v === 'proiectat_intarire') { el.color = '#a855f7'; }
         else if(v === 'coexistenta') { el.color = '#eab308'; }
-        // Also update connected cables
-        CN.forEach(cn => {
-            if(cn.fromElId === el.id || cn.toElId === el.id) {
-                if(v === 'proiectat_racordare') cn.color = '#ef4444';
-                else if(v === 'proiectat_intarire') cn.color = '#a855f7';
-                else if(v === 'coexistenta') cn.color = '#eab308';
-            }
-        });
+        // Also update connected cables (not for coexistenta)
+        if(v !== 'coexistenta') {
+          CN.forEach(cn => {
+              if(cn.fromElId === el.id || cn.toElId === el.id) {
+                  if(v === 'proiectat_racordare') cn.color = '#ef4444';
+                  else if(v === 'proiectat_intarire') cn.color = '#a855f7';
+              }
+          });
+        }
         render(); updateProps();
     });
+    document.getElementById('p-coex-replace')?.addEventListener('change', ev => { el.coexReplace = ev.target.value; });
     if(el.type==='meter') document.getElementById('p-bmpt')?.addEventListener('input',ev=>updSel('bmptText',ev.target.value));
     document.getElementById('p-scale')?.addEventListener('input', ev => { const v = parseFloat(ev.target.value); if(v > 0) { el.scale = v; updateConnectedCables(el); render(); } });
     document.getElementById('p-fsize')?.addEventListener('input', ev => { const v = parseInt(ev.target.value); if(v > 0) { el.fontSize = v; render(); } });
@@ -2344,7 +2354,6 @@ function updateProps(){
           <option value="existent" ${cnStare==='existent'?'selected':''}>✔ Existent</option>
           <option value="proiectat_racordare" ${cnStare==='proiectat_racordare'?'selected':''} style="color:#ef4444">🔴 Proiectat — Tarif Racordare</option>
           <option value="proiectat_intarire" ${cnStare==='proiectat_intarire'?'selected':''} style="color:#a855f7">🟣 Proiectat — Tarif Întărire</option>
-          <option value="coexistenta" ${cnStare==='coexistenta'?'selected':''} style="color:#eab308">🟡 Lucrări Coexistență</option>
         </select></div>
         <div class="pr"><div class="pl">Grup Circuit (pt. stâlpi comuni)</div><input class="pi" id="p-cgroup" value="${cn.circuitGroup||''}" placeholder="Ex: C3, Iluminat..."><div style="font-size:7px;color:var(--text3);margin-top:2px">Dacă este completat, căderea de tensiune va urmări doar cablurile din același grup.</div></div>
         <div class="pr"><div class="pl">Lungime tronson (m)</div><div style="display:flex;gap:4px"><input class="pi" type="number" id="p-len" value="${cn.length||''}" style="flex:1"><button class="t2" style="height:23px;padding:0 6px;min-width:auto;border-color:var(--border2);background:var(--bg3);color:var(--accent)" onclick="updSel('length', parseFloat((calcPathLen(CN.find(x=>x.id===${cn.id}).path)/pxPerMeter).toFixed(1)))" title="Recalculează distanța din desen">📐 Auto</button></div></div>
@@ -2373,7 +2382,6 @@ function updateProps(){
         cn.stare = v;
         if(v === 'proiectat_racordare') cn.color = '#ef4444';
         else if(v === 'proiectat_intarire') cn.color = '#a855f7';
-        else if(v === 'coexistenta') cn.color = '#eab308';
         render(); updateProps();
     });
     document.getElementById('p-cgroup')?.addEventListener('input',ev=>updSel('circuitGroup',ev.target.value));
@@ -5349,7 +5357,16 @@ async function generateFS() {
         // Section 8
         ps(),
         pb('8. Alte informații (prim utilizator, racordare la instalația unui prim utilizator etc.):', { size: sb }),
-        p('________'),
+        ...(() => {
+          const coexEls = EL.filter(e => e.stare === 'coexistenta' && e.type.startsWith('stalp_') && e.coexReplace);
+          if (coexEls.length === 0) return [p('________')];
+          const tipOriginal = { stalp_se4:'SE4', stalp_se10:'SE10', stalp_sc10002:'SC10002', stalp_sc10005:'SC10005', stalp_rotund:'Stâlp Rotund', stalp_rotund_special:'Stâlp Rotund Special', stalp_cs:'SCS' };
+          const lines = coexEls.map(e => {
+            const origType = tipOriginal[e.type] || e.type;
+            return `Necesar inlocuire stalp existent ${e.label || ''} tip ${origType} cu stalp tip ${e.coexReplace}.`;
+          });
+          return [pb('Lucrări de coexistență:', { size: sb }), ...lines.map(ln => p(ln))];
+        })(),
 
         // Section 9
         ps(200),
