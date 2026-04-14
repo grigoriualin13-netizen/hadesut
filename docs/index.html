@@ -4663,6 +4663,55 @@ async function generateFS() {
     }
 
     // ══════════════════════════════════════════════
+    // CASE: Extindere retea LEA existenta cu retea subterana (cablu la firida noua)
+    // Trigger: stalp existent + firide proiectate (fara stalpi noi) + bransament
+    // ══════════════════════════════════════════════
+    if (srcIsStalp && nrFirideNoi > 0 && nrStalpiNoi === 0 && hasBransament) {
+      const src = sourceEls[0];
+      const srcLabel = src.el.label || 'SE';
+
+      // Detect existing cable type on source stalp (LEA/LES)
+      const existCablesOnSrc = CN.filter(cn => (!cn.stare || cn.stare === 'existent') && (cn.fromElId === src.el.id || cn.toElId === src.el.id));
+      let tipReteaExistenta = 'LEA';
+      let conductorExistent = '';
+      if (existCablesOnSrc.length > 0) {
+        const ec = existCablesOnSrc[0];
+        conductorExistent = getCableOfficialName(ec.tipConductor || 'Torsadat Al', ec.sectiune || 16, ec.tipRetea || 'Trifazat');
+        if (ec.tipConductor === 'Cablu Al' || ec.tipConductor === 'Cablu Cu') tipReteaExistenta = 'LES';
+      }
+
+      // Find existing circuit on source stalp
+      let existCircuit = src.circuit || '';
+      if (!existCircuit) {
+        existCablesOnSrc.forEach(cn => {
+          if (cn.circuitGroup) existCircuit = cn.circuitGroup;
+          else if (cn.label && cn.label.match(/^C\d/)) existCircuit = cn.label.split('-')[0];
+        });
+      }
+
+      // Cable from stalp to firida
+      const circDescs = describeCableGroup(cabluriCircuit);
+      const circLen = cabluriCircuit.reduce((s, cn) => s + (parseFloat(cn.length) || 0), 0);
+
+      // Firida info
+      const firida = firideleProiectate[0];
+      const firidaName = getFiridaTypeName(firida);
+
+      let text = `Alimentarea cu energie electrica a obiectivului se va realiza prin extinderea retelei existente de tip ${tipReteaExistenta}`;
+      if (conductorExistent) text += ` (${conductorExistent})`;
+      if (existCircuit) text += `, circuit ${existCircuit}`;
+      text += ` astfel: din ${srcLabel} se va poza ${circDescs.join(', ')}`;
+      text += ` pana la o ${firidaName} proiectata si montata pe soclu de beton la limita de proprietate`;
+
+      // Bransament from firida to BMPT
+      const branDescs = describeCableGroup(cabluriBransament);
+      text += `. Din ${firidaName} proiectata se va realiza un bransament cu ${branDescs.join(', ')}`;
+      if (bmptText) text += `, pana la ${bmptText}`;
+      text += '.';
+      return text;
+    }
+
+    // ══════════════════════════════════════════════
     // CASE: Single source + circuit + bransament
     // ══════════════════════════════════════════════
     if (hasCircuit && hasBransament) {
