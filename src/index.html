@@ -384,25 +384,19 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
     <span class="tb-lbl">BMPT</span>
   </div>
 
-  <div class="tb" onclick="startPlace('stalp_se4')" title="Stâlp SE4">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="7" width="10" height="10"/></svg>
-    <span class="tb-lbl">SE4</span>
+  <div class="sep"></div><div class="cat">STÂLPI</div><div class="sep"></div>
+  <div class="tb" onclick="toggleSub('sstalpi')" title="Stâlpi">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="7" width="10" height="10"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>
+    <span class="tb-lbl">STÂLPI ▾</span>
   </div>
-  <div class="tb" onclick="startPlace('stalp_se10')" title="Stâlp SE10">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="7" width="10" height="10"/><line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/></svg>
-    <span class="tb-lbl">SE10</span>
-  </div>
-  <div class="tb" onclick="startPlace('stalp_cs')" title="Stâlp cu Cutie Selectivitate">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="7" width="10" height="10"/><line x1="4" y1="7" x2="14" y2="17"/><line x1="14" y1="7" x2="4" y2="17"/><rect x="14" y="10" width="5" height="5" stroke="#ff9f43" fill="#ff9f43" rx="1"/></svg>
-    <span class="tb-lbl">St. CS</span>
-  </div>
-  <div class="tb" onclick="startPlace('stalp_rotund')" title="Stâlp Rotund">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/></svg>
-    <span class="tb-lbl">St.Rotund</span>
-  </div>
-  <div class="tb" onclick="startPlace('stalp_rotund_special')" title="Stâlp Rotund Special">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/><line x1="15.5" y1="8.5" x2="8.5" y2="15.5"/></svg>
-    <span class="tb-lbl">St.Spec.</span>
+  <div id="sstalpi" class="sub">
+    <div class="tb" onclick="startPlace('stalp_se4')" title="Stâlp SE4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="7" width="10" height="10"/></svg><span class="tb-lbl">SE4</span></div>
+    <div class="tb" onclick="startPlace('stalp_se10')" title="Stâlp SE10"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="7" width="10" height="10"/><line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/></svg><span class="tb-lbl">SE10</span></div>
+    <div class="tb" onclick="startPlace('stalp_cs')" title="Stâlp cu Cutie Selectivitate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="7" width="10" height="10"/><line x1="4" y1="7" x2="14" y2="17"/><line x1="14" y1="7" x2="4" y2="17"/><rect x="14" y="10" width="5" height="5" stroke="#ff9f43" fill="#ff9f43" rx="1"/></svg><span class="tb-lbl">St. CS</span></div>
+    <div class="tb" onclick="startPlace('stalp_sc10002')" title="Stâlp SC10002"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><text x="12" y="13.5" text-anchor="middle" font-size="5" fill="currentColor" font-weight="700">02</text></svg><span class="tb-lbl">SC10002</span></div>
+    <div class="tb" onclick="startPlace('stalp_sc10005')" title="Stâlp SC10005"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><text x="12" y="13.5" text-anchor="middle" font-size="5" fill="currentColor" font-weight="700">05</text></svg><span class="tb-lbl">SC10005</span></div>
+    <div class="tb" onclick="startPlace('stalp_rotund')" title="Stâlp Rotund"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/></svg><span class="tb-lbl">St.Rotund</span></div>
+    <div class="tb" onclick="startPlace('stalp_rotund_special')" title="Stâlp Rotund Special"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/><line x1="15.5" y1="8.5" x2="8.5" y2="15.5"/></svg><span class="tb-lbl">St.Spec.</span></div>
   </div>
   <div class="tb" onclick="startPlace('separator')" title="Separator JT">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="12" r="2.5"/><circle cx="19" cy="12" r="2.5"/><line x1="7.5" y1="12" x2="15" y2="7"/></svg>
@@ -666,6 +660,8 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
         <optgroup label="Rețea Aeriană (LEA)">
           <option value="stalp_se4">Stâlp SE 4</option>
           <option value="stalp_se10">Stâlp SE 10</option>
+          <option value="stalp_sc10002">SC10002</option>
+          <option value="stalp_sc10005">SC10005</option>
           <option value="stalp_rotund">Stâlp Rotund</option>
         </optgroup>
         <optgroup label="Rețea Subterană (LES)">
@@ -891,7 +887,7 @@ function calcDU_tronson(L_m, P_eff, tipRetea, sectiune){
 }
 
 function nextLbl(t){
-  const prefix={ ptab_1t: 'PTAB', ptab_2t: 'PTAB', trafo:'PT',firida_e2_4:'FG',firida_e3_4:'FG',firida_e3_0:'FG',cd4:'CD',cd5:'CD',cd8:'CD',meter:'BMPT', stalp_se4:'SE4',stalp_se10:'SE10',stalp_cs:'SCS',stalp_rotund:'SR',stalp_rotund_special:'SRS', separator:'SEP',separator_mt:'SMT',manson:'M',priza_pamant:'PP',text:'',rect:'',circle:'',polyline:'', bara_mt:'BAMT', celula_linie_mt:'CLM', celula_trafo_mt:'CTM', ptab_mono:'PTAb', bara_statie_mt:'BS' };
+  const prefix={ ptab_1t: 'PTAB', ptab_2t: 'PTAB', trafo:'PT',firida_e2_4:'FG',firida_e3_4:'FG',firida_e3_0:'FG',cd4:'CD',cd5:'CD',cd8:'CD',meter:'BMPT', stalp_se4:'SE4',stalp_se10:'SE10',stalp_cs:'SCS',stalp_sc10002:'SC10002',stalp_sc10005:'SC10005',stalp_rotund:'SR',stalp_rotund_special:'SRS', separator:'SEP',separator_mt:'SMT',manson:'M',priza_pamant:'PP',text:'',rect:'',circle:'',polyline:'', bara_mt:'BAMT', celula_linie_mt:'CLM', celula_trafo_mt:'CTM', ptab_mono:'PTAb', bara_statie_mt:'BS' };
   const p=prefix[t]||t.slice(0,3).toUpperCase(); if(!p)return '';
   counters[p]=(counters[p]||0)+1; if(t.startsWith('stalp_')) return `${p}/${counters[p]}`; return `${p}${counters[p]}`;
 }
@@ -984,7 +980,7 @@ function isConnectionActive(el, term) {
 
 function addElem(x,y){
   if(!pendType)return; saveState('add '+pendType);
-  const CM={ ptab_1t:'#1a6ba0', ptab_2t:'#1a6ba0', trafo:'#1a6ba0', firida_e2_4:'#555',firida_e3_4:'#555',firida_e3_0:'#555',cd4:'#555',cd5:'#555',cd8:'#555', meter:'#555',stalp_se4:'#555',stalp_se10:'#555',stalp_cs:'#555',stalp_rotund:'#555', stalp_rotund_special:'#555',separator:'#0a5',separator_mt:'#0a5', manson:'#555',priza_pamant:'#555',text:'#dce8f5',rect:'#00cfff',circle:'#00cfff', bara_mt:'#c07000', celula_linie_mt:'#c07000', celula_trafo_mt:'#c07000', ptab_mono:'#c07000', bara_statie_mt:'#cc2200' };
+  const CM={ ptab_1t:'#1a6ba0', ptab_2t:'#1a6ba0', trafo:'#1a6ba0', firida_e2_4:'#555',firida_e3_4:'#555',firida_e3_0:'#555',cd4:'#555',cd5:'#555',cd8:'#555', meter:'#555',stalp_se4:'#555',stalp_se10:'#555',stalp_cs:'#555',stalp_sc10002:'#555',stalp_sc10005:'#555',stalp_rotund:'#555', stalp_rotund_special:'#555',separator:'#0a5',separator_mt:'#0a5', manson:'#555',priza_pamant:'#555',text:'#dce8f5',rect:'#00cfff',circle:'#00cfff', bara_mt:'#c07000', celula_linie_mt:'#c07000', celula_trafo_mt:'#c07000', ptab_mono:'#c07000', bara_statie_mt:'#cc2200' };
   const el={id:uid(),type:pendType,x:sn(x),y:sn(y), label:nextLbl(pendType),color:CM[pendType]||'#555',fillColor:'none',rotation:0, scale:1};
   if(pendType==='stalp_cs') el.cs_fuse=100;
   if(pendType==='meter') el.bmptText='';
@@ -1188,6 +1184,8 @@ function sym(el){
   case 'stalp_se4': inner=`<rect class="sel-r" x="-22" y="-22" width="44" height="44" fill="${bg}" stroke="${c}" stroke-width="2.5"/>${td(-22,-13)}${td(-22,0)}${td(-22,13)}${td(22,-13)}${td(22,0)}${td(22,13)}${td(-13,-22)}${td(0,-22)}${td(13,-22)}${td(-13,22)}${td(0,22)}${td(13,22)}`; break;
   case 'stalp_se10': inner=`<rect class="sel-r" x="-22" y="-22" width="44" height="44" fill="${bg}" stroke="${c}" stroke-width="2.5"/><line x1="-22" y1="-22" x2="22" y2="22" stroke="${c}" stroke-width="2"/><line x1="22" y1="-22" x2="-22" y2="22" stroke="${c}" stroke-width="2"/>${td(-22,-13)}${td(-22,0)}${td(-22,13)}${td(22,-13)}${td(22,0)}${td(22,13)}${td(-13,-22)}${td(0,-22)}${td(13,-22)}${td(-13,22)}${td(0,22)}${td(13,22)}`; break;
   case 'stalp_cs': inner=`<rect class="sel-r" x="-22" y="-22" width="44" height="44" fill="${bg}" stroke="${c}" stroke-width="2.5"/><line x1="-22" y1="-22" x2="22" y2="22" stroke="${c}" stroke-width="2"/><line x1="22" y1="-22" x2="-22" y2="22" stroke="${c}" stroke-width="2"/><rect x="22" y="-12" width="18" height="24" fill="${bg!=='none'?bg:'#243755'}" stroke="#ff9f43" stroke-width="2" rx="2"/><text x="31" y="3.5" text-anchor="middle" font-size="9" font-family="Barlow Condensed,sans-serif" fill="#ff9f43" font-weight="700">CS</text>${td(-22,-13)}${td(-22,0)}${td(-22,13)}${td(40,-13)}${td(40,0)}${td(40,13)}${td(-13,-22)}${td(0,-22)}${td(13,-22)}${td(-13,22)}${td(0,22)}${td(13,22)}`; break;
+  case 'stalp_sc10002': inner=`<circle class="sel-r" cx="0" cy="0" r="22" fill="${bg}" stroke="${c}" stroke-width="2.5"/>${td(-22,-13)}${td(-22,0)}${td(-22,13)}${td(22,-13)}${td(22,0)}${td(22,13)}${td(-13,-22)}${td(0,-22)}${td(13,-22)}${td(-13,22)}${td(0,22)}${td(13,22)}`; break;
+  case 'stalp_sc10005': inner=`<circle class="sel-r" cx="0" cy="0" r="22" fill="${bg}" stroke="${c}" stroke-width="2.5"/>${td(-22,-13)}${td(-22,0)}${td(-22,13)}${td(22,-13)}${td(22,0)}${td(22,13)}${td(-13,-22)}${td(0,-22)}${td(13,-22)}${td(-13,22)}${td(0,22)}${td(13,22)}`; break;
   case 'stalp_rotund': inner=`<circle class="sel-r" cx="0" cy="0" r="22" fill="${bg}" stroke="${c}" stroke-width="2.5"/>${td(-22,-13)}${td(-22,0)}${td(-22,13)}${td(22,-13)}${td(22,0)}${td(22,13)}${td(-13,-22)}${td(0,-22)}${td(13,-22)}${td(-13,22)}${td(0,22)}${td(13,22)}`; break;
   case 'stalp_rotund_special': inner=`<circle class="sel-r" cx="0" cy="0" r="22" fill="${bg}" stroke="${c}" stroke-width="2.5"/><line x1="-16" y1="-16" x2="16" y2="16" stroke="${c}" stroke-width="2"/><line x1="16" y1="-16" x2="-16" y2="16" stroke="${c}" stroke-width="2"/>${td(-22,-13)}${td(-22,0)}${td(-22,13)}${td(22,-13)}${td(22,0)}${td(22,13)}${td(-13,-22)}${td(0,-22)}${td(13,-22)}${td(-13,22)}${td(0,22)}${td(13,22)}`; break;
   case 'priza_pamant': if(bg !== 'none') inner+=`<rect x="-25" y="-32" width="50" height="58" fill="${bg}" stroke="none" rx="4"/>`; inner+=`<rect class="sel-r" x="-25" y="-32" width="50" height="58" fill="none" stroke="transparent"/><line x1="0" y1="-32" x2="0" y2="0" stroke="${c}" stroke-width="2.5"/><line x1="-22" y1="0" x2="22" y2="0" stroke="${c}" stroke-width="2.5"/><line x1="-15" y1="8" x2="15" y2="8" stroke="${c}" stroke-width="2"/><line x1="-8" y1="16" x2="8" y2="16" stroke="${c}" stroke-width="1.5"/>`; inner+=td(0,-32); break;
@@ -2175,6 +2173,8 @@ function updateProps(){
                 <option value="stalp_se4" ${el.type==='stalp_se4'?'selected':''}>SE 4 (Pătrat Gol)</option>
                 <option value="stalp_se10" ${el.type==='stalp_se10'?'selected':''}>SE 10 (Pătrat cu X)</option>
                 <option value="stalp_cs" ${el.type==='stalp_cs'?'selected':''}>SE 10 cu Cutie Selectivitate (CS)</option>
+                <option value="stalp_sc10002" ${el.type==='stalp_sc10002'?'selected':''}>SC10002</option>
+                <option value="stalp_sc10005" ${el.type==='stalp_sc10005'?'selected':''}>SC10005</option>
                 <option value="stalp_rotund" ${el.type==='stalp_rotund'?'selected':''}>Stâlp Rotund</option>
                 <option value="stalp_rotund_special" ${el.type==='stalp_rotund_special'?'selected':''}>Stâlp Rotund Special</option>
              </select></div>`;
@@ -4314,7 +4314,7 @@ async function generateFS() {
   function describeElements(elemente) {
     const types = {};
     elemente.forEach(el => {
-      const tName = { meter: 'BMPT', stalp_se4: 'stâlp SE4', stalp_se10: 'stâlp SE10', stalp_rotund: 'stâlp rotund', firida_e2_4: 'firidă E2-4', firida_e3_4: 'firidă E3-4', cd4: 'CD 4P', cd5: 'CD 5P', cd8: 'CD 8P' }[el.type] || el.type;
+      const tName = { meter: 'BMPT', stalp_se4: 'stâlp SE4', stalp_se10: 'stâlp SE10', stalp_sc10002: 'stâlp SC10002', stalp_sc10005: 'stâlp SC10005', stalp_rotund: 'stâlp rotund', firida_e2_4: 'firidă E2-4', firida_e3_4: 'firidă E3-4', cd4: 'CD 4P', cd5: 'CD 5P', cd8: 'CD 8P' }[el.type] || el.type;
       if (!types[tName]) types[tName] = [];
       types[tName].push(el);
     });
