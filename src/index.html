@@ -5153,6 +5153,12 @@ async function generateFS() {
       }
 
       // ── RACORDARE: bransamente din circuitul proiectat ──
+      // Check if racordare has firide — if so, use buildSolutionText which handles the full trace
+      const racFiride = proiectRacordare.elemente.filter(e => e.type.startsWith('firida_'));
+      if (racFiride.length > 0) {
+        // Use the full solution text builder which handles firide chains + bransamente
+        solutieRacordareText = buildSolutionText(proiectRacordare.cabluri, proiectRacordare.elemente);
+      } else {
       // Find ALL BMPTs in racordare and intarire
       const allRacBMPTs = [
         ...proiectRacordare.elemente.filter(e => e.type === 'meter'),
@@ -5224,6 +5230,7 @@ async function generateFS() {
       } else {
         solutieRacordareText = 'Se va stabili conform proiect.';
       }
+      } // close else for racFiride check
     } else {
       solutieRacordareText = buildSolutionText(proiectRacordare.cabluri, proiectRacordare.elemente);
       solutieIntarireText = lucrariIntarire;
