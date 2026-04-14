@@ -5430,7 +5430,15 @@ async function generateFS() {
             const el = EL.find(x => x.id === data.elId);
             if (!el) return;
             if (el.type.startsWith('cd') || el.type.startsWith('ptab_') || el.type === 'trafo' || el.type === 'meter' || el.type === 'celula_linie_mt' || el.type === 'celula_trafo_mt' || el.type === 'bara_mt' || el.type === 'bara_statie_mt') return;
-            vdRows.push({ label: data.label || el.label || '?', circuit: data.circKey || '', conductor: (data.tipConductor || '—') + ' ' + (data.sectiune || '') + 'mm²', L: data.L || 0, Lcum: data.L_cumulat || 0, nrCons: data.nrCons || 0, P: data.P_total_branch || 0, duNod: data.duNod || 0, Isc: data.Isc || 0 });
+            // Get local consumatori from element, not propagated VD value
+            let localCons = 0;
+            if (el.cons_dict) {
+              const grp = data.circKey || 'Implicit';
+              localCons = parseInt(el.cons_dict[grp] || el.cons_dict['Implicit'] || 0) || 0;
+            } else {
+              localCons = parseInt(el.consumatori) || 0;
+            }
+            vdRows.push({ label: data.label || el.label || '?', circuit: data.circKey || '', conductor: (data.tipConductor || '—') + ' ' + (data.sectiune || '') + 'mm²', L: data.L || 0, Lcum: data.L_cumulat || 0, nrCons: localCons, P: data.P_total_branch || 0, duNod: data.duNod || 0, Isc: data.Isc || 0 });
           });
           if (vdRows.length === 0) return [];
           vdRows.sort((a, b) => a.circuit.localeCompare(b.circuit) || a.Lcum - b.Lcum);
