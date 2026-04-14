@@ -2536,13 +2536,14 @@ function calcNetworkVD_ptab2t(cdElId, Pc_abonat, tipAmplasare, forceKs, tdNum) {
 
     const circLabel = `C${circ - startCirc + 1}`;
     const traceGroup = seedCables[0].circuitGroup || circLabel;
-    const nodes = new Map(), visitedEls = new Set([cdElId]), queue = [{ elId: cdElId, path: [], L_cum: 0 }];
+    const nodes = new Map(), visitedEls = new Set([cdElId]), queue = [{ elId: cdElId, path: [], L_cum: 0 }], treeList = [];
 
     nodes.set(cdElId, { elId: cdElId, label: (cdEl.label || 'PTAB') + ' TD' + tdNum, children: [], nrCons: 0, P_cablu: 0, L_cumulat: 0, circKey: circLabel, P_total_branch: 0, duNod: 0, duTronson: 0, path: [], P_eff: 0, R_cum: trafoImpedance.R, X_cum: trafoImpedance.X, Isc: startIsc, active_fuse: rootFuse, totalDownstreamCons: 0, totalDownstreamPcablu: 0 });
 
     while (queue.length > 0) {
       const { elId, path, L_cum } = queue.shift();
       const parentNode = nodes.get(elId);
+      if (elId !== cdElId) treeList.push(elId);
 
       const cables = CN.filter(cn => cn.fromElId === elId || cn.toElId === elId);
 
@@ -2579,15 +2580,47 @@ function calcNetworkVD_ptab2t(cdElId, Pc_abonat, tipAmplasare, forceKs, tdNum) {
         const R_cum = parentNode.R_cum + (r0v * 2) * (L / 1000);
         const X_cum = parentNode.X_cum + x0v * 2 * (L / 1000);
         const Isc = 230 / Math.sqrt(R_cum * R_cum + X_cum * X_cum);
-        const P_eff = nrCons * Pc_abonat * (forceKs || getKs(nrCons, tipAmplasare));
-        const du = calcDU_tronson(L, P_eff, cn.tipRetea || 'Trifazat', sectiune);
 
-        const nd = { elId: childId, label: childEl.label || '?', children: [], nrCons, P_cablu: parseFloat(cn.putereConc) || 0, L, L_cumulat: parentNode.L_cumulat + L, circKey: circLabel, P_total_branch: P_eff, duNod: parentNode.duNod + du, duTronson: du, path: [...path, childEl.label || '?'], P_eff, r0: r0v, tipConductor, sectiune, tipRetea: cn.tipRetea || 'Trifazat', R_cum, X_cum, Isc, active_fuse: childActiveFuse, totalDownstreamCons: nrCons, totalDownstreamPcablu: parseFloat(cn.putereConc) || 0 };
+        const nd = { elId: childId, label: childEl.label || '?', parentId: elId, children: [], nrCons, P_cablu: parseFloat(cn.putereConc) || 0, L, L_cumulat: parentNode.L_cumulat + L, circKey: circLabel, P_total_branch: 0, duNod: 0, duTronson: 0, path: [...path, childEl.label || '?'], P_eff: 0, r0: r0v, tipConductor, sectiune, tipRetea: cn.tipRetea || 'Trifazat', R_cum, X_cum, Isc, active_fuse: childActiveFuse, totalDownstreamCons: nrCons, totalDownstreamPcablu: parseFloat(cn.putereConc) || 0, P_eff_dU: 0, P_tot_base: 0 };
         nodes.set(childId, nd);
-        allResults.set(childId, nd);
+        parentNode.children.push(childId);
         queue.push({ elId: childId, path: [...path, childEl.label || '?'], L_cum: parentNode.L_cumulat + L });
       });
     }
+
+    // Backward pass — propagare putere din frunze spre rădăcină
+    for (let i = treeList.length - 1; i >= 0; i--) {
+      const nId = treeList[i], node = nodes.get(nId);
+      let downstream_cons = node.nrCons;
+      let I278_tranzit = 0;
+      node.children.forEach(cId => {
+        const childNode = nodes.get(cId);
+        downstream_cons += childNode.totalDownstreamCons;
+        I278_tranzit += childNode.P_tot_base || 0;
+      });
+      node.totalDownstreamCons = downstream_cons;
+      const K278_local = node.nrCons;
+      const J273_Pc = parseFloat(Pc_abonat) || 2;
+      const L278_Ks = (!isNaN(forceKs) && forceKs > 0) ? forceKs : getKs(K278_local, tipAmplasare || 'RURAL');
+      const M278_distrib = K278_local * J273_Pc * L278_Ks;
+      const J278_conc = node.P_cablu || 0;
+      const N278_total = M278_distrib + J278_conc + I278_tranzit;
+      node.P_tot_base = N278_total;
+      node.P_eff_dU = (M278_distrib / 2) + J278_conc + I278_tranzit;
+      node.P_total_branch = N278_total;
+    }
+
+    // Forward pass — calcul ΔU cumulat
+    treeList.forEach(nId => {
+      const node = nodes.get(nId);
+      if (node.parentId) {
+        const pNode = nodes.get(node.parentId);
+        node.duTronson = calcDU_tronson(node.L, node.P_eff_dU, node.tipRetea, node.sectiune);
+        node.duNod = pNode.duNod + node.duTronson;
+      }
+      if (node.children.length === 0) node.isEnd = true;
+      allResults.set(nId, node);
+    });
   }
   return allResults;
 }
