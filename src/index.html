@@ -590,8 +590,14 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
         <input id="vd-ks" type="number" step="0.001" value="" placeholder="Auto" onchange="runVD()" style="width:50px;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:4px 6px;color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:10px" title="Forțează un coeficient global (ex: 0.405). Lasă gol pentru normativul PE 132.">
       </div>
       <div style="display:flex;flex-direction:column;gap:2px">
-        <span style="font-size:7.5px;font-weight:700;color:var(--text3);text-transform:uppercase">Sursă (CD / PTAB)</span>
-        <select id="vd-src" onchange="runVD()" style="background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:4px 6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:10px">
+        <span style="font-size:7.5px;font-weight:700;color:var(--text3);text-transform:uppercase">Sursă</span>
+        <select id="vd-src" onchange="populateVDCircuits();runVD()" style="background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:4px 6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:10px">
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span style="font-size:7.5px;font-weight:700;color:var(--text3);text-transform:uppercase">Circuit</span>
+        <select id="vd-circ" onchange="runVD()" style="background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:4px 6px;color:var(--accent);font-weight:bold;font-family:'JetBrains Mono',monospace;font-size:10px">
+          <option value="all">Toate</option>
         </select>
       </div>
       <div style="display:flex;flex-direction:column;gap:2px">
@@ -2509,8 +2515,66 @@ function toggleVD(){
         sel.appendChild(o);
       });
     });
-    if(!sel.options.length) sel.innerHTML='<option value="">— niciun CD / PTAB —</option>';
+    // Firide existente ca surse posibile
+    EL.filter(e=>e.type.startsWith('firida_') && (!e.stare || e.stare === 'existent')).forEach(e=>{
+      const o=document.createElement('option'); o.value='fg__'+e.id; o.textContent='📦 '+(e.label||'FG')+' (firidă existentă)'; sel.appendChild(o);
+    });
+    if(!sel.options.length) sel.innerHTML='<option value="">— niciun CD / PTAB / FG —</option>';
+    populateVDCircuits();
   }
+}
+
+function populateVDCircuits() {
+  const srcRaw = document.getElementById('vd-src').value;
+  const circSel = document.getElementById('vd-circ');
+  circSel.innerHTML = '<option value="all">Toate circuitele</option>';
+
+  let cdId = null;
+  if (srcRaw.includes('fg__')) {
+    cdId = parseInt(srcRaw.replace('fg__', ''));
+  } else if (srcRaw.includes('__')) {
+    cdId = parseInt(srcRaw.split('__')[0]);
+  } else {
+    cdId = parseInt(srcRaw);
+  }
+  if (!cdId) return;
+
+  // Find all circuits connected to this source
+  const circuits = new Set();
+  CN.forEach(cn => {
+    if (cn.fromElId === cdId || cn.toElId === cdId) {
+      if (cn.circuitGroup) circuits.add(cn.circuitGroup);
+      else if (cn.fromElId === cdId && cn.fromCircuit) circuits.add('C' + cn.fromCircuit);
+      else if (cn.toElId === cdId && cn.toCircuit) circuits.add('C' + cn.toCircuit);
+    }
+  });
+
+  // Also trace from firide — find circuits on cables connected downstream
+  if (srcRaw.includes('fg__')) {
+    const visited = new Set([cdId]);
+    const queue = [cdId];
+    while (queue.length > 0) {
+      const curId = queue.shift();
+      CN.forEach(cn => {
+        const otherId = cn.fromElId === curId ? cn.toElId : (cn.toElId === curId ? cn.fromElId : null);
+        if (otherId && !visited.has(otherId)) {
+          visited.add(otherId);
+          if (cn.circuitGroup) circuits.add(cn.circuitGroup);
+          const el = EL.find(e => e.id === otherId);
+          if (el && (el.type.startsWith('stalp_') || el.type.startsWith('firida_') || el.type === 'meter')) {
+            queue.push(otherId);
+          }
+        }
+      });
+    }
+  }
+
+  circuits.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c;
+    o.textContent = c;
+    circSel.appendChild(o);
+  });
 }
 
 function calcNetworkVD_ptab2t(cdElId, Pc_abonat, tipAmplasare, forceKs, tdNum) {
@@ -2889,11 +2953,18 @@ function runVD(){
   const forceKs = parseFloat(document.getElementById('vd-ks')?.value);
   const showIsc = document.getElementById('vd-show-isc')?.checked !== false;
 
-  if(!srcRaw){toast('Selectează un CD sursă','ac');return;}
+  if(!srcRaw){toast('Selectează o sursă','ac');return;}
 
-  let cdId, ptab2tTD = 0; // ptab2tTD: 0=all, 1=TD1 only, 2=TD2 only
+  const selectedCircuit = document.getElementById('vd-circ')?.value || 'all';
+  let cdId, ptab2tTD = 0, isFgSource = false;
+
+  // Firidă existentă ca sursă
+  if(srcRaw.includes('fg__')) {
+    cdId = parseInt(srcRaw.replace('fg__', ''));
+    isFgSource = true;
+  }
   // PTAb Mono: format "elId__celN"
-  if(srcRaw.includes('__cel')) {
+  else if(srcRaw.includes('__cel')) {
     const parts = srcRaw.split('__cel');
     cdId = parseInt(parts[0]);
     const parentEl = EL.find(x=>x.id===cdId);
@@ -2908,10 +2979,9 @@ function runVD(){
       }
     }
   } else if(srcRaw.includes('__td')) {
-    // PTAB 2T: format "elId__td1" sau "elId__td2"
     const parts = srcRaw.split('__td');
     cdId = parseInt(parts[0]);
-    ptab2tTD = parseInt(parts[1]); // 1 or 2
+    ptab2tTD = parseInt(parts[1]);
   } else {
     cdId = parseInt(srcRaw);
   }
@@ -2919,16 +2989,20 @@ function runVD(){
   const cdEl=EL.find(x=>x.id===cdId);
   if(!cdEl){toast('Sursa negăsită','ac');return;}
 
-  if(cdEl.type === 'ptab_2t' && ptab2tTD > 0) {
-    // Calculate VD only for circuits of the selected TD
-    // TD1 = circuits 1-8, TD2 = circuits 9-16
+  if (isFgSource) {
+    // Calculate VD from existing firida — treat it like a generic source
+    vdResults = calcNetworkVD(cdId, Pc, amp, forceKs);
+  } else if(cdEl.type === 'ptab_2t' && ptab2tTD > 0) {
     vdResults = calcNetworkVD_ptab2t(cdId, Pc, amp, forceKs, ptab2tTD);
   } else {
     vdResults = calcNetworkVD(cdId, Pc, amp, forceKs);
   }
+
+  // Filter by selected circuit
   const rows=[];
   vdResults.forEach((data, key)=>{
     if(data.elId===cdId) return;
+    if(selectedCircuit !== 'all' && data.circKey !== selectedCircuit) return;
     const el=EL.find(x=>x.id===data.elId); if(!el) return;
     if(el.type.startsWith('cd') || el.type.startsWith('ptab_') || el.type === 'trafo' || el.type === 'celula_linie_mt' || el.type === 'celula_trafo_mt' || el.type === 'bara_mt' || el.type === 'bara_statie_mt') return;
     
