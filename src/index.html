@@ -2515,11 +2515,7 @@ function toggleVD(){
         sel.appendChild(o);
       });
     });
-    // Firide existente ca surse posibile
-    EL.filter(e=>e.type.startsWith('firida_') && (!e.stare || e.stare === 'existent')).forEach(e=>{
-      const o=document.createElement('option'); o.value='fg__'+e.id; o.textContent='📦 '+(e.label||'FG')+' (firidă existentă)'; sel.appendChild(o);
-    });
-    if(!sel.options.length) sel.innerHTML='<option value="">— niciun CD / PTAB / FG —</option>';
+    if(!sel.options.length) sel.innerHTML='<option value="">— niciun CD / PTAB —</option>';
     populateVDCircuits();
   }
 }
@@ -2530,9 +2526,7 @@ function populateVDCircuits() {
   circSel.innerHTML = '<option value="all">Toate circuitele</option>';
 
   let cdId = null;
-  if (srcRaw.includes('fg__')) {
-    cdId = parseInt(srcRaw.replace('fg__', ''));
-  } else if (srcRaw.includes('__')) {
+  if (srcRaw.includes('__')) {
     cdId = parseInt(srcRaw.split('__')[0]);
   } else {
     cdId = parseInt(srcRaw);
@@ -2548,26 +2542,6 @@ function populateVDCircuits() {
       else if (cn.toElId === cdId && cn.toCircuit) circuits.add('C' + cn.toCircuit);
     }
   });
-
-  // Also trace from firide — find circuits on cables connected downstream
-  if (srcRaw.includes('fg__')) {
-    const visited = new Set([cdId]);
-    const queue = [cdId];
-    while (queue.length > 0) {
-      const curId = queue.shift();
-      CN.forEach(cn => {
-        const otherId = cn.fromElId === curId ? cn.toElId : (cn.toElId === curId ? cn.fromElId : null);
-        if (otherId && !visited.has(otherId)) {
-          visited.add(otherId);
-          if (cn.circuitGroup) circuits.add(cn.circuitGroup);
-          const el = EL.find(e => e.id === otherId);
-          if (el && (el.type.startsWith('stalp_') || el.type.startsWith('firida_') || el.type === 'meter')) {
-            queue.push(otherId);
-          }
-        }
-      });
-    }
-  }
 
   circuits.forEach(c => {
     const o = document.createElement('option');
@@ -2956,15 +2930,10 @@ function runVD(){
   if(!srcRaw){toast('Selectează o sursă','ac');return;}
 
   const selectedCircuit = document.getElementById('vd-circ')?.value || 'all';
-  let cdId, ptab2tTD = 0, isFgSource = false;
+  let cdId, ptab2tTD = 0;
 
-  // Firidă existentă ca sursă
-  if(srcRaw.includes('fg__')) {
-    cdId = parseInt(srcRaw.replace('fg__', ''));
-    isFgSource = true;
-  }
   // PTAb Mono: format "elId__celN"
-  else if(srcRaw.includes('__cel')) {
+  if(srcRaw.includes('__cel')) {
     const parts = srcRaw.split('__cel');
     cdId = parseInt(parts[0]);
     const parentEl = EL.find(x=>x.id===cdId);
@@ -2989,10 +2958,7 @@ function runVD(){
   const cdEl=EL.find(x=>x.id===cdId);
   if(!cdEl){toast('Sursa negăsită','ac');return;}
 
-  if (isFgSource) {
-    // Calculate VD from existing firida — treat it like a generic source
-    vdResults = calcNetworkVD(cdId, Pc, amp, forceKs);
-  } else if(cdEl.type === 'ptab_2t' && ptab2tTD > 0) {
+  if(cdEl.type === 'ptab_2t' && ptab2tTD > 0) {
     vdResults = calcNetworkVD_ptab2t(cdId, Pc, amp, forceKs, ptab2tTD);
   } else {
     vdResults = calcNetworkVD(cdId, Pc, amp, forceKs);
