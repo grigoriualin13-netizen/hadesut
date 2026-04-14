@@ -4484,7 +4484,7 @@ async function generateFS() {
         if (elId && !proiectIds.has(elId) && !sourceElIds.has(elId)) {
           const el = EL.find(e => e.id === elId);
           if (el && (!el.stare || el.stare === 'existent')) {
-            const isSource = el.type.startsWith('cd') || el.type.startsWith('ptab_') || el.type === 'trafo';
+            const isSource = el.type.startsWith('cd') || el.type.startsWith('ptab_') || el.type === 'trafo' || el.type.startsWith('firida_');
             if (isSource) {
               // Find which PT this CD belongs to
               let ptLabel = el.label || '';
@@ -4675,26 +4675,76 @@ async function generateFS() {
         const label = idx === 0 ? 'Alimentare de baza' : 'Alimentare de rezerva';
         const ptLbl = src.ptLabel || src.el.label || '';
         const cableDescs = describeCableGroup(pathCables);
+        const srcIsFirida = src.el.type.startsWith('firida_');
 
-        text += `${label}: ${getSourcePrefix(src.el, ptLbl)}, se va echipa circuit ${src.circuit || ''} cu ${cableDescs.join(', ')}`;
+        // Detect existing cable type on source for LES/LEA description
+        const existCablesOnSrc = CN.filter(cn => (!cn.stare || cn.stare === 'existent') && (cn.fromElId === src.el.id || cn.toElId === src.el.id));
+        let tipReteaSrc = '';
+        let conductorSrc = '';
+        if (existCablesOnSrc.length > 0) {
+          const ec = existCablesOnSrc[0];
+          conductorSrc = getCableOfficialName(ec.tipConductor || 'Cablu Al', ec.sectiune || 16, ec.tipRetea || 'Trifazat');
+          tipReteaSrc = (ec.tipConductor === 'Cablu Al' || ec.tipConductor === 'Cablu Cu') ? 'LES' : 'LEA';
+        }
+
+        if (srcIsFirida) {
+          // Extindere LES din firidă existentă
+          text += `${label}: prin extinderea retelei existente de tip ${tipReteaSrc || 'LES'}`;
+          if (conductorSrc) text += ` (${conductorSrc})`;
+          if (src.circuit) text += `, circuit ${src.circuit}`;
+          text += ` din ${src.el.label || 'FG'} se va poza ${cableDescs.join(', ')}`;
+        } else {
+          // Alimentare din CD/PT
+          text += `${label}: ${getSourcePrefix(src.el, ptLbl)}, se va echipa circuit ${src.circuit || ''} cu ${cableDescs.join(', ')}`;
+        }
 
         // Find target firida
         const targetFirida = firideleProiectate.length > 0 ? firideleProiectate[0] : null;
         if (targetFirida) {
-          if (idx === 0) {
-            text += ` pana la o ${getFiridaTypeName(targetFirida)} proiectata`;
-          } else {
-            text += ` pana la ${getFiridaTypeName(targetFirida)} proiectata`;
-          }
+          text += ` pana la o ${getFiridaTypeName(targetFirida)} proiectata si montata pe soclu de beton`;
         }
-        text += '.';
+        text += '.\n';
       });
 
-      // Bransament from firida to BMPT
-      if (hasBransament) {
-        const firidaName = firideleProiectate.length > 0 ? getFiridaTypeName(firideleProiectate[0]) : 'FG';
+      // Bransamente from firide to BMPTs
+      if (hasBransament && firideleProiectate.length > 0) {
+        const firidaBrans = [];
+        firideleProiectate.forEach(fg => {
+          const fgId = fg.id;
+          const fgLabel = fg.label || getFiridaTypeName(fg);
+          const brans = [];
+          cabluriBransament.forEach(cn => {
+            const otherId = cn.fromElId === fgId ? cn.toElId : (cn.toElId === fgId ? cn.fromElId : null);
+            if (!otherId) return;
+            const otherEl = EL.find(e => e.id === otherId);
+            if (otherEl && otherEl.type === 'meter') brans.push({ bmpt: otherEl, cable: cn });
+          });
+          if (brans.length > 0) firidaBrans.push({ fgLabel, brans });
+        });
+
+        if (firidaBrans.length > 0) {
+          text += 'Bransamente:';
+          firidaBrans.forEach(fb => {
+            if (fb.brans.length === 1) {
+              const b = fb.brans[0];
+              const bmptLabel = b.bmpt.bmptText || b.bmpt.label || 'BMPT';
+              const bDescs = describeCableGroup([b.cable]);
+              text += `\nDin ${fb.fgLabel} se va realiza 1 bransament cu ${bDescs.join(', ')} pana la un ${bmptLabel} montat ${getBMPTLocation(0, true)}.`;
+            } else {
+              text += `\nDin ${fb.fgLabel} se vor realiza ${fb.brans.length} bransamente astfel:`;
+              fb.brans.forEach(b => {
+                const bmptLabel = b.bmpt.bmptText || b.bmpt.label || 'BMPT';
+                const cableName = getCableOfficialName(b.cable.tipConductor || 'Cablu Al', b.cable.sectiune || 16, b.cable.tipRetea || 'Trifazat');
+                const tipCC = getConductorOrCablu(cableName);
+                const len = parseFloat(b.cable.length) || 0;
+                text += `\n- ${tipCC} tip ${cableName} in lungime de ${len.toFixed(0)} m pana la un ${bmptLabel} montat ${getBMPTLocation(0, true)}.`;
+              });
+            }
+          });
+        }
+      } else if (hasBransament) {
         const branDescs = describeCableGroup(cabluriBransament);
-        text += `Bransament: Din ${firidaName} se va realiza un bransament cu ${branDescs.join(', ')}`;
+        text += `Bransament: ${branDescs.join(', ')}`;
         if (bmptText) text += `, pana la ${bmptText}`;
         text += '.';
       }
