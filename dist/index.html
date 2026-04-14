@@ -60,6 +60,40 @@ html[data-theme="light"]{
 .auth-user-bar .user-email{color:var(--accent);font-weight:600}
 .auth-user-bar button{height:24px;padding:0 10px;border-radius:5px;border:1px solid var(--border);background:var(--bg3);color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:9px;cursor:pointer;transition:all .15s}
 .auth-user-bar button:hover{border-color:var(--danger);color:var(--danger)}
+/* ADMIN PANEL */
+#admin-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10002;
+  background:var(--panel);border:1px solid var(--border2);border-radius:16px;
+  min-width:520px;max-width:620px;max-height:80vh;display:none;flex-direction:column;
+  box-shadow:0 12px 48px var(--shadow)}
+#admin-panel.show{display:flex}
+#admin-overlay{position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.5);display:none}
+#admin-overlay.show{display:block}
+.adm-header{padding:14px 20px;background:var(--bg3);border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;border-radius:16px 16px 0 0}
+.adm-title{font-size:14px;font-weight:800;color:var(--accent);letter-spacing:.5px;text-transform:uppercase}
+.adm-close{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:transparent;
+  color:var(--text3);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.adm-close:hover{color:var(--danger);border-color:var(--danger)}
+.adm-body{padding:16px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+.adm-section{font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em}
+.adm-user{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg3);
+  border:1px solid var(--border);border-radius:8px}
+.adm-user-info{flex:1;display:flex;flex-direction:column;gap:2px}
+.adm-user-email{font-size:13px;font-weight:700;color:var(--text)}
+.adm-user-meta{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.adm-btn{height:28px;padding:0 12px;border-radius:6px;border:1px solid var(--border2);
+  font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;cursor:pointer;transition:all .15s}
+.adm-btn.approve{background:rgba(0,229,160,.1);color:var(--accentg);border-color:rgba(0,229,160,.3)}
+.adm-btn.approve:hover{background:rgba(0,229,160,.25)}
+.adm-btn.reject{background:rgba(255,61,113,.08);color:var(--danger);border-color:rgba(255,61,113,.3)}
+.adm-btn.reject:hover{background:rgba(255,61,113,.2)}
+.adm-btn.disable{background:rgba(255,159,67,.08);color:var(--warn);border-color:rgba(255,159,67,.3)}
+.adm-btn.disable:hover{background:rgba(255,159,67,.2)}
+.adm-empty{text-align:center;color:var(--text3);font-size:12px;padding:12px 0}
+.adm-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.5px}
+.adm-badge.admin{background:rgba(0,207,255,.15);color:var(--accent)}
+.adm-badge.active{background:rgba(0,229,160,.15);color:var(--accentg)}
+.adm-badge.pending{background:rgba(255,159,67,.15);color:var(--warn)}
 /* FLOATING SAVE BUTTONS */
 #save-float{position:absolute;bottom:32px;right:16px;z-index:45;display:flex;gap:8px;align-items:center}
 .sf-btn{height:38px;padding:0 16px;border-radius:10px;border:none;font-family:'Barlow Condensed',sans-serif;
@@ -5266,10 +5300,17 @@ function translateAuthError(msg) {
 
 function onAuthSuccess(user) {
   currentUser = user;
-  hideAuthScreen();
   updateUserBar();
-  toast('Conectat: ' + user.email, 'ok');
-  showProjectManagerAfterAuth();
+  // Check if approved
+  checkUserApproval().then(function(approved) {
+    if (approved) {
+      hideAuthScreen();
+      toast('Conectat: ' + user.email, 'ok');
+      showProjectManagerAfterAuth();
+    } else {
+      showPendingScreen();
+    }
+  });
 }
 
 function updateUserBar() {
@@ -5375,6 +5416,146 @@ function cloudGetProject(projectId) {
       if (res.error) return null;
       return res.data;
     });
+}
+
+// ── Admin + Approval System ──
+var ADMIN_EMAIL = 'grigoriualin13@gmail.com';
+var currentProfile = null;
+
+function checkUserApproval() {
+  if (!currentUser || !supaClient) return Promise.resolve(false);
+  return supaClient.from('profiles')
+    .select('approved, is_admin, display_name')
+    .eq('id', currentUser.id)
+    .single()
+    .then(function(res) {
+      if (res.error || !res.data) {
+        console.warn('Profile not found:', res.error);
+        return false;
+      }
+      currentProfile = res.data;
+      // Show admin button if admin
+      if (currentProfile.is_admin) {
+        document.getElementById('admin-btn').style.display = '';
+      }
+      return currentProfile.approved;
+    });
+}
+
+function showPendingScreen() {
+  hideAuthScreen();
+  hideProjectScreen();
+  // Show a message overlay
+  var screen = document.getElementById('project-screen');
+  screen.classList.remove('hidden');
+  var listEl = document.getElementById('ps-list');
+  listEl.innerHTML = '<div class="ps-empty" style="padding:40px 20px;font-size:14px">' +
+    '<div style="font-size:40px;margin-bottom:16px">⏳</div>' +
+    '<div style="color:var(--warn);font-weight:700;font-size:16px;margin-bottom:8px">Cont în așteptare</div>' +
+    '<div style="color:var(--text3)">Contul tău (<b>' + currentUser.email + '</b>) nu a fost încă aprobat.<br>' +
+    'Administratorul va fi notificat și vei primi acces în curând.</div>' +
+    '</div>';
+  document.getElementById('ps-recovery').style.display = 'none';
+  // Hide normal actions, show only logout and local
+  var actionsEl = document.querySelector('.ps-actions');
+  if (actionsEl) {
+    actionsEl.innerHTML = '<button class="ps-btn secondary" onclick="authLogout();location.reload()">Deconectare</button>' +
+      '<button class="ps-btn" onclick="authSkip();hideProjectScreen()">Continuă fără cont (local)</button>';
+  }
+}
+
+function openAdminPanel() {
+  if (!currentProfile || !currentProfile.is_admin) return;
+  document.getElementById('admin-overlay').classList.add('show');
+  document.getElementById('admin-panel').classList.add('show');
+  refreshAdminList();
+}
+
+function closeAdminPanel() {
+  document.getElementById('admin-overlay').classList.remove('show');
+  document.getElementById('admin-panel').classList.remove('show');
+}
+
+function refreshAdminList() {
+  var body = document.getElementById('admin-body');
+  body.innerHTML = '<div class="adm-empty">Se încarcă...</div>';
+
+  supaClient.from('profiles')
+    .select('id, email, display_name, approved, is_admin, created_at')
+    .order('created_at', { ascending: false })
+    .then(function(res) {
+      if (res.error) {
+        body.innerHTML = '<div class="adm-empty">Eroare: ' + res.error.message + '</div>';
+        return;
+      }
+      var profiles = res.data || [];
+      var pending = profiles.filter(function(p) { return !p.approved; });
+      var active = profiles.filter(function(p) { return p.approved; });
+
+      var html = '';
+
+      // Pending section
+      html += '<div class="adm-section">În așteptare (' + pending.length + ')</div>';
+      if (pending.length === 0) {
+        html += '<div class="adm-empty">Niciun cont în așteptare</div>';
+      } else {
+        pending.forEach(function(p) {
+          var date = new Date(p.created_at).toLocaleDateString('ro-RO');
+          html += '<div class="adm-user">' +
+            '<div class="adm-user-info">' +
+            '<div class="adm-user-email">' + p.email + ' <span class="adm-badge pending">PENDING</span></div>' +
+            '<div class="adm-user-meta">' + (p.display_name || '') + ' — înregistrat ' + date + '</div>' +
+            '</div>' +
+            '<button class="adm-btn approve" onclick="approveUser(\'' + p.id + '\')">Aprobă</button>' +
+            '<button class="adm-btn reject" onclick="rejectUser(\'' + p.id + '\')">Șterge</button>' +
+            '</div>';
+        });
+      }
+
+      // Active section
+      html += '<div class="adm-section" style="margin-top:8px">Conturi active (' + active.length + ')</div>';
+      active.forEach(function(p) {
+        var date = new Date(p.created_at).toLocaleDateString('ro-RO');
+        var badge = p.is_admin ? '<span class="adm-badge admin">ADMIN</span>' : '<span class="adm-badge active">ACTIV</span>';
+        var actions = '';
+        if (!p.is_admin) {
+          actions = '<button class="adm-btn disable" onclick="disableUser(\'' + p.id + '\')">Dezactivează</button>';
+        }
+        html += '<div class="adm-user">' +
+          '<div class="adm-user-info">' +
+          '<div class="adm-user-email">' + p.email + ' ' + badge + '</div>' +
+          '<div class="adm-user-meta">' + (p.display_name || '') + ' — din ' + date + '</div>' +
+          '</div>' + actions + '</div>';
+      });
+
+      body.innerHTML = html;
+    });
+}
+
+function approveUser(userId) {
+  supaClient.from('profiles').update({ approved: true }).eq('id', userId).then(function(res) {
+    if (res.error) { toast('Eroare: ' + res.error.message, ''); return; }
+    toast('Cont aprobat!', 'ok');
+    refreshAdminList();
+  });
+}
+
+function rejectUser(userId) {
+  if (!confirm('Ești sigur? Utilizatorul va fi șters permanent.')) return;
+  // Delete profile then delete auth user via admin
+  supaClient.from('profiles').delete().eq('id', userId).then(function() {
+    toast('Cont șters', 'ok');
+    refreshAdminList();
+  });
+}
+
+function disableUser(userId) {
+  if (!confirm('Dezactivezi acest cont? Utilizatorul nu va mai putea accesa proiectele din cloud.')) return;
+  supaClient.from('profiles').update({ approved: false }).eq('id', userId).then(function(res) {
+    if (res.error) { toast('Eroare: ' + res.error.message, ''); return; }
+    toast('Cont dezactivat', 'ok');
+    refreshAdminList();
+  });
 }
 
 // ── Export dropdown ──
@@ -5868,9 +6049,14 @@ init = function() {
       if (res.data.session && res.data.session.user) {
         currentUser = res.data.session.user;
         updateUserBar();
-        showProjectManagerAfterAuth();
+        checkUserApproval().then(function(approved) {
+          if (approved) {
+            showProjectManagerAfterAuth();
+          } else {
+            showPendingScreen();
+          }
+        });
       } else {
-        // Show auth screen
         showAuthScreen();
       }
     }).catch(function() {
@@ -6223,7 +6409,19 @@ window.onload = init;
 <!-- USER BAR (shown when logged in) -->
 <div id="user-bar" class="auth-user-bar" style="display:none">
   <span class="user-email" id="user-email-display"></span>
+  <button id="admin-btn" onclick="openAdminPanel()" style="display:none;color:var(--accent);border-color:rgba(0,207,255,.3)">ADMIN</button>
   <button onclick="authLogout()">DECONECTARE</button>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="admin-overlay" onclick="closeAdminPanel()"></div>
+<div id="admin-panel">
+  <div class="adm-header">
+    <span class="adm-title">Admin — Gestionare Conturi</span>
+    <button class="adm-close" onclick="closeAdminPanel()">✕</button>
+  </div>
+  <div class="adm-body" id="admin-body">
+  </div>
 </div>
 
 <!-- PROJECT MANAGER SCREEN -->
