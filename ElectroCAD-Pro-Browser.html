@@ -2355,6 +2355,7 @@ function updateProps(){
           <option value="proiectat_racordare" ${cnStare==='proiectat_racordare'?'selected':''} style="color:#ef4444">🔴 Proiectat — Tarif Racordare</option>
           <option value="proiectat_intarire" ${cnStare==='proiectat_intarire'?'selected':''} style="color:#a855f7">🟣 Proiectat — Tarif Întărire</option>
         </select></div>
+        ${cn.stare === 'proiectat_intarire' && cn.oldTipConductor ? `<div class="pr" style="border-left:3px solid #a855f7;padding-left:8px;background:rgba(168,85,247,.05)"><div class="pl" style="color:#a855f7">Conductor vechi (înlocuit)</div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#a855f7;padding:4px 7px">${cn.oldTipConductor} ${cn.oldSectiune} mm² — ${cn.oldTipRetea||'Trifazat'}</div><div style="font-size:7px;color:var(--text3);margin-top:2px">Setează mai jos noul tip de conductor. Căderea de tensiune va folosi valorile noi.</div></div>` : ''}
         <div class="pr"><div class="pl">Grup Circuit (pt. stâlpi comuni)</div><input class="pi" id="p-cgroup" value="${cn.circuitGroup||''}" placeholder="Ex: C3, Iluminat..."><div style="font-size:7px;color:var(--text3);margin-top:2px">Dacă este completat, căderea de tensiune va urmări doar cablurile din același grup.</div></div>
         <div class="pr"><div class="pl">Lungime tronson (m)</div><div style="display:flex;gap:4px"><input class="pi" type="number" id="p-len" value="${cn.length||''}" style="flex:1"><button class="t2" style="height:23px;padding:0 6px;min-width:auto;border-color:var(--border2);background:var(--bg3);color:var(--accent)" onclick="updSel('length', parseFloat((calcPathLen(CN.find(x=>x.id===${cn.id}).path)/pxPerMeter).toFixed(1)))" title="Recalculează distanța din desen">📐 Auto</button></div></div>
       </div>
@@ -2379,9 +2380,17 @@ function updateProps(){
     document.getElementById('p-cl').addEventListener('input',ev=>updSel('label',ev.target.value));
     document.getElementById('p-cn-stare')?.addEventListener('change', ev => {
         const v = ev.target.value;
+        // Save old conductor info when switching to intarire from existent
+        if(v === 'proiectat_intarire' && (!cn.stare || cn.stare === 'existent') && !cn.oldTipConductor) {
+          cn.oldTipConductor = cn.tipConductor || 'Clasic Al';
+          cn.oldSectiune = cn.sectiune || 16;
+          cn.oldTipRetea = cn.tipRetea || 'Trifazat';
+        }
         cn.stare = v;
         if(v === 'proiectat_racordare') cn.color = '#ef4444';
         else if(v === 'proiectat_intarire') cn.color = '#a855f7';
+        // Clear old info if switching back to existent
+        if(v === 'existent') { delete cn.oldTipConductor; delete cn.oldSectiune; delete cn.oldTipRetea; }
         render(); updateProps();
     });
     document.getElementById('p-cgroup')?.addEventListener('input',ev=>updSel('circuitGroup',ev.target.value));
@@ -5088,9 +5097,41 @@ async function generateFS() {
       const intCableDescs = describeCableGroup(proiectIntarire.cabluri);
       const intTotalLen = proiectIntarire.cabluri.reduce((s, cn) => s + (parseFloat(cn.length) || 0), 0);
 
-      solutieIntarireText = `Se va realiza un circuit nou proiectat ${intPrefix.replace('Din ','din ')} cu ${intCableDescs.join(', ')}${comunCuText}`;
-      if (lastIntStalpLabel) solutieIntarireText += ` pana la ${lastIntStalpLabel}`;
-      solutieIntarireText += '. Se vor prelua jumatate din consumatorii existenti pe noul circuit.';
+      // Detect cable replacement (inlocuire conductor)
+      const replacementCables = proiectIntarire.cabluri.filter(cn => cn.oldTipConductor);
+      if (replacementCables.length > 0 && intStalpi.length === 0) {
+        // Pure cable replacement — no new poles
+        const replGroups = {};
+        replacementCables.forEach(cn => {
+          const oldName = getCableOfficialName(cn.oldTipConductor, cn.oldSectiune || 16, cn.oldTipRetea || 'Trifazat');
+          const newName = getCableOfficialName(cn.tipConductor || 'Torsadat Al', cn.sectiune || 16, cn.tipRetea || 'Trifazat');
+          const key = oldName + '→' + newName;
+          if (!replGroups[key]) replGroups[key] = { oldName, newName, oldCC: getConductorOrCablu(oldName), newCC: getConductorOrCablu(newName), totalLen: 0 };
+          replGroups[key].totalLen += parseFloat(cn.length) || 0;
+        });
+        solutieIntarireText = Object.values(replGroups).map(g =>
+          `Se va inlocui ${g.oldCC} existent tip ${g.oldName} cu ${g.newCC} tip ${g.newName} pe o lungime de ${g.totalLen.toFixed(0)} m.`
+        ).join('\n');
+        if (comunCuText) solutieIntarireText = solutieIntarireText.replace('.', `${comunCuText}.`);
+      } else {
+        solutieIntarireText = `Se va realiza un circuit nou proiectat ${intPrefix.replace('Din ','din ')} cu ${intCableDescs.join(', ')}${comunCuText}`;
+        if (lastIntStalpLabel) solutieIntarireText += ` pana la ${lastIntStalpLabel}`;
+        solutieIntarireText += '. Se vor prelua jumatate din consumatorii existenti pe noul circuit.';
+        // Also mention cable replacements if mixed
+        if (replacementCables.length > 0) {
+          const replGroups = {};
+          replacementCables.forEach(cn => {
+            const oldName = getCableOfficialName(cn.oldTipConductor, cn.oldSectiune || 16, cn.oldTipRetea || 'Trifazat');
+            const newName = getCableOfficialName(cn.tipConductor || 'Torsadat Al', cn.sectiune || 16, cn.tipRetea || 'Trifazat');
+            const key = oldName + '→' + newName;
+            if (!replGroups[key]) replGroups[key] = { oldName, newName, oldCC: getConductorOrCablu(oldName), newCC: getConductorOrCablu(newName), totalLen: 0 };
+            replGroups[key].totalLen += parseFloat(cn.length) || 0;
+          });
+          solutieIntarireText += '\n' + Object.values(replGroups).map(g =>
+            `Se va inlocui ${g.oldCC} existent tip ${g.oldName} cu ${g.newCC} tip ${g.newName} pe o lungime de ${g.totalLen.toFixed(0)} m.`
+          ).join('\n');
+        }
+      }
 
       // ── RACORDARE: bransament din circuitul proiectat ──
       // Search BMPT in racordare first, then in all proiectat elements
