@@ -4328,7 +4328,10 @@ async function generateFS() {
     return Object.entries(types).map(([name, els]) => {
       if (name === 'BMPT' && els.length === 1) {
         const bmpt = els[0];
-        return `BMPT ${bmpt.bmptText || ''} montat pe soclu de beton la limita de proprietate`.trim();
+        // Find bransament cable to this BMPT to determine location
+        const bmptCable = cabluri.find(cn => cn.fromElId === bmpt.id || cn.toElId === bmpt.id);
+        const bmptLen = bmptCable ? (parseFloat(bmptCable.length) || 0) : 0;
+        return `BMPT ${bmpt.bmptText || ''} montat ${getBMPTLocation(bmptLen)}`.trim();
       }
       return els.length > 1 ? `${els.length}x ${name}` : name;
     }).join(', ');
@@ -4384,7 +4387,8 @@ async function generateFS() {
     // BMPT text
     let bmptText = '';
     if (bmptEl) {
-      bmptText = `un ${bmptEl.bmptText || bmptEl.label || 'BMPT'} montat pe soclu de beton la limita de proprietate`;
+      const bmptCableLen = cabluriBransament.length > 0 ? (parseFloat(cabluriBransament[0].length) || 0) : 0;
+      bmptText = `un ${bmptEl.bmptText || bmptEl.label || 'BMPT'} montat ${getBMPTLocation(bmptCableLen)}`;
     }
 
     // Find last element before BMPT
@@ -4524,8 +4528,9 @@ async function generateFS() {
         if (fg.myBransamente.length === 1) {
           const bran = fg.myBransamente[0];
           const bmptLabel = bran.bmpt.bmptText || bran.bmpt.label || 'BMPT';
+          const branLen = parseFloat(bran.cable.length) || 0;
           const branDescs = describeCableGroup([bran.cable]);
-          text += `. Din ${fg.fgNouaName} proiectata, se va realiza un bransament cu ${branDescs.join(', ')}, pana la un ${bmptLabel} montat pe soclu de beton la limita de proprietate`;
+          text += `. Din ${fg.fgNouaName} proiectata, se va realiza un bransament cu ${branDescs.join(', ')}, pana la un ${bmptLabel} montat ${getBMPTLocation(branLen)}`;
         } else if (fg.myBransamente.length > 1) {
           const nrText = ['doua','trei','patru','cinci','sase'][fg.myBransamente.length - 2] || fg.myBransamente.length;
           text += `. Din ${fg.fgNouaName} proiectata, se vor realiza ${nrText} bransamente astfel:`;
@@ -4534,8 +4539,7 @@ async function generateFS() {
             const cableName = getCableOfficialName(bran.cable.tipConductor || 'Cablu Al', bran.cable.sectiune || 16, bran.cable.tipRetea || 'Trifazat');
             const tipCC = getConductorOrCablu(cableName);
             const len = parseFloat(bran.cable.length) || 0;
-            text += `\n- ${tipCC} tip ${cableName} in lungime de ${len.toFixed(0)} m pana la un ${bmptLabel} montat pe soclu de beton la limita de proprietate`;
-          });
+            text += `\n- ${tipCC} tip ${cableName} in lungime de ${len.toFixed(0)} m pana la un ${bmptLabel} montat ${getBMPTLocation(len)}`;
         }
 
         text += '.';
@@ -5111,7 +5115,8 @@ async function generateFS() {
         const circText = intCircuit ? `, circuit nr. ${intCircuit}` : '';
         const ptText = intSrcPtLabel ? ` din ${intPrefix.replace('Din ','')}` : '';
 
-        solutieRacordareText = `Alimentarea cu energie electrica se va realiza pe joasa tensiune printr-un bransament ${tipFazat}, racord din ${branStartLabel || 'circuitul proiectat'}${circText}${ptText}, format din ${branDescs.join(', ')}, pana la un ${bmptLabel} montat pe soclu de beton la limita de proprietate.`;
+        const racBranLen = racCabluri.reduce((s, cn) => s + (parseFloat(cn.length) || 0), 0);
+        solutieRacordareText = `Alimentarea cu energie electrica se va realiza pe joasa tensiune printr-un bransament ${tipFazat}, racord din ${branStartLabel || 'circuitul proiectat'}${circText}${ptText}, format din ${branDescs.join(', ')}, pana la un ${bmptLabel} montat ${getBMPTLocation(racBranLen)}.`;
       } else if (proiectRacordare.cabluri.length > 0 || proiectRacordare.elemente.length > 0) {
         solutieRacordareText = buildSolutionText(proiectRacordare.cabluri, proiectRacordare.elemente);
       } else {
