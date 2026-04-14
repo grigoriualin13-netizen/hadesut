@@ -5424,21 +5424,32 @@ var currentProfile = null;
 
 function checkUserApproval() {
   if (!currentUser || !supaClient) return Promise.resolve(false);
+  // Admin email always approved (bypass RLS issues)
+  if (currentUser.email === ADMIN_EMAIL) {
+    currentProfile = { approved: true, is_admin: true, display_name: 'Admin' };
+    document.getElementById('admin-btn').style.display = '';
+    return Promise.resolve(true);
+  }
   return supaClient.from('profiles')
     .select('approved, is_admin, display_name')
     .eq('id', currentUser.id)
     .single()
     .then(function(res) {
-      if (res.error || !res.data) {
-        console.warn('Profile not found:', res.error);
+      if (res.error) {
+        console.warn('Profile check error:', res.error);
+        // If RLS error, don't block — let them in with local only
+        if (res.error.code === 'PGRST116') return false; // no rows = not approved
         return false;
       }
+      if (!res.data) return false;
       currentProfile = res.data;
-      // Show admin button if admin
       if (currentProfile.is_admin) {
         document.getElementById('admin-btn').style.display = '';
       }
       return currentProfile.approved;
+    }).catch(function(e) {
+      console.error('Approval check failed:', e);
+      return false;
     });
 }
 
