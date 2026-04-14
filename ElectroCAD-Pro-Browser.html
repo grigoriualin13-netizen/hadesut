@@ -1918,9 +1918,25 @@ function updateProps(){
         const colorMap = { proiectat_racordare: '#ef4444', proiectat_intarire: '#a855f7', coexistenta: '#eab308' };
         multiSel.forEach(id => {
             const el = EL.find(e => e.id === id);
-            if (el) { el.stare = v; if (colorMap[v]) el.color = colorMap[v]; }
+            if (el) {
+                // Coexistenta doar pe stalpi, nu pe BMPT sau alte elemente non-stalp
+                if (v === 'coexistenta' && !el.type.startsWith('stalp_')) return;
+                el.stare = v; if (colorMap[v]) el.color = colorMap[v];
+                if (v === 'existent') el.color = null;
+            }
             const cn = CN.find(c => c.id === id);
-            if (cn) { cn.stare = v; if (colorMap[v]) cn.color = colorMap[v]; }
+            if (cn) {
+                // Coexistenta nu se aplica pe cabluri
+                if (v === 'coexistenta') return;
+                // Save old conductor when switching to intarire
+                if (v === 'proiectat_intarire' && (!cn.stare || cn.stare === 'existent') && !cn.oldTipConductor) {
+                    cn.oldTipConductor = cn.tipConductor || 'Clasic Al';
+                    cn.oldSectiune = cn.sectiune || 16;
+                    cn.oldTipRetea = cn.tipRetea || 'Trifazat';
+                }
+                cn.stare = v; if (colorMap[v]) cn.color = colorMap[v];
+                if (v === 'existent') { cn.color = '#ef4444'; delete cn.oldTipConductor; delete cn.oldSectiune; delete cn.oldTipRetea; }
+            }
         });
         render(); updateProps();
     });
@@ -2380,17 +2396,20 @@ function updateProps(){
     document.getElementById('p-cl').addEventListener('input',ev=>updSel('label',ev.target.value));
     document.getElementById('p-cn-stare')?.addEventListener('change', ev => {
         const v = ev.target.value;
+        console.log('Cable stare change:', v, 'cn.id:', cn.id, 'old stare:', cn.stare);
+        saveState('schimbare stare cablu');
         // Save old conductor info when switching to intarire from existent
         if(v === 'proiectat_intarire' && (!cn.stare || cn.stare === 'existent') && !cn.oldTipConductor) {
           cn.oldTipConductor = cn.tipConductor || 'Clasic Al';
           cn.oldSectiune = cn.sectiune || 16;
           cn.oldTipRetea = cn.tipRetea || 'Trifazat';
+          console.log('Saved old conductor:', cn.oldTipConductor, cn.oldSectiune);
         }
         cn.stare = v;
         if(v === 'proiectat_racordare') cn.color = '#ef4444';
         else if(v === 'proiectat_intarire') cn.color = '#a855f7';
-        // Clear old info if switching back to existent
-        if(v === 'existent') { delete cn.oldTipConductor; delete cn.oldSectiune; delete cn.oldTipRetea; }
+        else if(v === 'existent') { cn.color = '#ef4444'; delete cn.oldTipConductor; delete cn.oldSectiune; delete cn.oldTipRetea; }
+        console.log('Cable after:', cn.stare, cn.color);
         render(); updateProps();
     });
     document.getElementById('p-cgroup')?.addEventListener('input',ev=>updSel('circuitGroup',ev.target.value));
