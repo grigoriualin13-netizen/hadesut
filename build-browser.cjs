@@ -20,7 +20,7 @@ fs.writeFileSync(outPath, result, 'utf8');
 
 // Write to dist/index.html for Netlify deploy
 console.log('[3/3] Copying to dist/index.html...');
-const distDir = path.join(__dirname, 'dist');
+const distDir = path.join(__dirname, 'docs');
 if (!fs.existsSync(distDir)) fs.mkdirSync(distDir);
 fs.writeFileSync(path.join(distDir, 'index.html'), result, 'utf8');
 
