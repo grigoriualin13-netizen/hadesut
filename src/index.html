@@ -4540,6 +4540,7 @@ async function generateFS() {
             const tipCC = getConductorOrCablu(cableName);
             const len = parseFloat(bran.cable.length) || 0;
             text += `\n- ${tipCC} tip ${cableName} in lungime de ${len.toFixed(0)} m pana la un ${bmptLabel} montat ${getBMPTLocation(len)}`;
+          });
         }
 
         text += '.';
@@ -4711,6 +4712,7 @@ async function generateFS() {
               const tipCC = getConductorOrCablu(cableName);
               const len = parseFloat(b.cable.length) || 0;
               text += `\n- ${tipCC} tip ${cableName} in lungime de ${len.toFixed(0)} m pana la un ${bmptLabel} montat ${getBMPTLocation(len)}.`;
+            });
           }
         });
       }
@@ -4850,6 +4852,7 @@ async function generateFS() {
               const tipCC = getConductorOrCablu(cableName);
               const len = parseFloat(b.cable.length) || 0;
               text += `\n- ${tipCC} tip ${cableName} in lungime de ${len.toFixed(0)} m pana la un ${bmptLabel} montat ${getBMPTLocation(len)}.`;
+            });
           }
         });
       }
