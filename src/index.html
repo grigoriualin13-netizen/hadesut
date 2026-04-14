@@ -5430,7 +5430,7 @@ async function generateFS() {
             const el = EL.find(x => x.id === data.elId);
             if (!el) return;
             if (el.type.startsWith('cd') || el.type.startsWith('ptab_') || el.type === 'trafo' || el.type === 'meter' || el.type === 'celula_linie_mt' || el.type === 'celula_trafo_mt' || el.type === 'bara_mt' || el.type === 'bara_statie_mt') return;
-            vdRows.push({ label: data.label || el.label || '?', circuit: data.circKey || '', conductor: (data.tipConductor || '—') + ' ' + (data.sectiune || '') + 'mm²', L: data.L || 0, Lcum: data.L_cumulat || 0, P: data.P_total_branch || 0, duTron: data.duTronson || 0, duNod: data.duNod || 0, Isc: data.Isc || 0 });
+            vdRows.push({ label: data.label || el.label || '?', circuit: data.circKey || '', conductor: (data.tipConductor || '—') + ' ' + (data.sectiune || '') + 'mm²', L: data.L || 0, Lcum: data.L_cumulat || 0, nrCons: data.nrCons || 0, P: data.P_total_branch || 0, duNod: data.duNod || 0, Isc: data.Isc || 0 });
           });
           if (vdRows.length === 0) return [];
           vdRows.sort((a, b) => a.circuit.localeCompare(b.circuit) || a.Lcum - b.Lcum);
@@ -5438,7 +5438,7 @@ async function generateFS() {
           const hdr = (text) => new TableCell({ children: [new Paragraph({ children: [new TextRun({ text, size: 16, bold: true, font: f })], alignment: AlignmentType.CENTER })], shading: { fill: 'D9E2F3' }, verticalAlign: VerticalAlign.CENTER });
           const cell = (text, opts) => new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: String(text), size: 16, font: f, bold: opts?.bold, color: opts?.color })], alignment: opts?.align || AlignmentType.CENTER })], verticalAlign: VerticalAlign.CENTER });
 
-          const headers = [hdr('Nod'), hdr('Circuit'), hdr('Conductor'), hdr('L(m)'), hdr('L cum.(m)'), hdr('P(kW)'), hdr('ΔU tron.%'), hdr('ΔU nod%')];
+          const headers = [hdr('Nod'), hdr('Circuit'), hdr('Conductor'), hdr('L(m)'), hdr('L cum.(m)'), hdr('Nr.cons.'), hdr('P(kW)'), hdr('ΔU nod%')];
           if (showIsc) headers.push(hdr('Isc 1F(kA)'));
 
           const tableRows = [new TableRow({ children: headers })];
@@ -5446,18 +5446,26 @@ async function generateFS() {
             const duColor = r.duNod > 10 ? 'FF0000' : r.duNod > 5 ? 'FF6600' : r.duNod > 3 ? 'CC9900' : '008800';
             const cells = [
               cell(r.label, { align: AlignmentType.LEFT }), cell(r.circuit), cell(r.conductor, { align: AlignmentType.LEFT }),
-              cell(r.L.toFixed(0)), cell(r.Lcum.toFixed(0)), cell(r.P.toFixed(2)),
-              cell(r.duTron.toFixed(3)), cell(r.duNod.toFixed(3), { bold: true, color: duColor })
+              cell(r.L.toFixed(0)), cell(r.Lcum.toFixed(0)), cell(String(r.nrCons)), cell(r.P.toFixed(2)),
+              cell(r.duNod.toFixed(3), { bold: true, color: duColor })
             ];
             if (showIsc) cells.push(cell(r.Isc > 0 ? r.Isc.toFixed(3) : '-'));
             tableRows.push(new TableRow({ children: cells }));
           });
           const maxDU = vdRows.reduce((m, r) => Math.max(m, r.duNod), 0);
+          // Count total consumatori per circuit
+          const consPerCircuit = {};
+          vdRows.forEach(r => {
+            if (!consPerCircuit[r.circuit]) consPerCircuit[r.circuit] = 0;
+            consPerCircuit[r.circuit] += r.nrCons;
+          });
+          const consText = Object.entries(consPerCircuit).map(([circ, cnt]) => `Consumatori pe ${circ} = ${cnt} consumatori`).join('; ');
           const result = [
             ps(100),
             pb('Calcul căderi de tensiune (PE 132/2003):', { size: sb }),
             new Table({ rows: tableRows, width: { size: 100, type: WidthType.PERCENTAGE } }),
             p(`ΔU max nod: ${maxDU.toFixed(3)}% — Limita admisă: ±10% (PE 132)`, { size: 18 }),
+            p(consText, { size: 18 }),
           ];
           return result;
         })(),
