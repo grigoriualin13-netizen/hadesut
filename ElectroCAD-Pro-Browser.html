@@ -5152,48 +5152,73 @@ async function generateFS() {
         }
       }
 
-      // ── RACORDARE: bransament din circuitul proiectat ──
-      // Search BMPT in racordare first, then in all proiectat elements
-      let racBMPT = proiectRacordare.elemente.find(e => e.type === 'meter');
-      if (!racBMPT) racBMPT = proiectIntarire.elemente.find(e => e.type === 'meter');
+      // ── RACORDARE: bransamente din circuitul proiectat ──
+      // Find ALL BMPTs in racordare and intarire
+      const allRacBMPTs = [
+        ...proiectRacordare.elemente.filter(e => e.type === 'meter'),
+        ...proiectIntarire.elemente.filter(e => e.type === 'meter')
+      ];
+      // Deduplicate
+      const seenBMPTs = new Set();
+      const uniqueBMPTs = allRacBMPTs.filter(b => { if (seenBMPTs.has(b.id)) return false; seenBMPTs.add(b.id); return true; });
 
-      // Find cables connected to BMPT (search in both racordare and intarire)
-      let racCabluri = proiectRacordare.cabluri.filter(cn =>
-        cn.fromElId === (racBMPT && racBMPT.id) || cn.toElId === (racBMPT && racBMPT.id)
-      );
-      if (racCabluri.length === 0 && racBMPT) {
-        racCabluri = proiectIntarire.cabluri.filter(cn =>
-          cn.fromElId === racBMPT.id || cn.toElId === racBMPT.id
-        );
-      }
-      // Also search all proiectat cables
-      if (racCabluri.length === 0 && racBMPT) {
-        racCabluri = CN.filter(cn =>
-          (cn.stare === 'proiectat_racordare' || cn.stare === 'proiectat_intarire') &&
-          (cn.fromElId === racBMPT.id || cn.toElId === racBMPT.id)
-        );
-      }
+      if (uniqueBMPTs.length > 0) {
+        const allProiectCables = [...proiectRacordare.cabluri, ...proiectIntarire.cabluri, ...CN.filter(cn => (cn.stare === 'proiectat_racordare' || cn.stare === 'proiectat_intarire'))];
+        const seenCables = new Set();
+        const uniqueCables = allProiectCables.filter(c => { if (seenCables.has(c.id)) return false; seenCables.add(c.id); return true; });
 
-      if (racBMPT && racCabluri.length > 0) {
-        let branStartLabel = '';
-        racCabluri.forEach(cn => {
-          const otherId = cn.fromElId === racBMPT.id ? cn.toElId : (cn.toElId === racBMPT.id ? cn.fromElId : null);
-          if (otherId) {
-            const otherEl = EL.find(e => e.id === otherId);
-            if (otherEl) branStartLabel = otherEl.label || '';
-          }
+        // Build bransamente per source element
+        const bransamente = [];
+        uniqueBMPTs.forEach(bmpt => {
+          // Find cable to this BMPT
+          const bmptCable = uniqueCables.find(cn => cn.fromElId === bmpt.id || cn.toElId === bmpt.id);
+          if (!bmptCable) return;
+          const otherId = bmptCable.fromElId === bmpt.id ? bmptCable.toElId : bmptCable.fromElId;
+          const srcEl = EL.find(e => e.id === otherId);
+          const srcLabel = srcEl ? (srcEl.label || '') : '';
+          bransamente.push({ bmpt, cable: bmptCable, srcLabel });
         });
 
-        const racCable = racCabluri[0];
-        const tipFazat = (racCable.tipRetea === 'Monofazat') ? 'monofazat' : 'trifazat';
-        const bmptLabel = racBMPT.bmptText || racBMPT.label || 'BMPT';
-        const branDescs = describeCableGroup(racCabluri);
-
-        const circText = intCircuit ? `, circuit nr. ${intCircuit}` : '';
-        const ptText = intSrcPtLabel ? ` din ${intPrefix.replace('Din ','')}` : '';
-
-        const racBranLen = racCabluri.reduce((s, cn) => s + (parseFloat(cn.length) || 0), 0);
-        solutieRacordareText = `Alimentarea cu energie electrica se va realiza pe joasa tensiune printr-un bransament ${tipFazat}, racord din ${branStartLabel || 'circuitul proiectat'}${circText}${ptText}, format din ${branDescs.join(', ')}, pana la un ${bmptLabel} montat ${getBMPTLocation(racBranLen)}.`;
+        if (bransamente.length === 1) {
+          const b = bransamente[0];
+          const racCable = b.cable;
+          const tipFazat = (racCable.tipRetea === 'Monofazat') ? 'monofazat' : 'trifazat';
+          const bmptLabel = b.bmpt.bmptText || b.bmpt.label || 'BMPT';
+          const branDescs = describeCableGroup([racCable]);
+          const circText = intCircuit ? `, circuit nr. ${intCircuit}` : '';
+          const ptText = intSrcPtLabel ? ` din ${intPrefix.replace('Din ','')}` : '';
+          const racBranLen = parseFloat(racCable.length) || 0;
+          solutieRacordareText = `Alimentarea cu energie electrica se va realiza pe joasa tensiune printr-un bransament ${tipFazat}, racord din ${b.srcLabel || 'circuitul proiectat'}${circText}${ptText}, format din ${branDescs.join(', ')}, pana la un ${bmptLabel} montat ${getBMPTLocation(racBranLen)}.`;
+        } else if (bransamente.length > 1) {
+          const circText = intCircuit ? `, circuit nr. ${intCircuit}` : '';
+          const ptText = intSrcPtLabel ? ` din ${intPrefix.replace('Din ','')}` : '';
+          solutieRacordareText = `Alimentarea cu energie electrica se va realiza pe joasa tensiune${circText}${ptText}.\nBransamente:`;
+          // Group by source element
+          const srcGroups = {};
+          bransamente.forEach(b => {
+            const key = b.srcLabel || 'circuit';
+            if (!srcGroups[key]) srcGroups[key] = [];
+            srcGroups[key].push(b);
+          });
+          Object.entries(srcGroups).forEach(([srcLabel, brans]) => {
+            if (brans.length === 1) {
+              const b = brans[0];
+              const bmptLabel = b.bmpt.bmptText || b.bmpt.label || 'BMPT';
+              const bLen = parseFloat(b.cable.length) || 0;
+              const bDescs = describeCableGroup([b.cable]);
+              solutieRacordareText += `\nDin ${srcLabel} se va realiza 1 bransament cu ${bDescs.join(', ')} pana la un ${bmptLabel} montat ${getBMPTLocation(bLen)}.`;
+            } else {
+              solutieRacordareText += `\nDin ${srcLabel} se vor realiza ${brans.length} bransamente astfel:`;
+              brans.forEach(b => {
+                const bmptLabel = b.bmpt.bmptText || b.bmpt.label || 'BMPT';
+                const cableName = getCableOfficialName(b.cable.tipConductor || 'Cablu Al', b.cable.sectiune || 16, b.cable.tipRetea || 'Trifazat');
+                const tipCC = getConductorOrCablu(cableName);
+                const len = parseFloat(b.cable.length) || 0;
+                solutieRacordareText += `\n- ${tipCC} tip ${cableName} in lungime de ${len.toFixed(0)} m pana la un ${bmptLabel} montat ${getBMPTLocation(len)}.`;
+              });
+            }
+          });
+        }
       } else if (proiectRacordare.cabluri.length > 0 || proiectRacordare.elemente.length > 0) {
         solutieRacordareText = buildSolutionText(proiectRacordare.cabluri, proiectRacordare.elemente);
       } else {
