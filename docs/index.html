@@ -4350,8 +4350,10 @@ async function generateFS() {
     return 'conductor';
   }
 
-  // Determină locul montării BMPT: pe stâlp dacă branșament < 8.05m, altfel la limita de proprietate
-  function getBMPTLocation(cableOrLen) {
+  // Determină locul montării BMPT: pe stâlp dacă branșament < 8.05m din stâlp, altfel pe soclu de beton
+  // fromFirida=true → mereu pe soclu de beton
+  function getBMPTLocation(cableOrLen, fromFirida) {
+    if (fromFirida) return 'pe soclu de beton la limita de proprietate';
     var len = typeof cableOrLen === 'number' ? cableOrLen : (parseFloat(cableOrLen && cableOrLen.length) || 0);
     if (len > 0 && len < 8.05) return 'pe stalpul de racord';
     return 'pe soclu de beton la limita de proprietate';
@@ -4605,7 +4607,7 @@ async function generateFS() {
           const bmptLabel = bran.bmpt.bmptText || bran.bmpt.label || 'BMPT';
           const branLen = parseFloat(bran.cable.length) || 0;
           const branDescs = describeCableGroup([bran.cable]);
-          text += `. Din ${fg.fgNouaName} proiectata, se va realiza un bransament cu ${branDescs.join(', ')}, pana la un ${bmptLabel} montat ${getBMPTLocation(branLen)}`;
+          text += `. Din ${fg.fgNouaName} proiectata, se va realiza un bransament cu ${branDescs.join(', ')}, pana la un ${bmptLabel} montat ${getBMPTLocation(branLen, true)}`;
         } else if (fg.myBransamente.length > 1) {
           const nrText = ['doua','trei','patru','cinci','sase'][fg.myBransamente.length - 2] || fg.myBransamente.length;
           text += `. Din ${fg.fgNouaName} proiectata, se vor realiza ${nrText} bransamente astfel:`;
@@ -4614,7 +4616,7 @@ async function generateFS() {
             const cableName = getCableOfficialName(bran.cable.tipConductor || 'Cablu Al', bran.cable.sectiune || 16, bran.cable.tipRetea || 'Trifazat');
             const tipCC = getConductorOrCablu(cableName);
             const len = parseFloat(bran.cable.length) || 0;
-            text += `\n- ${tipCC} tip ${cableName} in lungime de ${len.toFixed(0)} m pana la un ${bmptLabel} montat ${getBMPTLocation(len)}`;
+            text += `\n- ${tipCC} tip ${cableName} in lungime de ${len.toFixed(0)} m pana la un ${bmptLabel} montat ${getBMPTLocation(len, true)}`;
           });
         }
 
@@ -4918,7 +4920,7 @@ async function generateFS() {
             const bLen = parseFloat(b.cable.length) || 0;
             const bDescs = describeCableGroup([b.cable]);
             text += `\nDin ${fb.fgLabel} se va realiza 1 bransament astfel:`;
-            text += `\n- ${bDescs.join(', ')} pana la un ${bmptLabel} montat ${getBMPTLocation(bLen)}.`;
+            text += `\n- ${bDescs.join(', ')} pana la un ${bmptLabel} montat ${getBMPTLocation(bLen, true)}.`;
           } else {
             text += `\nDin ${fb.fgLabel} se vor realiza ${fb.brans.length} bransamente astfel:`;
             fb.brans.forEach(b => {
@@ -4926,7 +4928,7 @@ async function generateFS() {
               const cableName = getCableOfficialName(b.cable.tipConductor || 'Cablu Al', b.cable.sectiune || 16, b.cable.tipRetea || 'Trifazat');
               const tipCC = getConductorOrCablu(cableName);
               const len = parseFloat(b.cable.length) || 0;
-              text += `\n- ${tipCC} tip ${cableName} in lungime de ${len.toFixed(0)} m pana la un ${bmptLabel} montat ${getBMPTLocation(len)}.`;
+              text += `\n- ${tipCC} tip ${cableName} in lungime de ${len.toFixed(0)} m pana la un ${bmptLabel} montat ${getBMPTLocation(len, true)}.`;
             });
           }
         });
@@ -5227,7 +5229,9 @@ async function generateFS() {
           const circText = intCircuit ? `, circuit nr. ${intCircuit}` : '';
           const ptText = intSrcPtLabel ? ` din ${intPrefix.replace('Din ','')}` : '';
           const racBranLen = parseFloat(racCable.length) || 0;
-          solutieRacordareText = `Alimentarea cu energie electrica se va realiza pe joasa tensiune printr-un bransament ${tipFazat}, racord din ${b.srcLabel || 'circuitul proiectat'}${circText}${ptText}, format din ${branDescs.join(', ')}, pana la un ${bmptLabel} montat ${getBMPTLocation(racBranLen)}.`;
+          const srcEl1 = b.srcLabel ? EL.find(e => e.label === b.srcLabel) : null;
+          const isFirida1 = srcEl1 && srcEl1.type.startsWith('firida_');
+          solutieRacordareText = `Alimentarea cu energie electrica se va realiza pe joasa tensiune printr-un bransament ${tipFazat}, racord din ${b.srcLabel || 'circuitul proiectat'}${circText}${ptText}, format din ${branDescs.join(', ')}, pana la un ${bmptLabel} montat ${getBMPTLocation(racBranLen, isFirida1)}.`;
         } else if (bransamente.length > 1) {
           const circText = intCircuit ? `, circuit nr. ${intCircuit}` : '';
           const ptText = intSrcPtLabel ? ` din ${intPrefix.replace('Din ','')}` : '';
@@ -5240,12 +5244,14 @@ async function generateFS() {
             srcGroups[key].push(b);
           });
           Object.entries(srcGroups).forEach(([srcLabel, brans]) => {
+            // Check if source is firida
+            const srcIsFirida = srcLabel.match(/^FG|^E[23]/i) || brans.some(b => { const srcEl = EL.find(e => e.label === srcLabel); return srcEl && srcEl.type.startsWith('firida_'); });
             if (brans.length === 1) {
               const b = brans[0];
               const bmptLabel = b.bmpt.bmptText || b.bmpt.label || 'BMPT';
               const bLen = parseFloat(b.cable.length) || 0;
               const bDescs = describeCableGroup([b.cable]);
-              solutieRacordareText += `\nDin ${srcLabel} se va realiza 1 bransament cu ${bDescs.join(', ')} pana la un ${bmptLabel} montat ${getBMPTLocation(bLen)}.`;
+              solutieRacordareText += `\nDin ${srcLabel} se va realiza 1 bransament cu ${bDescs.join(', ')} pana la un ${bmptLabel} montat ${getBMPTLocation(bLen, srcIsFirida)}.`;
             } else {
               solutieRacordareText += `\nDin ${srcLabel} se vor realiza ${brans.length} bransamente astfel:`;
               brans.forEach(b => {
@@ -5253,7 +5259,7 @@ async function generateFS() {
                 const cableName = getCableOfficialName(b.cable.tipConductor || 'Cablu Al', b.cable.sectiune || 16, b.cable.tipRetea || 'Trifazat');
                 const tipCC = getConductorOrCablu(cableName);
                 const len = parseFloat(b.cable.length) || 0;
-                solutieRacordareText += `\n- ${tipCC} tip ${cableName} in lungime de ${len.toFixed(0)} m pana la un ${bmptLabel} montat ${getBMPTLocation(len)}.`;
+                solutieRacordareText += `\n- ${tipCC} tip ${cableName} in lungime de ${len.toFixed(0)} m pana la un ${bmptLabel} montat ${getBMPTLocation(len, srcIsFirida)}.`;
               });
             }
           });
