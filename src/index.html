@@ -5708,6 +5708,10 @@ function updateAutoSaveIndicator(text) {
 }
 
 // ── Save project to IndexedDB ──
+function getLocalUserId() {
+  return currentUser ? currentUser.id : 'local';
+}
+
 function saveProjectToDB(projectId, projectName) {
   var now = Date.now();
   var projData = getProjectData();
@@ -5715,6 +5719,7 @@ function saveProjectToDB(projectId, projectName) {
     id: projectId,
     name: projectName,
     data: projData,
+    user_id: getLocalUserId(),
     createdAt: null,
     updatedAt: now
   };
@@ -5907,8 +5912,11 @@ function refreshProjectList() {
     }
   }).catch(function() { recoveryEl.style.display = 'none'; });
 
-  // Load project list — merge local + cloud
-  var localPromise = dbGetAll('projects');
+  // Load project list — merge local (filtered by user) + cloud
+  var uid = getLocalUserId();
+  var localPromise = dbGetAll('projects').then(function(all) {
+    return all.filter(function(p) { return !p.user_id || p.user_id === uid; });
+  });
   var cloudPromise = (currentUser && supaClient) ? cloudLoadProjects() : Promise.resolve([]);
 
   Promise.all([localPromise, cloudPromise]).then(function(results) {
