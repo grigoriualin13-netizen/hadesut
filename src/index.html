@@ -4695,40 +4695,30 @@ async function generateFS() {
       text += ` astfel:`;
 
       // Trace the chain: stalp → cable → firida1 → cable → firida2 → ...
-      // Build ordered list of firide and cables between them
       const firidaChain = [];
-      let currentElId = src.el.id;
-      const visitedFiride = new Set();
+      const visitedNodes = new Set([src.el.id]);
 
-      // BFS to find firide in order from source
-      function traceFireChain(startId) {
-        const queue = [startId];
-        const visited = new Set([startId]);
-        while (queue.length > 0) {
-          const curId = queue.shift();
-          // Find proiectat circuit cables from current element
-          const outCables = cabluriCircuit.filter(cn => cn.fromElId === curId || cn.toElId === curId);
-          outCables.forEach(cn => {
-            const otherId = cn.fromElId === curId ? cn.toElId : cn.fromElId;
-            if (visited.has(otherId)) return;
-            visited.add(otherId);
-            const otherEl = EL.find(e => e.id === otherId);
-            if (otherEl && otherEl.type.startsWith('firida_') && proiectIds.has(otherId) && !visitedFiride.has(otherId)) {
-              visitedFiride.add(otherId);
-              // Find cable(s) leading to this firida
-              const cablesToFirida = cabluriCircuit.filter(c => {
-                const fromOk = (c.fromElId === curId && c.toElId === otherId);
-                const toOk = (c.toElId === curId && c.fromElId === otherId);
-                return fromOk || toOk;
-              });
-              firidaChain.push({ firida: otherEl, cables: cablesToFirida, fromLabel: curId === startId ? srcLabel : (EL.find(e => e.id === curId) || {}).label || '' });
-              // Continue tracing from this firida
-              traceFireChain(otherId);
-            }
-          });
-        }
+      function traceFromNode(nodeId, nodeLabel) {
+        // Find all circuit cables from this node
+        cabluriCircuit.forEach(cn => {
+          const otherId = cn.fromElId === nodeId ? cn.toElId : (cn.toElId === nodeId ? cn.fromElId : null);
+          if (!otherId || visitedNodes.has(otherId)) return;
+          const otherEl = EL.find(e => e.id === otherId);
+          if (!otherEl) return;
+
+          if (otherEl.type.startsWith('firida_') && proiectIds.has(otherId)) {
+            visitedNodes.add(otherId);
+            firidaChain.push({
+              firida: otherEl,
+              cables: [cn],
+              fromLabel: nodeLabel
+            });
+            // Continue tracing from this firida
+            traceFromNode(otherId, otherEl.label || getFiridaTypeName(otherEl));
+          }
+        });
       }
-      traceFireChain(src.el.id);
+      traceFromNode(src.el.id, srcLabel);
 
       // If no chain found, fallback to simple list
       if (firidaChain.length === 0) {
