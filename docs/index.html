@@ -2762,17 +2762,11 @@ function calcNetworkVD(cdElId, Pc_abonat, tipAmplasare, forceKs){
         const cables = CN.filter(cn => cn.fromElId===elId || cn.toElId===elId || cn.from===elId);
 
         cables.forEach(cn => {
-          // Permitem prelungirile de tronsoane chiar dacă au "circuitGroup" vizual diferit
           // Blocăm DOAR cablurile direct din CD/Tablou care aparțin altui circuit
-          if (cn.circuitGroup && cn.circuitGroup !== traceGroup && cn.circuitGroup !== circ.toString()) {
-              if (cn.fromElId === cdElId || cn.toElId === cdElId) return;
-              // În rețeaua de firide, permitem trecerea între circuite (cabluri comune)
-              const fromEl = EL.find(x => x.id === cn.fromElId);
-              const toEl = EL.find(x => x.id === cn.toElId);
-              const isFireChain = (fromEl && fromEl.type.startsWith('firida_')) || (toEl && toEl.type.startsWith('firida_'));
-              if (!isFireChain) return;
+          // În restul rețelei, curentul merge pe fir indiferent de eticheta circuitului
+          if (cn.fromElId === cdElId || cn.toElId === cdElId) {
+              if ((cn.fromElId === cdElId && cn.fromCircuit !== circ) || (cn.toElId === cdElId && cn.toCircuit !== circ)) return;
           }
-          if ((cn.fromElId === cdElId && cn.fromCircuit !== circ) || (cn.toElId === cdElId && cn.toCircuit !== circ)) return;
 
           const currentTerm = (cn.fromElId === elId) ? cn.fromTerm : (cn.toElId === elId) ? cn.toTerm : null;
           if (el && !isConnectionActive(el, currentTerm)) return; 
