@@ -4648,17 +4648,62 @@ async function generateFS() {
       const lastStalp = lastElBeforeBMPT && lastElBeforeBMPT.type.startsWith('stalp_') ? lastElBeforeBMPT : stalpiProiectati[stalpiProiectati.length - 1];
       const lastStalpLabel = lastStalp ? (lastStalp.label || 'ultimul stalp') : 'ultimul stalp';
 
-      let text = `Alimentarea cu energie electrica a obiectivului se va realiza prin extinderea circuitului ${existCircuit} existent de la stalpul ${srcLabel} pe o lungime de ${extensionLen.toFixed(0)} m pe stalpi noi proiectati de tip ${stalpTypeText}`;
+      let text = `Alimentarea cu energie electrica a obiectivului se va realiza prin extinderea circuitului ${existCircuit} existent de la stalpul ${srcLabel} pe o lungime de ${extensionLen.toFixed(0)} m pe stalpi noi proiectati de tip ${stalpTypeText}.`;
 
-      // Bransament
-      const branDescs = describeCableGroup(cabluriBransament);
-      const branCable = cabluriBransament[0];
-      const tipCC = branCable ? getConductorOrCablu(getCableOfficialName(branCable.tipConductor || 'Cablu Al', branCable.sectiune || 16, branCable.tipRetea || 'Trifazat')) : 'conductor';
-      const branLen = cabluriBransament.reduce((s, cn) => s + (parseFloat(cn.length) || 0), 0);
-      const branName = branCable ? getCableOfficialName(branCable.tipConductor || 'Cablu Al', branCable.sectiune || 16, branCable.tipRetea || 'Trifazat') : '';
+      // Find bransamente per stalp proiectat
+      const stalpBransamente = [];
+      stalpiProiectati.forEach(st => {
+        const stId = st.id;
+        const stLabel = st.label || 'stalp';
+        const brans = [];
+        cabluriBransament.forEach(cn => {
+          const otherId = cn.fromElId === stId ? cn.toElId : (cn.toElId === stId ? cn.fromElId : null);
+          if (!otherId) return;
+          const otherEl = EL.find(e => e.id === otherId);
+          if (otherEl && otherEl.type === 'meter') {
+            brans.push({ bmpt: otherEl, cable: cn });
+          }
+        });
+        if (brans.length > 0) {
+          stalpBransamente.push({ stLabel, brans });
+        }
+      });
 
-      text += `. Din stalpul ${lastStalpLabel} se va realiza un bransament cu ${tipCC} tip ${branName} in lungime de ${branLen.toFixed(0)} m pana la ${bmptText || 'un BMPT montat pe soclu de beton la limita de proprietate'}`;
-      text += '.';
+      // Also check source stalp for bransamente
+      const srcBrans = [];
+      cabluriBransament.forEach(cn => {
+        const otherId = cn.fromElId === src.el.id ? cn.toElId : (cn.toElId === src.el.id ? cn.fromElId : null);
+        if (!otherId) return;
+        const otherEl = EL.find(e => e.id === otherId);
+        if (otherEl && otherEl.type === 'meter') {
+          srcBrans.push({ bmpt: otherEl, cable: cn });
+        }
+      });
+      if (srcBrans.length > 0) {
+        stalpBransamente.unshift({ stLabel: srcLabel, brans: srcBrans });
+      }
+
+      if (stalpBransamente.length > 0) {
+        text += '\nBransamente:';
+        stalpBransamente.forEach(sb => {
+          if (sb.brans.length === 1) {
+            const b = sb.brans[0];
+            const bmptLabel = b.bmpt.bmptText || b.bmpt.label || 'BMPT';
+            const bDescs = describeCableGroup([b.cable]);
+            text += `\nDin stalpul ${sb.stLabel} se va realiza 1 bransament cu ${bDescs.join(', ')} pana la un ${bmptLabel} montat pe soclu de beton la limita de proprietate.`;
+          } else {
+            text += `\nDin stalpul ${sb.stLabel} se vor realiza ${sb.brans.length} bransamente astfel:`;
+            sb.brans.forEach(b => {
+              const bmptLabel = b.bmpt.bmptText || b.bmpt.label || 'BMPT';
+              const cableName = getCableOfficialName(b.cable.tipConductor || 'Cablu Al', b.cable.sectiune || 16, b.cable.tipRetea || 'Trifazat');
+              const tipCC = getConductorOrCablu(cableName);
+              const len = parseFloat(b.cable.length) || 0;
+              text += `\n- ${tipCC} tip ${cableName} in lungime de ${len.toFixed(0)} m pana la un ${bmptLabel} montat pe soclu de beton la limita de proprietate.`;
+            });
+          }
+        });
+      }
+
       return text;
     }
 
