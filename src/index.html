@@ -5327,10 +5327,21 @@ function updateUserBar() {
 
 function authLogout() {
   if (!confirm('Vrei să te deconectezi?')) return;
+  // Auto-save proiectul curent înainte de deconectare
+  if (currentProjectId && currentProjectName && (EL.length > 0 || CN.length > 0)) {
+    saveProjectToDB(currentProjectId, currentProjectName);
+    toast('Proiect salvat automat: ' + currentProjectName, 'ok');
+  }
   supaClient.auth.signOut().then(function() {
     currentUser = null;
+    currentProfile = null;
+    currentProjectId = null;
+    currentProjectName = null;
     updateUserBar();
-    toast('Deconectat', 'ok');
+    updateProjectNameUI();
+    hideProjectScreen();
+    closeAdminPanel();
+    showAuthScreen();
   });
 }
 
