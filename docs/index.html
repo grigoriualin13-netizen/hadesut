@@ -5429,7 +5429,7 @@ async function generateFS() {
           vdResults.forEach((data, key) => {
             const el = EL.find(x => x.id === data.elId);
             if (!el) return;
-            if (el.type.startsWith('cd') || el.type.startsWith('ptab_') || el.type === 'trafo' || el.type === 'celula_linie_mt' || el.type === 'celula_trafo_mt' || el.type === 'bara_mt' || el.type === 'bara_statie_mt') return;
+            if (el.type.startsWith('cd') || el.type.startsWith('ptab_') || el.type === 'trafo' || el.type === 'meter' || el.type === 'celula_linie_mt' || el.type === 'celula_trafo_mt' || el.type === 'bara_mt' || el.type === 'bara_statie_mt') return;
             vdRows.push({ label: data.label || el.label || '?', circuit: data.circKey || '', conductor: (data.tipConductor || '—') + ' ' + (data.sectiune || '') + 'mm²', L: data.L || 0, Lcum: data.L_cumulat || 0, P: data.P_total_branch || 0, duTron: data.duTronson || 0, duNod: data.duNod || 0, Isc: data.Isc || 0 });
           });
           if (vdRows.length === 0) return [];
