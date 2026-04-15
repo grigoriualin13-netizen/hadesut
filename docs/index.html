@@ -879,7 +879,7 @@ function getKs(nrCons, tipAmplasare){
     }
 }
 
-function getR0(tipConductor, sectiune){ const tbl = R0_TABLES[tipConductor]; if(!tbl) return null; if(tbl[sectiune] !== undefined) return tbl[sectiune]; const secs = Object.keys(tbl).map(Number).sort((a,b)=>a-b); let best = secs[0]; for(const s of secs){ if(s<=sectiune) best=s; } return tbl[best]; }
+function getR0(tipConductor, sectiune){ const tbl = R0_TABLES[tipConductor]; if(!tbl) return null; if(tbl[sectiune] !== undefined) return tbl[sectiune]; const secs = Object.keys(tbl).map(Number).sort((a,b)=>a-b); if(secs.length === 0) return null; let best = secs[0]; for(const s of secs){ if(s<=sectiune) best=s; } return tbl[best]; }
 
 function calcDU_tronson(L_m, P_eff, tipRetea, sectiune){
   if(!L_m || !P_eff || !sectiune) return 0;
@@ -917,7 +917,7 @@ function sn(v){return snapOn?Math.round(v/GRID)*GRID:v;}
 function uid(){return Date.now()+Math.floor(Math.random()*99999);}
 function termWorldPos(el,lcx,lcy){ const rot=(el.rotation||0)*Math.PI/180, sc=el.scale||1, cos=Math.cos(rot),sin=Math.sin(rot); return { x: el.x + (lcx*sc)*cos - (lcy*sc)*sin, y: el.y + (lcx*sc)*sin + (lcy*sc)*cos }; }
 function getLineIntersection(p1, p2, p3, p4) { const denom = (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y); if (denom === 0) return null; const ua = ((p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x)) / denom, ub = ((p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x)) / denom; if (ua > 0.05 && ua < 0.95 && ub > 0.05 && ub < 0.95) return { x: p1.x + ua * (p2.x - p1.x), y: p1.y + ua * (p2.y - p1.y) }; return null; }
-function calcPathLen(pts) { let l = 0; for(let i=0; i<pts.length-1; i++) l += Math.hypot(pts[i+1].x - pts[i].x, pts[i+1].y - pts[i].y); return l; }
+function calcPathLen(pts) { if(!pts || pts.length < 2) return 0; let l = 0; for(let i=0; i<pts.length-1; i++) l += Math.hypot(pts[i+1].x - pts[i].x, pts[i+1].y - pts[i].y); return l; }
 
 function toggleBgPanel() { const p = document.getElementById('bg-panel'); p.style.display = p.style.display === 'flex' ? 'none' : 'flex'; }
 function loadBg(inp) { const f = inp.files[0]; if(!f) return; const r = new FileReader(); r.onload = e => { const img = new Image(); img.onload = () => { bgData = { url: e.target.result, x: -img.width/2, y: -img.height/2, w: img.width, h: img.height, op: parseFloat(document.getElementById('bg-op').value), locked: document.getElementById('bg-lock').checked }; renderBg(); toast('Fundal încărcat! Îl poți calibra pentru o distanță exactă.', 'ok'); }; img.src = e.target.result; }; r.readAsDataURL(f); inp.value = ''; }
@@ -957,7 +957,7 @@ function pasteEl(){
   if(!clipboard || ((clipboard.els||[]).length === 0 && (clipboard.cns||[]).length === 0)){ toast('Clipboard gol', 'ac'); return; }
   saveState('paste'); multiSel.clear(); sel = null; const idMap = {};
   (clipboard.els||[]).forEach(orig => { const n = JSON.parse(JSON.stringify(orig)), newId = uid() + Math.floor(Math.random()*1000); idMap[orig.id] = newId; n.id = newId; n.x = (n.x||0) + 40; n.y = (n.y||0) + 40; if(n.label && !['rect','circle','polyline'].includes(n.type)) n.label = n.label+'_cp'; EL.push(n); multiSel.add(newId); });
-  (clipboard.cns||[]).forEach(orig => { const n = JSON.parse(JSON.stringify(orig)), newId = uid() + Math.floor(Math.random()*1000); idMap[orig.id] = newId; n.id = newId; n.path.forEach(p => { p.x += 40; p.y += 40; }); if(n.fromElId && idMap[n.fromElId]) n.fromElId = idMap[n.fromElId]; else n.fromElId = null; if(n.toElId && idMap[n.toElId]) n.toElId = idMap[n.toElId]; else n.toElId = null; if(n.from && idMap[n.from]) n.from = idMap[n.from]; else n.from = null; n.label = n.label ? n.label+'_cp' : `C${CN.length+1}`; CN.push(n); multiSel.add(newId); });
+  (clipboard.cns||[]).forEach(orig => { const n = JSON.parse(JSON.stringify(orig)), newId = uid() + Math.floor(Math.random()*1000); idMap[orig.id] = newId; n.id = newId; if(n.path && Array.isArray(n.path)) n.path.forEach(p => { p.x += 40; p.y += 40; }); if(n.fromElId && idMap[n.fromElId]) n.fromElId = idMap[n.fromElId]; else n.fromElId = null; if(n.toElId && idMap[n.toElId]) n.toElId = idMap[n.toElId]; else n.toElId = null; if(n.from && idMap[n.from]) n.from = idMap[n.from]; else n.from = null; n.label = n.label ? n.label+'_cp' : `C${CN.length+1}`; CN.push(n); multiSel.add(newId); });
   if(multiSel.size === 1) { sel = Array.from(multiSel)[0]; multiSel.clear(); }
   render(); updateProps(); updateStat(); toast(`⎘ ${(clipboard.els||[]).length + (clipboard.cns||[]).length} obiecte lipite!`, 'ok');
 }
@@ -2402,20 +2402,17 @@ function updateProps(){
     document.getElementById('p-cl').addEventListener('input',ev=>updSel('label',ev.target.value));
     document.getElementById('p-cn-stare')?.addEventListener('change', ev => {
         const v = ev.target.value;
-        console.log('Cable stare change:', v, 'cn.id:', cn.id, 'old stare:', cn.stare);
         saveState('schimbare stare cablu');
         // Save old conductor info when switching to intarire from existent
         if(v === 'proiectat_intarire' && (!cn.stare || cn.stare === 'existent') && !cn.oldTipConductor) {
           cn.oldTipConductor = cn.tipConductor || 'Clasic Al';
           cn.oldSectiune = cn.sectiune || 16;
           cn.oldTipRetea = cn.tipRetea || 'Trifazat';
-          console.log('Saved old conductor:', cn.oldTipConductor, cn.oldSectiune);
         }
         cn.stare = v;
         if(v === 'proiectat_racordare') cn.color = '#ef4444';
         else if(v === 'proiectat_intarire') cn.color = '#a855f7';
         else if(v === 'existent') { cn.color = '#ef4444'; delete cn.oldTipConductor; delete cn.oldSectiune; delete cn.oldTipRetea; }
-        console.log('Cable after:', cn.stare, cn.color);
         render(); updateProps();
     });
     document.getElementById('p-cgroup')?.addEventListener('input',ev=>updSel('circuitGroup',ev.target.value));
@@ -6901,14 +6898,16 @@ window.onload = init;
       }).then(function(filePath) {
         if (!filePath) return;
         return T.fs.readTextFile(filePath).then(function(content) {
-          var data = JSON.parse(content);
-          EL = data.EL || []; CN = data.CN || [];
-          if (data.bgData) bgData = data.bgData;
-          else bgData = { url: null, x: 0, y: 0, w: 0, h: 0, op: 0.5, locked: true };
-          sel = null; multiSel.clear(); render(); renderBg(); updateProps(); updateStat();
-          currentFilePath = filePath;
-          toast('Incarcat: ' + filePath.split(/[/\\]/).pop(), 'ok');
-          updateTitle(filePath);
+          try {
+            var data = JSON.parse(content);
+            EL = data.EL || []; CN = data.CN || [];
+            if (data.bgData) bgData = data.bgData;
+            else bgData = { url: null, x: 0, y: 0, w: 0, h: 0, op: 0.5, locked: true };
+            sel = null; multiSel.clear(); render(); renderBg(); updateProps(); updateStat();
+            currentFilePath = filePath;
+            toast('Incarcat: ' + filePath.split(/[/\\]/).pop(), 'ok');
+            updateTitle(filePath);
+          } catch(err) { toast('Eroare la încărcare — fișier corupt!', 'danger'); }
         });
       }).catch(function(e) { console.error('open err:', e); toast('Eroare: ' + e, ''); });
     };
