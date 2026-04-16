@@ -2585,7 +2585,7 @@ function calcNetworkVD_ptab2t(cdElId, Pc_abonat, tipAmplasare, forceKs, tdNum) {
 
       cables.forEach(cn => {
         if (cn.circuitGroup && cn.circuitGroup !== traceGroup && cn.circuitGroup !== circ.toString()) {
-          if (cn.fromElId === cdElId || cn.toElId === cdElId) return;
+          return;
         }
         if ((cn.fromElId === cdElId && cn.fromCircuit !== circ) || (cn.toElId === cdElId && cn.toCircuit !== circ)) return;
 
@@ -2722,6 +2722,7 @@ function calcNetworkVD(cdElId, Pc_abonat, tipAmplasare, forceKs){
         const {elId,path,L_cum}=queue.shift(); if(elId===cdElId) continue;
         const parentNode2=nodes.get(elId); if(!parentNode2) continue;
         CN.filter(cn=>cn.fromElId===elId||cn.toElId===elId||cn.from===elId).forEach(cn=>{
+          if (cn.circuitGroup && cn.circuitGroup !== traceGroup && cn.circuitGroup !== circ.toString()) return;
           const childId2=cn.fromElId===elId?cn.toElId:(cn.toElId===elId?cn.fromElId:null);
           if(!childId2||visitedEls.has(childId2)) return;
           visitedEls.add(childId2);
@@ -2760,11 +2761,11 @@ function calcNetworkVD(cdElId, Pc_abonat, tipAmplasare, forceKs){
         const cables = CN.filter(cn => cn.fromElId===elId || cn.toElId===elId || cn.from===elId);
 
         cables.forEach(cn => {
-          // Blocăm DOAR cablurile direct din CD/Tablou care aparțin altui circuit
-          // În restul rețelei, curentul merge pe fir indiferent de eticheta circuitului
-          if (cn.fromElId === cdElId || cn.toElId === cdElId) {
-              if ((cn.fromElId === cdElId && cn.fromCircuit !== circ) || (cn.toElId === cdElId && cn.toCircuit !== circ)) return;
+          // Blocăm cablurile care aparțin altui circuit (circuitGroup diferit)
+          if (cn.circuitGroup && cn.circuitGroup !== traceGroup && cn.circuitGroup !== circ.toString()) {
+            return;
           }
+          if ((cn.fromElId === cdElId && cn.fromCircuit !== circ) || (cn.toElId === cdElId && cn.toCircuit !== circ)) return;
 
           const currentTerm = (cn.fromElId === elId) ? cn.fromTerm : (cn.toElId === elId) ? cn.toTerm : null;
           if (el && !isConnectionActive(el, currentTerm)) return; 
