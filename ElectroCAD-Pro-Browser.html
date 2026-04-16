@@ -1540,8 +1540,9 @@ function render(){
     const isSel=el.id===sel;
     if(el.type==='text'){
       const g=mk('g');g.setAttribute('class',`el ${isSel?'sel':''}`);g.dataset.eid=el.id; const hlStyle = el.fillColor && el.fillColor !== 'none' ? `stroke:${el.fillColor}; stroke-width:4px; paint-order:stroke fill;` : '';
-      g.setAttribute('transform',`rotate(${el.rotation||0} ${el.x} ${el.y})`);
-      g.innerHTML=`<text x="${el.x}" y="${el.y}" font-size="${el.fontSize||15}" fill="${el.color||(lightMode?'#1a2740':'#dce8f5')}" font-family="Barlow Condensed,sans-serif" font-weight="700" style="${hlStyle}">${el.label||'Text'}</text>`;
+      const sc = el.scale || 1;
+      g.setAttribute('transform',`translate(${el.x},${el.y}) rotate(${el.rotation||0}) scale(${sc})`);
+      g.innerHTML=`<text x="0" y="0" font-size="${el.fontSize||10}" fill="${el.color||(lightMode?'#1a2740':'#dce8f5')}" font-family="Barlow Condensed,sans-serif" font-weight="700" style="${hlStyle}">${el.label||'Text'}</text>`;
       g.addEventListener('mousedown',ev=>{ if(mode==='select'){ev.stopPropagation();dragging=true;dragEl=el; dragOff={x:svgPt(ev).x-el.x,y:svgPt(ev).y-el.y};selectEl(el.id);} }); NL.appendChild(g);return;
     }
     if(el.type==='polyline'){
@@ -2246,8 +2247,8 @@ function updateProps(){
           <option value="Stâlp Rotund" ${(el.coexReplace||'')==='Stâlp Rotund'?'selected':''}>Stâlp Rotund</option>
         </select></div>` : ''}
         ${el.type==='meter'?`<div class="pr"><div class="pl">Text BMPT</div><input class="pi" id="p-bmpt" value="${el.bmptText||''}"></div>`:''}
-        ${el.type!=='polyline' && el.type!=='text' && el.type!=='rect' && el.type!=='circle' && el.type!=='busbar' ? `<div class="pr"><div class="pl">Scară (Mărime)</div><input class="pi" type="number" id="p-scale" step="0.1" min="0.1" max="10" value="${el.scale||1}"></div>` : ''}
-        ${el.type==='text' ? `<div class="pr"><div class="pl">Dimensiune Text (px)</div><input class="pi" type="number" id="p-fsize" min="5" max="100" value="${el.fontSize||15}"></div>` : ''}
+        ${el.type!=='polyline' && el.type!=='rect' && el.type!=='circle' && el.type!=='busbar' ? `<div class="pr"><div class="pl">Scară (Mărime)</div><input class="pi" type="number" id="p-scale" step="0.1" min="0.1" max="10" value="${el.scale||1}"></div>` : ''}
+        ${el.type==='text' ? `<div class="pr"><div class="pl">Dimensiune Text (px)</div><input class="pi" type="number" id="p-fsize" min="5" max="100" value="${el.fontSize||10}"></div>` : ''}
         ${shapeProps}${lineProps}${arrowProps}${consumatoriHtml}
       </div>
       ${labelsHtml}${celMTHtml}${ptabMonoHtml}${baraStatieHtml}${firidaHtml}${circuitHtml}
