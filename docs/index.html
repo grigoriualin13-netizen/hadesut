@@ -2324,7 +2324,19 @@ function updateProps(){
         }
         render(); updateProps();
     });
-    document.getElementById('p-coex-replace')?.addEventListener('change', ev => { el.coexReplace = ev.target.value; });
+    document.getElementById('p-coex-replace')?.addEventListener('change', ev => {
+      el.coexReplace = ev.target.value;
+      if (ev.target.value) {
+        saveState('inlocuire stalp coexistenta');
+        // Save original type before replacing
+        if (!el.coexOrigType) el.coexOrigType = el.type;
+        const typeMap = { 'SE4':'stalp_se4', 'SE10':'stalp_se10', 'SC10002':'stalp_sc10002', 'SC10005':'stalp_sc10005', 'Stâlp Rotund':'stalp_rotund' };
+        if (typeMap[ev.target.value]) {
+          el.type = typeMap[ev.target.value];
+          render(); updateProps();
+        }
+      }
+    });
     if(el.type==='meter') document.getElementById('p-bmpt')?.addEventListener('input',ev=>updSel('bmptText',ev.target.value));
     document.getElementById('p-scale')?.addEventListener('input', ev => { const v = parseFloat(ev.target.value); if(v > 0) { el.scale = v; updateConnectedCables(el); render(); } });
     document.getElementById('p-fsize')?.addEventListener('input', ev => { const v = parseInt(ev.target.value); if(v > 0) { el.fontSize = v; render(); } });
@@ -4902,9 +4914,11 @@ async function generateFS(previewOnly) {
     // CASE: Prelungire circuit existent cu stalpi noi proiectati
     // Trigger: sursa e un stalp existent, urmat de stalpi noi proiectati + bransament
     // ══════════════════════════════════════════════
-    // Prefer stalp source over CD when we have new stalpi (extensie retea)
+    // Determine primary source type
+    const cdSource = sourceEls.find(s => !s.isStalp);
     const stalpSource = sourceEls.find(s => s.isStalp);
-    const srcIsStalp = !!stalpSource;
+    // srcIsStalp only if there's NO CD/PT source — CD always takes priority
+    const srcIsStalp = !!stalpSource && !cdSource;
     if (srcIsStalp && nrStalpiNoi > 0) {
       // Move stalp source to first position
       const idx = sourceEls.indexOf(stalpSource);
@@ -5168,63 +5182,153 @@ async function generateFS(previewOnly) {
           tipReteaExist = (ec.tipConductor === 'Cablu Al' || ec.tipConductor === 'Cablu Cu') ? 'LES' : 'LEA';
         }
 
-        // Rewrite intro with "extinderea retelei existente"
-        text = `Alimentarea cu energie electrica a obiectivului se va realiza prin extinderea retelei existente de tip ${tipReteaExist}`;
-        if (conductorExist) text += ` (${conductorExist})`;
-        if (src.circuit) text += `, circuit ${src.circuit}`;
-        text += ` astfel:`;
+        // Use appropriate intro based on source type
+        if (src.isStalp) {
+          // Source is existing stalp — extending existing network
+          text = `Alimentarea cu energie electrica a obiectivului se va realiza prin extinderea retelei existente de tip ${tipReteaExist}`;
+          if (conductorExist) text += ` (${conductorExist})`;
+          if (src.circuit) text += `, circuit ${src.circuit}`;
+          text += ` astfel:`;
+        } else {
+          // Source is CD/PT — new circuit
+          text = `Alimentarea cu energie electrica a obiectivului se va realiza pe joasa tensiune astfel: `;
+          text += `${getSourcePrefix(src.el, src.ptLabel || ptName)}`;
+          if (src.circuit) text += `, circuit ${src.circuit}`;
+          text += `,`;
+        }
 
-        // Trace chain: source → cable → FG1 → cable → FG2 → ...
+        // Build full route through ALL elements (stalpi + firide), not just firide
         const srcNodeId = srcElId;
         const srcNodeLabel = src.el ? (src.el.label || '') : '';
-        const firidaChain = [];
-        const visitedChain = new Set([srcNodeId]);
 
-        function traceChain(nodeId, nodeLabel) {
-          cabluriCircuit.forEach(cn => {
-            const otherId = cn.fromElId === nodeId ? cn.toElId : (cn.toElId === nodeId ? cn.fromElId : null);
-            if (!otherId || visitedChain.has(otherId)) return;
-            const otherEl = EL.find(e => e.id === otherId);
-            if (!otherEl || !otherEl.type.startsWith('firida_')) return;
-            visitedChain.add(otherId);
-            firidaChain.push({ firida: otherEl, cable: cn, fromLabel: nodeLabel });
-            traceChain(otherId, otherEl.label || getFiridaTypeName(otherEl));
+        // Build adjacency from circuit cables
+        const chainAdj = {};
+        const chainDeg = {};
+        cabluriCircuit.forEach(cn => {
+          const a = String(cn.fromElId), b = String(cn.toElId);
+          if (!chainAdj[a]) chainAdj[a] = [];
+          if (!chainAdj[b]) chainAdj[b] = [];
+          chainAdj[a].push({ to: b, cable: cn });
+          chainAdj[b].push({ to: a, cable: cn });
+          chainDeg[a] = (chainDeg[a] || 0) + 1;
+          chainDeg[b] = (chainDeg[b] || 0) + 1;
+        });
+
+        // DFS from source to trace all branches (handles tree topology, not just linear chain)
+        const chainStart = String(srcNodeId);
+        const getChainLabel = (id) => { const el = EL.find(e => e.id === Number(id)); return el ? (el.label || el.type) : ''; };
+        const getChainEl = (id) => EL.find(e => e.id === Number(id));
+        const chainVisited = new Set();
+
+        // Collect all paths from source to leaf nodes using DFS
+        const allPaths = [];
+        function dfsTrace(nodeId, currentPath, currentCables) {
+          const neighbors = (chainAdj[nodeId] || []).filter(n => !chainVisited.has(n.cable.id));
+          if (neighbors.length === 0) {
+            // Leaf node — save this path
+            allPaths.push({ route: [...currentPath], cables: [...currentCables] });
+            return;
+          }
+          neighbors.forEach((nb, ni) => {
+            chainVisited.add(nb.cable.id);
+            currentPath.push(nb.to);
+            currentCables.push(nb.cable);
+            if (neighbors.length > 1 && ni > 0) {
+              // Branch point — start a new path from the branch point
+              allPaths.push({ route: [...currentPath.slice(0, -1)], cables: [...currentCables.slice(0, -1)], continues: true });
+              // Continue DFS but as a separate segment description
+            }
+            dfsTrace(nb.to, currentPath, currentCables);
+            currentPath.pop();
+            currentCables.pop();
           });
         }
-        traceChain(srcNodeId, srcNodeLabel);
 
-        // Fallback if chain not found
-        if (firidaChain.length === 0) {
-          firideleProiectate.forEach(fg => {
-            firidaChain.push({ firida: fg, cable: cabluriCircuit[0], fromLabel: srcNodeLabel });
+        // Simpler approach: find all paths from source to each firida leaf
+        // First do a BFS/DFS to get the full tree structure, then describe each branch
+        const allChainNodes = new Set();
+        const chainVisitedCables = new Set();
+        const chainRoute = [chainStart]; const chainCables = [];
+
+        // Walk main path first (longest or first), then describe branches
+        function walkTree(nodeId) {
+          const nbs = (chainAdj[nodeId] || []).filter(n => !chainVisitedCables.has(n.cable.id));
+          // Sort: prefer non-firida first (walk through stalpi first, firide are branches)
+          nbs.sort((a, b) => {
+            const aEl = getChainEl(a.to);
+            const bEl = getChainEl(b.to);
+            const aIsFirida = aEl && aEl.type.startsWith('firida_') ? 1 : 0;
+            const bIsFirida = bEl && bEl.type.startsWith('firida_') ? 1 : 0;
+            return aIsFirida - bIsFirida;
+          });
+          nbs.forEach(nb => {
+            chainVisitedCables.add(nb.cable.id);
+            chainRoute.push(nb.to);
+            chainCables.push(nb.cable);
+            allChainNodes.add(nb.to);
+            walkTree(nb.to);
           });
         }
+        allChainNodes.add(chainStart);
+        walkTree(chainStart);
 
-        // Describe each segment
-        firidaChain.forEach((seg, idx) => {
-          const fgLabel = seg.firida.label || getFiridaTypeName(seg.firida);
-          const segDescs = describeCableGroup([seg.cable]);
-          if (idx === 0) {
-            text += ` din ${seg.fromLabel} se va poza ${segDescs.join(', ')} pana la o ${fgLabel} proiectata si montata pe soclu de beton`;
+        // Group consecutive segments by cable type, but break at firide (each firida must be mentioned)
+        const chainGroups = [];
+        chainCables.forEach((cn, i) => {
+          const name = getCableOfficialName(cn.tipConductor || 'Torsadat Al', cn.sectiune || 16, cn.tipRetea || 'Trifazat');
+          const fromEl = getChainEl(chainRoute[i]);
+          const toEl = getChainEl(chainRoute[i + 1]);
+          const fromIsFirida = fromEl && fromEl.type.startsWith('firida_');
+          const toIsFirida = toEl && toEl.type.startsWith('firida_');
+          const last = chainGroups[chainGroups.length - 1];
+          // Don't merge if current segment starts or ends at a firida
+          if (last && last.name === name && !fromIsFirida && !toIsFirida) {
+            last.totalLen += parseFloat(cn.length) || 0;
+            last.endIdx = i + 1;
           } else {
-            text += `. Din ${seg.fromLabel} se va poza ${segDescs.join(', ')} pana la o ${fgLabel} proiectata si montata pe soclu de beton`;
+            chainGroups.push({ name, cc: getConductorOrCablu(name), totalLen: parseFloat(cn.length) || 0, startIdx: i, endIdx: i + 1 });
+          }
+        });
+
+        // Build segment-by-segment text
+        chainGroups.forEach((g, gi) => {
+          const fromLbl = getChainLabel(chainRoute[g.startIdx]);
+          const toLbl = getChainLabel(chainRoute[g.endIdx]);
+          const toEl = getChainEl(chainRoute[g.endIdx]);
+          const isFirida = toEl && toEl.type.startsWith('firida_');
+          // Build intermediate route labels for this group
+          const grpLabels = [];
+          for (let ri = g.startIdx; ri <= g.endIdx; ri++) {
+            const lbl = getChainLabel(chainRoute[ri]);
+            if (lbl) grpLabels.push(lbl);
+          }
+          const grpRouteText = grpLabels.join(' - ');
+
+          if (gi === 0) {
+            text += ` din ${fromLbl} se va poza ${g.cc} tip ${g.name} in lungime de ${g.totalLen.toFixed(0)} m pana la ${isFirida ? 'o ' : ''}${toLbl}${isFirida ? ' proiectata si montata pe soclu de beton' : ''}`;
+          } else {
+            const hasMultipleStops = grpLabels.length > 2;
+            text += `. Din ${fromLbl} pana la ${isFirida ? 'o ' : ''}${toLbl}${isFirida ? ' proiectata si montata pe soclu de beton' : ''} se va poza ${g.cc} tip ${g.name} in lungime de ${g.totalLen.toFixed(0)} m`;
+            if (hasMultipleStops && !isFirida) text += ` pe stalpi existenti intre ${grpRouteText}`;
           }
         });
         text += '.';
 
-        // Bransamente per firida
+        // Bransamente per firida/stalp — find all elements in chain that have BMPT connections
         const firidaBrans = [];
-        firidaChain.forEach(seg => {
-          const fgId = seg.firida.id;
-          const fgLabel = seg.firida.label || getFiridaTypeName(seg.firida);
+        [...allChainNodes].forEach(nodeId => {
+          const numId = Number(nodeId);
+          const nodeEl = EL.find(e => e.id === numId);
+          if (!nodeEl) return;
+          const nodeLabel = nodeEl.label || (nodeEl.type.startsWith('firida_') ? getFiridaTypeName(nodeEl) : nodeEl.type);
           const brans = [];
           cabluriBransament.forEach(cn => {
-            const otherId = cn.fromElId === fgId ? cn.toElId : (cn.toElId === fgId ? cn.fromElId : null);
+            const otherId = cn.fromElId === numId ? cn.toElId : (cn.toElId === numId ? cn.fromElId : null);
             if (!otherId) return;
             const otherEl = EL.find(e => e.id === otherId);
             if (otherEl && otherEl.type === 'meter') brans.push({ bmpt: otherEl, cable: cn });
           });
-          if (brans.length > 0) firidaBrans.push({ fgLabel, brans });
+          if (brans.length > 0) firidaBrans.push({ fgLabel: nodeLabel, brans, isFirida: nodeEl.type.startsWith('firida_') });
         });
 
         if (firidaBrans.length > 0) {
@@ -5359,12 +5463,52 @@ async function generateFS(previewOnly) {
         }
       });
 
-      // Bransament
-      text += `. Din ${branStalpLabel || 'ultimul stalp'}`;
-      const branDescs = describeCableGroup(cabluriBransament);
-      text += ` se va realiza un bransament cu ${branDescs.join(', ')}`;
-      if (bmptText) text += `, pana la ${bmptText}`;
-      text += '.';
+      // Bransamente — group per source stalp
+      const branPerStalp = {};
+      cabluriBransament.forEach(cn => {
+        const fromEl = EL.find(e => e.id === cn.fromElId);
+        const toEl = EL.find(e => e.id === cn.toElId);
+        const bmpt = (fromEl && fromEl.type === 'meter') ? fromEl : toEl;
+        const srcEl = (fromEl && fromEl.type === 'meter') ? toEl : fromEl;
+        if (!bmpt || !srcEl) return;
+        const srcLabel = srcEl.label || srcEl.type;
+        if (!branPerStalp[srcLabel]) branPerStalp[srcLabel] = [];
+        branPerStalp[srcLabel].push({ bmpt, cable: cn, srcEl });
+      });
+
+      const stalpKeys = Object.keys(branPerStalp);
+      if (stalpKeys.length === 1 && branPerStalp[stalpKeys[0]].length === 1) {
+        // Single bransament from single stalp
+        const b = branPerStalp[stalpKeys[0]][0];
+        const bmptLabel = b.bmpt.bmptText || b.bmpt.label || 'BMPT';
+        const bDescs = describeCableGroup([b.cable]);
+        const bLen = parseFloat(b.cable.length) || 0;
+        const isFirida = b.srcEl && b.srcEl.type.startsWith('firida_');
+        text += `. Din ${stalpKeys[0]} se va realiza un bransament cu ${bDescs.join(', ')}, pana la un ${bmptLabel} montat ${getBMPTLocation(bLen, isFirida)}.`;
+      } else {
+        // Multiple bransamente
+        text += '.\nBransamente:';
+        stalpKeys.forEach(srcLabel => {
+          const brans = branPerStalp[srcLabel];
+          const isFirida = brans[0].srcEl && brans[0].srcEl.type.startsWith('firida_');
+          if (brans.length === 1) {
+            const b = brans[0];
+            const bmptLabel = b.bmpt.bmptText || b.bmpt.label || 'BMPT';
+            const bDescs = describeCableGroup([b.cable]);
+            const bLen = parseFloat(b.cable.length) || 0;
+            text += `\nDin ${srcLabel} se va realiza 1 bransament cu ${bDescs.join(', ')} pana la un ${bmptLabel} montat ${getBMPTLocation(bLen, isFirida)}.`;
+          } else {
+            text += `\nDin ${srcLabel} se vor realiza ${brans.length} bransamente astfel:`;
+            brans.forEach(b => {
+              const bmptLabel = b.bmpt.bmptText || b.bmpt.label || 'BMPT';
+              const cableName = getCableOfficialName(b.cable.tipConductor || 'Cablu Al', b.cable.sectiune || 16, b.cable.tipRetea || 'Trifazat');
+              const tipCC = getConductorOrCablu(cableName);
+              const len = parseFloat(b.cable.length) || 0;
+              text += `\n- ${tipCC} tip ${cableName} in lungime de ${len.toFixed(0)} m pana la un ${bmptLabel} montat ${getBMPTLocation(len, isFirida)}.`;
+            });
+          }
+        });
+      }
       return text;
     }
 
@@ -5693,7 +5837,36 @@ async function generateFS(previewOnly) {
             });
             const comunCircText = existCircOnRoute.size > 0 ? ` comuni cu circuit ${[...existCircOnRoute].join(', ')}` : '';
 
-            let extText = `${srcPrefix}${circuit ? ', circuit ' + circuit : ''} se va realiza un circuit nou cu ${descs.join(', ')} pe stalpi existenti${comunCircText} intre ${routeText}`;
+            // Group consecutive segments by cable type
+            const extGroups = [];
+            rCables.forEach((cn, i) => {
+              const name = getCableOfficialName(cn.tipConductor || 'Torsadat Al', cn.sectiune || 16, cn.tipRetea || 'Trifazat');
+              const last = extGroups[extGroups.length - 1];
+              if (last && last.name === name) {
+                last.totalLen += parseFloat(cn.length) || 0;
+                last.endIdx = i + 1;
+              } else {
+                extGroups.push({ name, cc: getConductorOrCablu(name), totalLen: parseFloat(cn.length) || 0, startIdx: i, endIdx: i + 1 });
+              }
+            });
+
+            let extText = `${srcPrefix}${circuit ? ', circuit ' + circuit : ''} se va realiza un circuit nou`;
+            extGroups.forEach((g, gi) => {
+              const fromLbl = getElLabelExt(route[g.startIdx]);
+              const toLbl = getElLabelExt(route[g.endIdx]);
+              // Build full route for this group
+              const grpRouteLabels = [];
+              for (let ri = g.startIdx; ri <= g.endIdx; ri++) {
+                const lbl = getElLabelExt(route[ri]);
+                if (lbl) grpRouteLabels.push(lbl);
+              }
+              const grpRouteText = grpRouteLabels.join(' - ');
+              if (gi === 0) {
+                extText += ` cu ${g.cc} tip ${g.name} in lungime de ${g.totalLen.toFixed(0)} m pana la ${toLbl}`;
+              } else {
+                extText += `, din ${fromLbl} pana la ${toLbl} se va poza ${g.cc} tip ${g.name} in lungime de ${g.totalLen.toFixed(0)} m pe stalpi existenti${comunCircText} intre ${grpRouteText}`;
+              }
+            });
             if (existCircOnRoute.size > 0) {
               extText += `, prin care se vor prelua parte din consumatorii existenti de pe circuit ${[...existCircOnRoute].join(', ')}`;
             }
@@ -6131,7 +6304,7 @@ async function generateFS(previewOnly) {
           if (coexEls.length === 0) return [p('________')];
           const tipOriginal = { stalp_se4:'SE4', stalp_se10:'SE10', stalp_sc10002:'SC10002', stalp_sc10005:'SC10005', stalp_rotund:'Stâlp Rotund', stalp_rotund_special:'Stâlp Rotund Special', stalp_cs:'SCS' };
           const lines = coexEls.map(e => {
-            const origType = tipOriginal[e.type] || e.type;
+            const origType = tipOriginal[e.coexOrigType || e.type] || e.coexOrigType || e.type;
             return `Necesar inlocuire stalp existent ${e.label || ''} tip ${origType} cu stalp tip ${e.coexReplace}.`;
           });
           return [pb('Lucrări de coexistență:', { size: sb }), ...lines.map(ln => p(ln))];
