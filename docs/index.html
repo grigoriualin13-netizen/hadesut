@@ -9,6 +9,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/svg2pdf.js/2.2.3/svg2pdf.umd.min.js"></script>
 <script src="docx.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="fc_template.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
 <style>
@@ -827,6 +829,7 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
       <button onclick="closeFSModal()" style="padding:6px 12px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:11px;">ANULEAZĂ</button>
       <button onclick="previewFS()" style="padding:6px 14px;border-radius:4px;border:none;background:#2ecc71;color:#000;cursor:pointer;font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:11px;">👁 PREVIZUALIZARE</button>
       <button onclick="generateFS()" style="padding:6px 14px;border-radius:4px;border:none;background:#ff9f43;color:#000;cursor:pointer;font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:11px;">📄 GENEREAZĂ DOCX</button>
+      <button onclick="generateFC()" style="padding:6px 14px;border-radius:4px;border:none;background:#00cfff;color:#000;cursor:pointer;font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:11px;">📊 FIȘĂ CALCUL XLSX</button>
     </div>
   </div>
 
@@ -4391,6 +4394,245 @@ function copyAllPreview() {
   navigator.clipboard.writeText(all).then(() => toast('Tot textul copiat!', 'ok')).catch(() => {
     const tmp = document.createElement('textarea'); tmp.value = all; document.body.appendChild(tmp); tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp); toast('Tot textul copiat!', 'ok');
   });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FIȘA DE CALCUL (FC) — generator xlsx pe modelul FISA_CALCUL.xlsm Delgaz
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Catalog master FC CALCUL — pozițiile relevante pentru auto-mapare din schemă.
+// Prețurile sunt conform FISA_CALCUL.xlsm (contr. 22.07.2024 / Costuri Specifice 2021).
+const FC_CATALOG = [
+  // Branșamente aerian mono
+  { poz:1, cat:'Brans.mono. radial aerian', den:'Branşament monofazat aerian standard', um:'buc', pu:1340.00 },
+  { poz:2, cat:'Brans.mono. radial aerian', den:'Branşament monofazat aerian - deschidere suplimentară', um:'buc', pu:1810.00 },
+  // Branșamente subteran mono
+  { poz:4, cat:'Brans.mono. radial subteran', den:'Branşament monofazat subteran standard L ≤ 20 m din LEA', um:'buc', pu:2060.00 },
+  { poz:5, cat:'Brans.mono. radial subteran', den:'Branşament monofazat subteran standard L ≤ 20 m din firidă', um:'buc', pu:1820.00 },
+  { poz:6, cat:'Brans.mono. radial subteran', den:'Branşament monofazat subteran - creşterea lungimii cu 1 m faţă de L = 20 m', um:'m', pu:60.00 },
+  // Branșamente aerian trif
+  { poz:7, cat:'Brans.trif. radial aerian', den:'Branşament trifazat aerian standard', um:'buc', pu:1460.00 },
+  { poz:8, cat:'Brans.trif. radial aerian', den:'Branşament trifazat aerian - deschidere suplimentară', um:'buc', pu:1930.00 },
+  // Branșamente subteran trif
+  { poz:10, cat:'Brans.trif. radial subteran', den:'Branşament trifazat subteran standard L≤ 20m din LEA', um:'buc', pu:2430.00 },
+  { poz:11, cat:'Brans.trif. radial subteran', den:'Branşament trifazat subteran standard L≤ 20m din firida S≤ 20 KVA', um:'buc', pu:2060.00 },
+  { poz:12, cat:'Brans.trif. radial subteran', den:'Branşament trifazat subteran standard L≤ 20m din firida 20KVA<S≤30 KVA', um:'buc', pu:2200.00 },
+  { poz:13, cat:'Brans.trif. radial subteran', den:'Branşament trifazat subteran - creşterea lungimii cu 1 m faţă de L = 20 m', um:'m', pu:70.00 },
+  // Extinderi rețele JT
+  { poz:37, cat:'Costuri Specifice 2021', den:'Extinderi - reţele electrice noi LEA JT', um:'km', pu:194598.49 },
+  { poz:38, cat:'Costuri Specifice 2021', den:'Extinderi - reţele electrice noi LES JT', um:'km', pu:257401.72 },
+  { poz:40, cat:'Costuri Specifice 2021', den:'Extinderi retele noi pe stilpi existenti LEA JT', um:'km', pu:77839.40 },
+  // Înlocuiri conductor
+  { poz:43, cat:'Costuri Specifice 2021', den:'Inlocuire conductor torsadat 95mm 1 KM traseu LEA 0.4 KV', um:'km', pu:176583.77 },
+  // Înlocuiri stâlpi JT (fără material)
+  { poz:47, cat:'Costuri Specifice 2021', den:'Înlocuire stâlp de JT de beton SE4 (fara material)', um:'buc', pu:7232.21 },
+  { poz:48, cat:'Costuri Specifice 2021', den:'Înlocuire stâlp de JT de beton SE 10 (fara material)', um:'buc', pu:10895.40 },
+];
+
+function fcFindPoz(pozId) { return FC_CATALOG.find(p => p.poz === pozId); }
+
+// Lungime cablu (m) cu fallback pe calc din puncte
+function fcCableLenM(cn) {
+  if (cn.length != null && !isNaN(parseFloat(cn.length))) return parseFloat(cn.length);
+  if (cn.pts && cn.pts.length >= 2) return calcPathLen(cn.pts) / pxPerMeter;
+  return 0;
+}
+
+// Clasifică un cablu: aerian|subteran (după tipConductor)
+function fcCableAerian(cn) {
+  const tc = (cn.tipConductor || '').toLowerCase();
+  return tc.includes('torsadat') || tc.includes('clasic');
+}
+
+// Clasifică mono/trif — din BMPT text sau tipRetea
+function fcIsMono(cn, bmptEl) {
+  if (bmptEl && bmptEl.bmptText) {
+    const t = bmptEl.bmptText.toUpperCase();
+    if (t.includes('BMPM')) return true;
+    if (t.includes('BMPT')) return false;
+  }
+  return cn.tipRetea === 'Monofazat';
+}
+
+function fcFromFirida(cn, bmptEl) {
+  if (!bmptEl) return false;
+  const otherId = cn.fromElId === bmptEl.id ? cn.toElId : cn.fromElId;
+  const other = EL.find(e => e.id === otherId);
+  return !!(other && other.type && other.type.startsWith('firida_'));
+}
+
+// Calculează deschiderile suplimentare pentru branșament aerian:
+// standard = ≤30m fără stâlp intermediar; fiecare deschidere suplimentară = +1 SE4 + până la 40m conductor.
+// Numărăm stâlpii SE4 intermediari între sursă și BMPT pe traseul cablului.
+function fcDeschideriSupl(cn, bmptEl, lenM) {
+  // Detectează stâlpi SE4 intermediari cu stare proiectat (racordare) în traseul branșamentului
+  const otherId = cn.fromElId === bmptEl.id ? cn.toElId : cn.fromElId;
+  const other = EL.find(e => e.id === otherId);
+  const sePrintermediari = EL.filter(e =>
+    e.type === 'stalp_se4' && e.stare === 'proiectat_racordare' && e.id !== otherId
+  );
+  // Dacă avem mai mulți SE4 proiectați, numărăm doar pe cei din aproapiere (simplificare MVP)
+  // Fallback: dedus din lungime (peste 30m → (L-30)/40 rotunjit în sus)
+  if (sePrintermediari.length === 0) {
+    if (lenM <= 30) return 0;
+    return Math.ceil((lenM - 30) / 40);
+  }
+  return sePrintermediari.length;
+}
+
+// Computes quantities from schema → returnează Map<pozId, cantitate>
+function computeCantitatiFC() {
+  const q = new Map();
+  const add = (pozId, n) => { if (!n) return; q.set(pozId, (q.get(pozId) || 0) + n); };
+
+  // Cabluri de luat în calcul: stare proiectat_racordare sau intarire_*
+  const cabluri = CN.filter(cn => cn.stare === 'proiectat_racordare' || cn.stare === 'intarire_nou' || cn.stare === 'intarire_inlocuire');
+
+  cabluri.forEach(cn => {
+    const fromEl = EL.find(e => e.id === cn.fromElId);
+    const toEl = EL.find(e => e.id === cn.toElId);
+    const isBrans = (fromEl && fromEl.type === 'meter') || (toEl && toEl.type === 'meter');
+    const lenM = fcCableLenM(cn);
+
+    if (isBrans) {
+      const bmptEl = fromEl && fromEl.type === 'meter' ? fromEl : toEl;
+      const aerian = fcCableAerian(cn);
+      const mono = fcIsMono(cn, bmptEl);
+      const fromFirida = fcFromFirida(cn, bmptEl);
+
+      if (aerian) {
+        if (mono) { add(1, 1); add(2, fcDeschideriSupl(cn, bmptEl, lenM)); }
+        else     { add(7, 1); add(8, fcDeschideriSupl(cn, bmptEl, lenM)); }
+      } else {
+        // subteran — standard ≤20m + metri suplimentari
+        const supl = Math.max(0, lenM - 20);
+        if (mono) {
+          if (fromFirida) { add(5, 1); } else { add(4, 1); }
+          add(6, Math.round(supl));
+        } else {
+          if (fromFirida) { add(11, 1); } else { add(10, 1); }
+          add(13, Math.round(supl));
+        }
+      }
+    } else {
+      // Circuit — aerian/subteran × pe stâlpi existenți/noi × înlocuire/extindere
+      const aerian = fcCableAerian(cn);
+      const km = lenM / 1000;
+
+      if (cn.stare === 'intarire_inlocuire' && aerian) {
+        add(43, km); // înlocuire torsadat LEA 0.4kV
+      } else if (aerian) {
+        // extindere aeriană: pe stâlpi noi sau existenți?
+        const stPe = [fromEl, toEl].filter(e => e && e.type && e.type.startsWith('stalp_'));
+        const areStalpProiectat = stPe.some(e => e.stare === 'proiectat_racordare' || e.stare === 'intarire_nou');
+        if (areStalpProiectat) add(37, km); else add(40, km);
+      } else {
+        // extindere subterană
+        add(38, km);
+      }
+    }
+  });
+
+  // Stâlpi SE4/SE10 înlocuiți (stare intarire_inlocuire pe element)
+  EL.forEach(e => {
+    if (e.stare === 'intarire_inlocuire') {
+      if (e.type === 'stalp_se4') add(47, 1);
+      else if (e.type === 'stalp_se10') add(48, 1);
+    }
+  });
+
+  return q;
+}
+
+async function generateFC() {
+  if (!window.ExcelJS) { toast('ExcelJS nu e încărcat!', ''); return; }
+  if (!window.FC_TEMPLATE_B64) { toast('Template FC nu e încărcat (fc_template.js)!', ''); return; }
+  toast('Generez Fișa de Calcul...', 'ac');
+
+  // Decode template base64 → ArrayBuffer
+  const binStr = atob(window.FC_TEMPLATE_B64);
+  const buf = new ArrayBuffer(binStr.length);
+  const bytes = new Uint8Array(buf);
+  for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+
+  // Load template (păstrează toate stilurile: culori, borduri, font-uri, merges)
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buf);
+
+  const dePrintat = wb.getWorksheet('DE PRINTAT');
+  const fcCalcul  = wb.getWorksheet('FC CALCUL');
+
+  // Header client (DE PRINTAT C1/C2/C3)
+  const beneficiar = (document.getElementById('fs-beneficiar')||{}).value || '';
+  const atr        = (document.getElementById('fs-nr')||{}).value || '';
+  const localitate = (document.getElementById('fs-localitate')||{}).value || '';
+  if (dePrintat) {
+    dePrintat.getCell('C1').value = beneficiar;
+    dePrintat.getCell('C2').value = atr;
+    dePrintat.getCell('C3').value = localitate;
+  }
+
+  // Scrie cantitățile în FC CALCUL!G{row} (poz P → rând P+9)
+  const q = computeCantitatiFC();
+  if (fcCalcul) {
+    q.forEach((cant, pozId) => {
+      const rowNum = pozId + 9;
+      fcCalcul.getCell(`G${rowNum}`).value = cant;
+    });
+  }
+
+  // Reproduce VBA Worksheet_Activate: ascunde rândurile cu cantitate 0 + renumerotează coloana A
+  // Verificăm direct în FC CALCUL G{i} (pentru A), Spargeri G{i-96} (B), AVIZE C{i-113} (C)
+  if (dePrintat) {
+    const spargeri = wb.getWorksheet('Spargeri si refacere carosabil');
+    const avize    = wb.getWorksheet('AVIZE SI ACORDURI');
+    const readNum = v => {
+      if (v == null) return 0;
+      if (typeof v === 'object' && 'result' in v) v = v.result;
+      const n = parseFloat(v);
+      return isNaN(n) ? 0 : n;
+    };
+    const sections = [
+      { start:10,  end:94,  prefix:'A.', source:(i)=> fcCalcul ? readNum(fcCalcul.getCell(`G${i}`).value) : 0 },
+      { start:99,  end:115, prefix:'B.', source:(i)=> spargeri ? readNum(spargeri.getCell(`G${i-96}`).value) : 0 },
+      { start:120, end:141, prefix:'C.', source:(i)=> {
+          if (!avize) return 0;
+          const v = avize.getCell(`C${i-113}`).value;
+          return v && String(v).trim() ? 1 : 0;
+        } },
+    ];
+    sections.forEach(s => {
+      let n = 1;
+      for (let i = s.start; i <= s.end; i++) {
+        const row = dePrintat.getRow(i);
+        const hasCant = s.source(i) > 0;
+        if (hasCant) {
+          row.hidden = false;
+          row.getCell(1).value = s.prefix + n;
+          n++;
+        } else {
+          row.hidden = true;
+        }
+      }
+    });
+  }
+
+  // Force Excel să recalculeze formulele la deschidere (altfel cached results din template rămân)
+  wb.calcProperties = wb.calcProperties || {};
+  wb.calcProperties.fullCalcOnLoad = true;
+
+  // Save ca xlsx → Blob → download
+  const outBuf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([outBuf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const fname = `Fisa_Calcul_${(beneficiar||'client').replace(/[^\w-]/g,'_')}_${new Date().toISOString().slice(0,10)}.xlsx`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 100);
+
+  toast('Fișa de Calcul generată ✓', 'ok');
 }
 
 async function generateFS(previewOnly) {
