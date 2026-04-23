@@ -334,6 +334,7 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
     height:auto !important; overflow:visible !important; background:white !important;
     -webkit-print-color-adjust:exact !important;
     print-color-adjust:exact !important;
+    color-adjust:exact !important;
   }
   body.pros-printing > *:not(#prosumator-panel){display:none !important;}
   body.pros-printing #prosumator-panel{
@@ -5419,8 +5420,9 @@ function load(inp){
 
 window.addEventListener('keydown',e=>{
   shiftOn=e.shiftKey;
-  const inp=document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='TEXTAREA';
-  if(e.ctrlKey||e.metaKey){
+  const ae=document.activeElement;
+  const inp=ae && (ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.isContentEditable);
+  if((e.ctrlKey||e.metaKey) && !inp){
     if(e.key==='z'){e.preventDefault();undo();return;}
     if(e.key==='y'){e.preventDefault();redo();return;}
     if(e.key==='c'){e.preventDefault();copyEl();return;}
