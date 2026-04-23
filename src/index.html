@@ -114,6 +114,9 @@ html[data-theme="light"]{
 .ps-container{background:var(--panel);border:1px solid var(--border2);border-radius:16px;padding:32px;min-width:500px;max-width:600px;max-height:80vh;display:flex;flex-direction:column;gap:20px;box-shadow:0 12px 48px var(--shadow)}
 .ps-title{font-size:28px;font-weight:800;color:var(--accent);text-align:center;letter-spacing:1px}
 .ps-subtitle{font-size:12px;color:var(--text3);text-align:center;margin-top:-12px}
+.ps-search{width:100%;height:36px;padding:0 12px 0 34px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23808080' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>") no-repeat 10px center;background-size:14px 14px;color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:13px;outline:none;transition:border-color .15s;box-sizing:border-box}
+.ps-search:focus{border-color:var(--accent)}
+.ps-search::placeholder{color:var(--text3)}
 .ps-list{display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:400px;padding-right:4px}
 .ps-item{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s}
 .ps-item:hover{border-color:var(--accent);background:var(--panel2);box-shadow:0 0 12px rgba(0,207,255,.1)}
@@ -5417,8 +5420,9 @@ function load(inp){
 
 window.addEventListener('keydown',e=>{
   shiftOn=e.shiftKey;
-  const inp=document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='TEXTAREA';
-  if(e.ctrlKey||e.metaKey){
+  const ae=document.activeElement;
+  const inp=ae && (ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.isContentEditable);
+  if((e.ctrlKey||e.metaKey) && !inp){
     if(e.key==='z'){e.preventDefault();undo();return;}
     if(e.key==='y'){e.preventDefault();redo();return;}
     if(e.key==='c'){e.preventDefault();copyEl();return;}
@@ -8545,8 +8549,9 @@ function hideProjectScreen() {
   document.getElementById('project-screen').classList.add('hidden');
 }
 
+var _psProjects = [];
+
 function refreshProjectList() {
-  var listEl = document.getElementById('ps-list');
   var recoveryEl = document.getElementById('ps-recovery');
 
   // Check for auto-save recovery
@@ -8591,34 +8596,60 @@ function refreshProjectList() {
       }
     });
 
-    var projects = Object.values(merged);
-    projects.sort(function(a, b) { return b.updatedAt - a.updatedAt; });
+    _psProjects = Object.values(merged);
+    _psProjects.sort(function(a, b) { return b.updatedAt - a.updatedAt; });
 
-    if (projects.length === 0) {
-      listEl.innerHTML = '<div class="ps-empty">Niciun proiect salvat încă.<br>Creează un proiect nou sau încarcă un fișier JSON.</div>';
-      return;
+    // Show/hide search based on count; reset query on reload
+    var searchEl = document.getElementById('ps-search-input');
+    if (_psProjects.length >= 2) {
+      searchEl.style.display = '';
+      searchEl.value = '';
+    } else {
+      searchEl.style.display = 'none';
     }
-    listEl.innerHTML = '';
-    projects.forEach(function(p) {
-      var date = new Date(p.updatedAt);
-      var dateStr = date.toLocaleDateString('ro-RO') + ' ' + date.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
-      var elCount = p.data && p.data.EL ? p.data.EL.length : 0;
-      var cnCount = p.data && p.data.CN ? p.data.CN.length : 0;
-      var isCurrent = p.id === currentProjectId;
-      var sourceIcon = p.source === 'cloud' ? ' ☁' : p.source === 'both' ? ' ☁💾' : ' 💾';
+    renderProjectList();
+  });
+}
 
-      var div = document.createElement('div');
-      div.className = 'ps-item';
-      if (isCurrent) div.style.borderColor = 'var(--accent)';
-      div.innerHTML = '<div class="ps-item-info">' +
-        '<div class="ps-item-name">' + p.name + sourceIcon + (isCurrent ? ' (deschis)' : '') + '</div>' +
-        '<div class="ps-item-meta">' + dateStr + '  |  ' + elCount + ' elem, ' + cnCount + ' conn</div>' +
-        '</div>' +
-        '<button class="ps-item-del" onclick="event.stopPropagation();renameProject(\'' + p.id + '\',\'' + p.name.replace(/'/g, "\\'") + '\')" title="Redenumește">✏</button>' +
-        '<button class="ps-item-del" onclick="event.stopPropagation();deleteProject(\'' + p.id + '\')" title="Șterge proiectul">✕</button>';
-      div.onclick = function() { openProject(p.id, p.source); };
-      listEl.appendChild(div);
-    });
+function renderProjectList() {
+  var listEl = document.getElementById('ps-list');
+  var searchEl = document.getElementById('ps-search-input');
+  var query = (searchEl && searchEl.value || '').trim().toLowerCase();
+
+  if (_psProjects.length === 0) {
+    listEl.innerHTML = '<div class="ps-empty">Niciun proiect salvat încă.<br>Creează un proiect nou sau încarcă un fișier JSON.</div>';
+    return;
+  }
+
+  var filtered = query
+    ? _psProjects.filter(function(p) { return (p.name || '').toLowerCase().indexOf(query) >= 0; })
+    : _psProjects;
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<div class="ps-empty">Niciun proiect nu se potrivește cu „' + query.replace(/</g, '&lt;') + '"</div>';
+    return;
+  }
+
+  listEl.innerHTML = '';
+  filtered.forEach(function(p) {
+    var date = new Date(p.updatedAt);
+    var dateStr = date.toLocaleDateString('ro-RO') + ' ' + date.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+    var elCount = p.data && p.data.EL ? p.data.EL.length : 0;
+    var cnCount = p.data && p.data.CN ? p.data.CN.length : 0;
+    var isCurrent = p.id === currentProjectId;
+    var sourceIcon = p.source === 'cloud' ? ' ☁' : p.source === 'both' ? ' ☁💾' : ' 💾';
+
+    var div = document.createElement('div');
+    div.className = 'ps-item';
+    if (isCurrent) div.style.borderColor = 'var(--accent)';
+    div.innerHTML = '<div class="ps-item-info">' +
+      '<div class="ps-item-name">' + p.name + sourceIcon + (isCurrent ? ' (deschis)' : '') + '</div>' +
+      '<div class="ps-item-meta">' + dateStr + '  |  ' + elCount + ' elem, ' + cnCount + ' conn</div>' +
+      '</div>' +
+      '<button class="ps-item-del" onclick="event.stopPropagation();renameProject(\'' + p.id + '\',\'' + p.name.replace(/'/g, "\\'") + '\')" title="Redenumește">✏</button>' +
+      '<button class="ps-item-del" onclick="event.stopPropagation();deleteProject(\'' + p.id + '\')" title="Șterge proiectul">✕</button>';
+    div.onclick = function() { openProject(p.id, p.source); };
+    listEl.appendChild(div);
   });
 }
 
@@ -9117,6 +9148,7 @@ window.onload = init;
     <div class="ps-title">ElectroCAD Pro</div>
     <div class="ps-subtitle">Selectează un proiect sau creează unul nou</div>
     <div id="ps-recovery" style="display:none" class="ps-recovery"></div>
+    <input id="ps-search-input" class="ps-search" type="text" placeholder="Caută proiect..." style="display:none" oninput="renderProjectList()">
     <div id="ps-list" class="ps-list"></div>
     <div class="ps-actions">
       <button class="ps-btn primary" onclick="newProject()">+ Proiect Nou</button>
