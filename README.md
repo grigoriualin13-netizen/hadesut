@@ -1,31 +1,55 @@
 # ElectroCAD Pro v12
 
-Aplicație profesională pentru proiectarea rețelelor electrice de distribuție de joasă și medie tensiune, cu analiză integrată pentru consumatori clasici și prosumatori (instalații fotovoltaice).
+> **Singura aplicație românească de proiectare rețele electrice JT/MT care integrează schemă CAD, calcul PE 132, analiză prosumator pe profile reale și generare automată Fișa de Soluție și Fișa de Calcul tarif racordare — totul într-un singur executabil, fără abonament, fără cloud, fără dependințe.**
 
-**Autor:** Grigoriu Alin-Florin
-**Tehnologie:** Tauri v2 (Rust + HTML/JS/SVG)
-**Platformă:** Windows x64 (+ deploy browser-only pe GitHub Pages)
-
----
-
-## 1. Privire generală
-
-ElectroCAD Pro combină într-un singur instrument:
-- Editor CAD schemă monofilară JT/MT cu 20+ tipuri de componente
-- Calcul PE 132 pentru cădere de tensiune și scurtcircuit pe rețeaua reală desenată
-- Analiză temporală prosumator (168 ore Lu→Du, vară/iarnă) cu profile reale Delgaz + PVGIS
-- Generator automat Fișă de Soluție (DOCX) cu detecție a 9 cazuri tehnice
-- Generator Fișă de Calcul tarif racordare (XLSX compatibil template Delgaz)
-- Export schemă PNG/SVG/PDF/DXF, import/export proiecte JSON
-
-Totul într-o singură aplicație, fără dependențe externe la runtime.
+**Autor:** ing. Grigoriu Alin-Florin — inginer electric, Distribuție Energie Electrică Iași
+**Versiune:** 12.0.0
+**Platformă:** Windows x64 (Tauri v2 / Rust + HTML5) + variantă browser-only pe GitHub Pages
+**Status:** în uz de proiectanți din zona Moldovei pentru dosare ATR reale către Delgaz Grid
 
 ---
 
-## 2. Modulul CONSUMATOR (clasic)
+## De ce ElectroCAD Pro?
+
+Un proiectant de rețele JT pierde zilnic **2–4 ore** reintroducând aceleași date în trei instrumente diferite: AutoCAD pentru schemă, Excel pentru calcule PE 132 și Word pentru Fișa de Soluție. ElectroCAD Pro înlocuiește toate trei.
+
+| Flux clasic | ElectroCAD Pro |
+|---|---|
+| AutoCAD + bloc-diagrame manuale | Editor CAD cu **20+ componente** dedicate rețelelor JT/MT |
+| Excel cu formule copiate între fișiere | **Calcul PE 132 live** direct pe schema desenată |
+| Word cu șabloane copiate și adaptate | **Generare automată DOCX** Fișă de Soluție (9 cazuri tehnice detectate) |
+| Introducere manuală în FISA_CALCUL.xlsm | **Export XLSX** direct în formatul oficial Delgaz |
+| Analiză prosumator? → foaie separată, aproximativă | **Simulare orară 168h** cu profile reale Delgaz + PVGIS |
+
+**Un singur fișier proiect `.json` conține toată rețeaua, toate calculele și toate documentele generate.**
+
+---
+
+## Pentru cine
+
+- **Proiectanți independenți** și **firme de proiectare** care livrează dosare ATR pentru Delgaz / DEER / E-Distribuție
+- **Departamente tehnice din operatorii de distribuție** care verifică soluții de racordare
+- **Integratori fotovoltaici** care au nevoie să demonstreze impactul PV asupra rețelei existente
+- **Studenți și cadre didactice** (ingineria energetică, electroenergetică) — aplicație didactică completă pe PE 132
+- **Inspectori ANRE / experți tehnici** care verifică dimensionări
+
+---
+
+## Ce face, pe scurt
+
+1. **Desenezi schema** — PT, CD/TDJT, stâlpi, firide, branșamente, cabluri — pe un canvas SVG
+2. **Declari consumatorii și PV** — dicționar pe stâlp/firidă, per circuit
+3. **Apeși un buton** — aplicația calculează ΔU, Isc, identifică topologia, validează normativ
+4. **Exportă** — PNG/SVG/PDF/DXF pentru schemă, DOCX pentru Fișa de Soluție, XLSX pentru tariful de racordare
+
+Totul **offline**, fără server, fără licență cloud, fără expunere de date.
+
+---
+
+## 1. Modulul CONSUMATOR (clasic)
 
 ### Model de date
-- Fiecare stâlp sau firidă poate avea câmpul `cons_dict` = dicționar `{grup_circuit: nr_consumatori}`
+- Fiecare stâlp sau firidă poate avea `cons_dict` = dicționar `{grup_circuit: nr_consumatori}`
 - Agregat automat în `el.consumatori` = total
 - Per-circuit (grup conductor) permite rețele multi-circuit pe același stâlp
 
@@ -45,20 +69,21 @@ Totul într-o singură aplicație, fără dependențe externe la runtime.
 | 20 | 0.450 | 0.510 |
 | 30 | 0.300 | 0.410 |
 | 50 | 0.280 | 0.380 |
-| > 60 | 0.250-0.270 | 0.350-0.410 |
+| > 60 | 0.250–0.270 | 0.350–0.410 |
 
 ### Puterea efectivă pe tronson
 ```
 P_eff_local = N_at_child_node × Pc × Ks(N_at_child_node)
 ```
-
 Consumatorii la nodul-capăt al tronsonului sunt tratați ca **distribuiți uniform** pe tronson (factor ½ în formulă).
 
 ---
 
-## 3. Modulul PROSUMATOR / FOTOVOLTAIC
+## 2. Modulul PROSUMATOR / FOTOVOLTAIC
 
 Modul dedicat analizei clienților care devin prosumatori (consumator + PV) sau pentru clienți noi concentrați cu cerere ATR.
+
+**Acesta este diferențiatorul major al aplicației față de orice alt instrument de pe piața românească.**
 
 ### Model de date
 - Paralel cu `cons_dict`: fiecare element poate avea `pv_dict` = `{grup_circuit: kWp_instalat}`
@@ -66,16 +91,16 @@ Modul dedicat analizei clienților care devin prosumatori (consumator + PV) sau 
 - Default `{}` → zero impact pe proiectele fără PV
 
 ### Moduri de analiză
-Butonul **"ANALIZĂ PROSUMATOR"** deschide un panou cu 2 moduri selectabile:
+Butonul **„ANALIZĂ PROSUMATOR"** deschide un panou cu 2 moduri selectabile:
 
-#### A) Mod "Rețea existentă (din schemă)"
+#### A) Mod „Rețea existentă (din schemă)"
 - Agregă toți consumatorii și PV-ul declarate în schemă
 - Calcul pe circuit echivalent (L + S reprezentative manual)
-- Util pentru analiză de sistem — cât stresează rețeaua consumul total vs producția total PV
+- Util pentru analiză de sistem — cât stresează rețeaua consumul total vs producția totală PV
 
-#### B) Mod "Client concentrat nou (ATR)"
+#### B) Mod „Client concentrat nou (ATR)"
 Pentru evaluare ATR prosumator cu client punctual:
-- Inputs: **Ps Consum client** (kW, contract) și **P_PV instalat client** (kWp inverter)
+- Inputs: **Ps Consum client** (kW, contract) și **P_PV instalat client** (kWp invertor)
 - Selector **Nod racordare** din schemă (dropdown cu toți stâlpii/firidele)
 - Aplicația **calculează automat drumul** de la sursă (CD/PTAB) la nodul ales
 - Folosește lungimile și secțiunile **reale** ale cablurilor din schemă
@@ -85,15 +110,15 @@ Pentru evaluare ATR prosumator cu client punctual:
 ### Profile temporale reale
 
 **Profil consum** — Delgaz Grid, Profil rezidual oficial:
-- Vară: săpt. 4-10 iulie 2022 (168 valori orare)
-- Iarnă: săpt. 5-11 decembrie 2022 (168 valori orare)
+- Vară: săpt. 4–10 iulie 2022 (168 valori orare)
+- Iarnă: săpt. 5–11 decembrie 2022 (168 valori orare)
 - Normalizare: media săptămânală = 1.0
 - Sursă: https://delgaz.ro/energie-electrica/profiluri-reziduale
 
 **Profil PV** — PVGIS v5.3 JRC EU:
 - Date măsurate satelit pentru Iași, anul 2023
-- Săptămâna vară: 3-9 iulie 2023
-- Săptămâna iarnă: 4-10 decembrie 2023
+- Săptămâna vară: 3–9 iulie 2023
+- Săptămâna iarnă: 4–10 decembrie 2023
 - Randament sistem: 14% pierderi (standard PV)
 - Include variabilitatea reală (zile înnorate, soare filtrat)
 - Sursă: https://re.jrc.ec.europa.eu/pvg_tools/en/
@@ -101,7 +126,7 @@ Pentru evaluare ATR prosumator cu client punctual:
 ### Ce rezultă
 1. **Flux putere** pe 168h — consum total, producție PV totală, flux net
 2. **Tensiune la nodul de racordare** pe 168h (2 curbe: cu PV vs fără PV)
-3. **Tabel "Defalcare per tronson"** — două tabele consecutive:
+3. **Tabel „Defalcare per tronson"** — două tabele consecutive:
    - Peak consum (seara, worst case pentru dimensionare)
    - Peak PV (amiaza, prosumator în funcțiune)
 4. **Statistici** — max consum, max injecție, ore flux invers, ΔU max zi cu/fără PV, beneficiu PV
@@ -109,10 +134,10 @@ Pentru evaluare ATR prosumator cu client punctual:
 
 ---
 
-## 4. Calcul cădere de tensiune (VD)
+## 3. Calcul cădere de tensiune (VD)
 
 ### Bază normativă
-Calculul se efectuează conform **PE 132/2003** — "Normativ privind proiectarea rețelelor electrice de distribuție publică".
+Calculul se efectuează conform **PE 132/2003** — „Normativ privind proiectarea rețelelor electrice de distribuție publică".
 
 ### Formulă PE 132 distribuită
 ```
@@ -130,8 +155,8 @@ Calculul se efectuează conform **PE 132/2003** — "Normativ privind proiectare
 
 Factorul K conține implicit tensiunea nominală (400V), conductivitatea Al (γ = 34) și cos φ = 0.95.
 
-### Interpretare "distribuit"
-Consumatorii la un nod nu sunt "concentrați" la un punct — sunt considerați distribuiți uniform pe tronsonul care duce la acel nod, de aceea `P_local / 2` (contribuția medie = jumătate din totalul local).
+### Interpretare „distribuit"
+Consumatorii la un nod nu sunt „concentrați" la un punct — sunt considerați distribuiți uniform pe tronsonul care duce la acel nod, de aceea `P_local / 2` (contribuția medie = jumătate din totalul local).
 
 ### Cumulativ la client
 ```
@@ -148,16 +173,14 @@ U_nod = Un × (1 − ΔU_cumul / 100)
 
 ---
 
-## 5. Calcul curent de scurtcircuit (Isc)
+## 4. Calcul curent de scurtcircuit (Isc)
 
 ### Formulă
 ```
 Isc = U_faza / √(R_cum² + X_cum²)
 ```
-
-Unde:
-- **U_faza** = 230 V (tensiunea de fază)
-- **R_cum**, **X_cum** (mΩ) = impedanța cumulată de la transformator până la punct
+- **U_faza** = 230 V
+- **R_cum**, **X_cum** (mΩ) = impedanța cumulată de la transformator până în punct
 
 ### Impedanța transformatorului
 | S_trafo (kVA) | R_trafo (mΩ) | X_trafo (mΩ) |
@@ -198,7 +221,7 @@ Aplicația afișează **warning roșu** în tabel dacă Isc ≤ 3 × curent nomi
 
 ---
 
-## 6. Exemple practice
+## 5. Exemple practice de calcul
 
 ### Exemplul 1 — rețea scurtă rurală, 3 consumatori
 
@@ -260,13 +283,13 @@ P_local = 5 × 2 × 0.51 = 5.10 kW/nod (Ks(5) = 0.51 rural).
 **Rezultat peak PV:** ΔU la SE10/3 = 0.10% (față de 1.28% la peak consum). PV-ul reduce fluxul net aproape la zero pe ultimul tronson → tensiunea se stabilizează aproape de nominal.
 
 #### Concluzii practice
-- **Pentru dimensionare (ATR)**: se folosește worst case = peak consum (1.28%)
+- **Pentru dimensionare (ATR)**: worst case = peak consum (1.28%)
 - **Pentru calitate energie zilnic**: prosumatorul îmbunătățește tensiunea la amiază cu ~1.2% = ~5 V
 - **Risc supratensiune**: dacă P_PV >> consum local, tensiunea poate urca peste +5% / +10%. Aici 10 kWp < 15 consumatori × 2 = 30 kW → fără risc.
 
 ---
 
-## 7. Normative și standarde aplicate
+## 6. Normative și standarde aplicate
 
 | Referință | Utilizare în ElectroCAD |
 |---|---|
@@ -285,36 +308,19 @@ P_local = 5 × 2 × 0.51 = 5.10 kW/nod (Ks(5) = 0.51 rural).
 
 ---
 
-## 8. Cazuri generate automat pentru Fișa de Soluție
+## 7. Cazuri generate automat pentru Fișa de Soluție
 
 Aplicația detectează automat 9 cazuri tehnice de racordare din schemă și generează textul Fișei de Soluție conform formularului oficial DEGR E P13-F16:
 
-### 1. Mansonare / intercalare firidă
-`2+ mansoane proiectate + firidă proiectată între firide existente`. Suportă multi-firide și multi-branșamente per firidă.
-
-### 2. Multi-PT (bază + rezervă)
-`2 posturi existente alimentează aceeași firidă proiectată`. Text separat pentru sursă bază și rezervă.
-
-### 3. Circuit aerian pe stâlpi NOI + branșament
-`CD/TDJT → stâlpi proiectați → branșament → BMPT`. Detectare automată stâlpi noi vs existenți.
-
-### 4. Circuit subteran cu firidă proiectată + branșament
-`CD/TDJT → cablu subteran → FG proiectată → branșament → BMPT`.
-
-### 5. Circuit proiectat pe stâlpi EXISTENȚI + branșament
-`Cabluri proiectate pe stâlpi existenți`. Detectare circuit comun existent (radial vs buclat).
-
-### 6. Branșament simplu din stâlp existent
-`Stâlp existent → cablu proiectat → BMPT`.
-
-### 7. Branșament direct din CD/TDJT
-`CD/TDJT → cablu proiectat → BMPT` (fără stâlpi intermediari).
-
-### 8. Doar circuit proiectat (fără BMPT)
-Circuit nou fără branșament la consumator (extindere pur de rețea).
-
-### 9. Separare Racordare + Întărire
-Detecție automată culori: elemente **roșii** (proiectat_racordare) → 6a, elemente **mov** (întărire_înlocuire) sau **albastre** (întărire_nou) → 6b. Demontări pe stări `demontat` în 6c.
+1. **Mansonare / intercalare firidă** — mansoane proiectate + firidă proiectată între firide existente. Suportă multi-firide și multi-branșamente per firidă.
+2. **Multi-PT (bază + rezervă)** — 2 posturi existente alimentează aceeași firidă proiectată. Text separat pentru sursă bază și rezervă.
+3. **Circuit aerian pe stâlpi NOI + branșament** — CD/TDJT → stâlpi proiectați → branșament → BMPT. Detectare automată stâlpi noi vs existenți.
+4. **Circuit subteran cu firidă proiectată + branșament** — CD/TDJT → cablu subteran → FG proiectată → branșament → BMPT.
+5. **Circuit proiectat pe stâlpi EXISTENȚI + branșament** — cabluri proiectate pe stâlpi existenți. Detectare circuit comun existent (radial vs buclat).
+6. **Branșament simplu din stâlp existent** — stâlp existent → cablu proiectat → BMPT.
+7. **Branșament direct din CD/TDJT** — fără stâlpi intermediari.
+8. **Doar circuit proiectat (fără BMPT)** — extindere pur de rețea.
+9. **Separare Racordare + Întărire** — detecție automată după culoare: **roșu** (proiectat_racordare) → 6a, **mov** (întărire_înlocuire) sau **albastru** (întărire_nou) → 6b, demontări → 6c.
 
 ### Distincții automate în toate cazurile
 - CD (PT Aerian) vs TDJT (PTAB 1T/2T)
@@ -326,7 +332,7 @@ Detecție automată culori: elemente **roșii** (proiectat_racordare) → 6a, el
 
 ---
 
-## 9. Fișa de Calcul Tarif Racordare (XLSX)
+## 8. Fișa de Calcul Tarif Racordare (XLSX)
 
 Generator separat care populează template-ul oficial Delgaz `FISA_CALCUL.xlsm`:
 - Mapare automată elemente schemă → poziții din catalogul FC (87 poziții)
@@ -337,7 +343,7 @@ Generator separat care populează template-ul oficial Delgaz `FISA_CALCUL.xlsm`:
 
 ---
 
-## 10. Editor — funcționalități principale
+## 9. Editor — funcționalități principale
 
 ### Elemente suportate (20+ tipuri)
 - **Surse**: PT aerian, PTAB 1T/2T, PTAb Mono (cu celule trafo independente)
@@ -348,7 +354,7 @@ Generator separat care populează template-ul oficial Delgaz `FISA_CALCUL.xlsm`:
 - **Auxiliare**: separatoare, mansoane, prize de pământ, puncte de conexiune
 - **MT**: celule linie, celule trafo, bara stație MT, separatoare MT
 
-### Stări element
+### Stări element (cu cod de culoare standard Delgaz)
 - Existent (culoare normală)
 - Proiectat — Tarif Racordare (roșu)
 - Întărire — Înlocuire conductor (mov)
@@ -367,17 +373,17 @@ Generare schemă completă dintr-un singur click plecând de la PT/PTAB:
 - **PNG** HD (până la 4× rezoluție nativă)
 - **SVG** vectorial (Inkscape, Illustrator, CorelDraw)
 - **PDF** vectorial cu footer proiect
-- **DXF** cu layere separate (pentru AutoCAD, LibreCAD, QCAD)
+- **DXF** cu layere separate (AutoCAD, LibreCAD, QCAD)
 - **JSON** pentru backup/versioning proiect
 - **DOCX** Fișă de Soluție
 - **XLSX** Fișă de Calcul
 
 ### Fundal cadastral
-Import PNG/JPG ca strat de fundal, calibrare scară (măsurare distanță reală între 2 puncte), opacitate și blocare.
+Import PNG/JPG ca strat de fundal, calibrare scară (măsurare distanță reală între 2 puncte), opacitate și blocare. Poți desena rețeaua direct peste planul cadastral al zonei.
 
 ---
 
-## 11. Shortcut-uri tastatură
+## 10. Shortcut-uri tastatură
 
 | Tastă | Acțiune |
 |---|---|
@@ -395,8 +401,30 @@ Import PNG/JPG ca strat de fundal, calibrare scară (măsurare distanță reală
 
 ---
 
-## 12. Dezvoltare
+## 11. Avantaje competitive (de ce nu AutoCAD + Excel?)
 
+| Criteriu | AutoCAD + Excel + Word | ElectroCAD Pro |
+|---|---|---|
+| Timp ciclu complet (schemă + calcul + FS + FC) | 4–8 ore | **30–60 min** |
+| Erori de transcriere între instrumente | frecvente | **zero** (o singură sursă de adevăr) |
+| Actualizare automată calcule la modificarea schemei | manuală | **instant** |
+| Analiză prosumator | inexistentă, aproximări | **profile reale 168h** |
+| Licență anuală | ~1500–3000 EUR (AutoCAD LT) | **gratuit pentru utilizare proprie** |
+| Funcționează offline, fără cloud | parțial | **integral** |
+| Învățare | zile–săptămâni | **sub 1 oră** |
+| Export dosare Delgaz formatat oficial | manual | **automat (DOCX + XLSX)** |
+
+---
+
+## 12. Stack tehnic
+
+- **Frontend**: HTML5 + SVG + JavaScript vanilla (fără framework) — ~8000 linii, single-file
+- **Desktop wrapper**: Tauri v2 (Rust) — binar nativ, ~8 MB, fără Electron bloat
+- **Generare documente**: `docx.js` pentru Fișa de Soluție, generator XLSX custom pentru Fișa de Calcul
+- **Build**: JavaScript obfuscation, MSI installer Windows
+- **Deploy browser-only**: GitHub Pages, fără server
+
+### Rulare
 ```bash
 # Mod dezvoltare (Tauri cu hot-reload)
 npm run dev
@@ -408,10 +436,32 @@ npm run build
 npm run obfuscate
 ```
 
-Codul sursă editabil: `src/index.html` (HTML + JS + CSS inline, ~8000 linii).
-La build, se generează `src-dist/index.html` obfuscat inclus în executabil.
+Codul sursă editabil: `src/index.html` (HTML + JS + CSS inline).
 Pentru testare rapidă în browser: deschide direct `src/index.html` cu Chrome (nu necesită server).
 
 ---
 
-(c) Grigoriu Alin-Florin — ElectroCAD Pro v12
+## 13. Context de proiect
+
+ElectroCAD Pro este dezvoltat de **ing. Grigoriu Alin-Florin**, inginer electric la Distribuție Energie Electrică Iași, pe baza experienței directe din proiectele de racordare reale executate în aria Delgaz. Fiecare caz tehnic generat automat corespunde unei situații întâlnite pe teren, iar formatele documentelor sunt validate cu verificatorii Delgaz.
+
+Aplicația este în dezvoltare activă. Modulul de prosumator a fost integrat în 2026 pentru a răspunde valului de cereri ATR fotovoltaice generat de schemele de sprijin naționale (Casa Verde Fotovoltaice, programe regionale).
+
+---
+
+## 14. Contact și colaborări
+
+**Autor:** ing. Grigoriu Alin-Florin
+**Email:** louischoleski@gmail.com
+**Locație:** Iași, România
+
+Deschis pentru:
+- Colaborări cu firme de proiectare electrică
+- Integrări cu fluxuri interne ale operatorilor de distribuție
+- Proiecte de cercetare în domeniul rețelelor inteligente / prosumatori
+- Prezentări la conferințe tehnice (CNEE, SIER, SIELMEN)
+- Licențiere instituțională
+
+---
+
+© 2026 Grigoriu Alin-Florin — ElectroCAD Pro v12
