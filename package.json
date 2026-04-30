@@ -1,0 +1,22 @@
+{
+  "name": "electrocad-pro",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev --config src-tauri/tauri.dev.conf.json",
+    "obfuscate": "node obfuscate.cjs",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "html-minifier-terser": "^7.2.0",
+    "javascript-obfuscator": "^5.4.1"
+  },
+  "dependencies": {
+    "canvas": "^3.2.3",
+    "docx": "^9.6.1",
+    "file-saver": "^2.0.5"
+  }
+}
