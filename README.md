@@ -5,7 +5,7 @@
 **Autor:** ing. Grigoriu Alin-Florin — inginer electric, Distribuție Energie Electrică Iași
 **Versiune:** 12.0.0
 **Platformă:** Windows x64 (Tauri v2 / Rust + HTML5) + variantă browser-only pe GitHub Pages
-**Status:** în uz de proiectanți din zona Moldovei pentru dosare ATR reale către Delgaz Grid
+
 
 ---
 
@@ -27,11 +27,11 @@ Un proiectant de rețele JT pierde zilnic **2–4 ore** reintroducând aceleași
 
 ## Pentru cine
 
-- **Proiectanți independenți** și **firme de proiectare** care livrează dosare ATR pentru Delgaz / DEER / E-Distribuție
+- **Emitenti fise solutie/studii solutie
 - **Departamente tehnice din operatorii de distribuție** care verifică soluții de racordare
 - **Integratori fotovoltaici** care au nevoie să demonstreze impactul PV asupra rețelei existente
 - **Studenți și cadre didactice** (ingineria energetică, electroenergetică) — aplicație didactică completă pe PE 132
-- **Inspectori ANRE / experți tehnici** care verifică dimensionări
+
 
 ---
 
