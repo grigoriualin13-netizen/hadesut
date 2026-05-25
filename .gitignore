@@ -11,6 +11,11 @@ node_modules
 dist-ssr
 *.local
 
+# Claude conversation data & dev screenshots
+.claude/
+IMAGINI/
+dist/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

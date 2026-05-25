@@ -1,108 +1,151 @@
-// ElectroCAD Pro v12 — Element CRUD Manager
-import { EL, CN, sel, multiSel, mode, pendType, setPendType, connStart, connPts, connFromEl, connFromTerm, connToEl, connToTerm, connFromCircuit, connToCircuit, dragging, dragEl, dragOff, view, panS, calibPts, tempCalibLenPx, exportRectStart, arrPts, draggingBg, bgData, pxPerMeter, vxDrag, vxConn, vxIdx, selRectStart, panning, GL, svgEl, VP, saveState, setEL, setCN, setSel, setClipboard } from './state.js';
-import { uid, sn, termWorldPos, nextLbl, toast, getLineIntersection, calcPathLen, applyView } from './utils.js';
-import { sym, symW, symH } from './elements.js';
-import { render, renderBg, callbacks } from './renderer.js';
-import { setStat } from './ui.js';
+import { S } from './state.js';
+import { MAX_UNDO } from './config.js';
+import { uid, sn, toast, calcPathLen, termWorldPos, setMode, updateStat } from './utils.js';
+import { sym, nextLbl } from './elements.js';
+import { render, renderFlowLayer } from './renderer.js';
+import { updateProps, runVD } from './ui.js';
 
-// ========== Add Element ==========
+export function saveState(lbl) {
+  S.undoStack.push({ lbl, E: JSON.stringify(S.EL), C: JSON.stringify(S.CN) });
+  if (S.undoStack.length > MAX_UNDO) S.undoStack.shift();
+  S.redoStack = [];
+}
+
+export function undo() {
+  if (!S.undoStack.length) { toast('Nimic de anulat', 'ac'); return; }
+  S.redoStack.push({ E: JSON.stringify(S.EL), C: JSON.stringify(S.CN) });
+  const s = S.undoStack.pop();
+  S.EL = JSON.parse(s.E); S.CN = JSON.parse(s.C);
+  S.sel = null; render(); updateProps(); updateStat(); toast('↩ Undo', 'ok');
+}
+
+export function redo() {
+  if (!S.redoStack.length) { toast('Nimic de refăcut', 'ac'); return; }
+  S.undoStack.push({ E: JSON.stringify(S.EL), C: JSON.stringify(S.CN) });
+  const s = S.redoStack.pop();
+  S.EL = JSON.parse(s.E); S.CN = JSON.parse(s.C);
+  S.sel = null; render(); updateProps(); updateStat(); toast('↪ Redo', 'ok');
+}
+
+export function copyEl() {
+  const toCopyEls = S.EL.filter(e => S.multiSel.has(e.id) || S.sel === e.id);
+  const toCopyCns = S.CN.filter(c => S.multiSel.has(c.id) || S.sel === c.id);
+  if (toCopyEls.length === 0 && toCopyCns.length === 0) { toast('Selectează ceva', 'ac'); return; }
+  S.clipboard = { els: JSON.parse(JSON.stringify(toCopyEls)), cns: JSON.parse(JSON.stringify(toCopyCns)) };
+  toast(`⧉ ${toCopyEls.length + toCopyCns.length} obiecte copiate!`, 'ok');
+}
+
+export function pasteEl() {
+  if (!S.clipboard || ((S.clipboard.els || []).length === 0 && (S.clipboard.cns || []).length === 0)) {
+    toast('Clipboard gol', 'ac'); return;
+  }
+  saveState('paste'); S.multiSel.clear(); S.sel = null; const idMap = {};
+  (S.clipboard.els || []).forEach(orig => {
+    const n = JSON.parse(JSON.stringify(orig)), newId = uid() + Math.floor(Math.random() * 1000);
+    idMap[orig.id] = newId; n.id = newId; n.x = (n.x || 0) + 40; n.y = (n.y || 0) + 40;
+    if (n.label && !['rect', 'circle', 'polyline'].includes(n.type)) n.label = n.label + '_cp';
+    S.EL.push(n); S.multiSel.add(newId);
+  });
+  (S.clipboard.cns || []).forEach(orig => {
+    const n = JSON.parse(JSON.stringify(orig)), newId = uid() + Math.floor(Math.random() * 1000);
+    idMap[orig.id] = newId; n.id = newId;
+    if (n.path && Array.isArray(n.path)) n.path.forEach(p => { p.x += 40; p.y += 40; });
+    if (n.fromElId && idMap[n.fromElId]) n.fromElId = idMap[n.fromElId]; else n.fromElId = null;
+    if (n.toElId && idMap[n.toElId]) n.toElId = idMap[n.toElId]; else n.toElId = null;
+    if (n.from && idMap[n.from]) n.from = idMap[n.from]; else n.from = null;
+    n.label = n.label ? n.label + '_cp' : `C${S.CN.length + 1}`;
+    S.CN.push(n); S.multiSel.add(newId);
+  });
+  if (S.multiSel.size === 1) { S.sel = Array.from(S.multiSel)[0]; S.multiSel.clear(); }
+  render(); updateProps(); updateStat();
+  toast(`⎘ ${(S.clipboard.els || []).length + (S.clipboard.cns || []).length} obiecte lipite!`, 'ok');
+}
 
 export function addElem(x, y) {
-  if (!pendType) return;
-  saveState('add ' + pendType);
+  if (!S.pendType) return; saveState('add ' + S.pendType);
   const CM = {
     ptab_1t: '#1a6ba0', ptab_2t: '#1a6ba0', trafo: '#1a6ba0',
     firida_e2_4: '#555', firida_e3_4: '#555', firida_e3_0: '#555',
-    cd4: '#555', cd5: '#555', cd8: '#555',
-    meter: '#555', stalp_se4: '#555', stalp_se10: '#555', stalp_cs: '#555',
-    stalp_sc10002: '#555', stalp_sc10005: '#555', stalp_rotund: '#555', stalp_rotund_special: '#555',
-    separator: '#0a5', separator_mt: '#0a5', manson: '#555', priza_pamant: '#555',
-    text: '#dce8f5', rect: '#00cfff', circle: '#00cfff',
+    cd4: '#555', cd5: '#555', cd8: '#555', meter: '#555',
+    stalp_se4: '#555', stalp_se10: '#555', stalp_cs: '#555',
+    stalp_sc10002: '#555', stalp_sc10005: '#555', stalp_rotund: '#555',
+    stalp_rotund_special: '#555', separator: '#0a5', separator_mt: '#0a5',
+    manson: '#555', priza_pamant: '#555', text: '#dce8f5',
+    rect: '#00cfff', circle: '#00cfff',
     bara_mt: '#c07000', celula_linie_mt: '#c07000', celula_trafo_mt: '#c07000',
     ptab_mono: '#c07000', bara_statie_mt: '#cc2200'
   };
-  const el = { id: uid(), type: pendType, x: sn(x), y: sn(y), label: nextLbl(pendType), color: CM[pendType] || '#555', fillColor: 'none', rotation: 0, scale: 1 };
-  if (pendType === 'stalp_cs') el.cs_fuse = 100;
-  if (pendType === 'meter') el.bmptText = '';
-  if (pendType === 'firida_e2_4') el.fuses = new Array(6).fill(true);
-  if (pendType === 'firida_e3_4') el.fuses = new Array(7).fill(true);
-  if (pendType === 'firida_e3_0') el.fuses = new Array(3).fill(true);
-  if (pendType === 'ptab_1t') el.fuses = new Array(10).fill(true);
-  if (pendType === 'ptab_2t') el.fuses = new Array(21).fill(true);
-  if (pendType === 'cd4') el.fuses = new Array(5).fill(true);
-  if (pendType === 'cd5') el.fuses = new Array(6).fill(true);
-  if (pendType === 'cd8') el.fuses = new Array(9).fill(true);
-  if (pendType === 'ptab_mono') el.celule = [
+  const el = {
+    id: uid(), type: S.pendType, x: sn(x), y: sn(y),
+    label: nextLbl(S.pendType), color: CM[S.pendType] || '#555',
+    fillColor: 'none', rotation: 0, scale: 1
+  };
+  if (S.pendType === 'stalp_cs') el.cs_fuse = 100;
+  if (S.pendType === 'meter') el.bmptText = '';
+  if (S.pendType === 'firida_e2_4') el.fuses = new Array(6).fill(true);
+  if (S.pendType === 'firida_e3_4') el.fuses = new Array(7).fill(true);
+  if (S.pendType === 'firida_e3_0') el.fuses = new Array(3).fill(true);
+  if (S.pendType === 'ptab_1t') el.fuses = new Array(10).fill(true);
+  if (S.pendType === 'ptab_2t') el.fuses = new Array(21).fill(true);
+  if (S.pendType === 'cd4') el.fuses = new Array(5).fill(true);
+  if (S.pendType === 'cd5') el.fuses = new Array(6).fill(true);
+  if (S.pendType === 'cd8') el.fuses = new Array(9).fill(true);
+  if (S.pendType === 'ptab_mono') el.celule = [
     { tip: 'L', label: 'Cel.L1', curent: '400A', tensiune: '20kV', stare: true },
     { tip: 'T', label: 'Cel.T1', curent: '16A', putere: '100kVA', volt: '20/0.4kV', stare: true },
     { tip: 'T', label: 'Cel.T2', curent: '16A', putere: '100kVA', volt: '20/0.4kV', stare: true },
     { tip: 'L', label: 'Cel.L2', curent: '400A', tensiune: '20kV', stare: true }
   ];
-  if (pendType === 'bara_statie_mt') { el.nrCircuit = '2'; el.numeStatie = 'STATIE 20kV'; el.lungime = 200; el.terminale = [{ pct: 25, label: '' }, { pct: 50, label: '' }, { pct: 75, label: '' }]; }
-  if (pendType === 'rect') { el.width = 100; el.height = 100; el.lineType = 'solid'; el.strokeWidth = 2; el.fillColor = 'none'; el.label = ''; }
-  if (pendType === 'circle') { el.r = 50; el.lineType = 'solid'; el.strokeWidth = 2; el.fillColor = 'none'; el.label = ''; }
-  EL.push(el);
-  render();
-  callbacks.selectEl?.(el.id);
-  setPendType();
-  callbacks.setMode?.('select');
-  callbacks.updateStat?.();
+  if (S.pendType === 'bara_statie_mt') {
+    el.nrCircuit = '2'; el.numeStatie = 'STAȚIE 20kV'; el.lungime = 200;
+    el.terminale = [{ pct: 25, label: '' }, { pct: 50, label: '' }, { pct: 75, label: '' }];
+  }
+  if (S.pendType === 'rect') { el.width = 100; el.height = 100; el.lineType = 'solid'; el.strokeWidth = 2; el.fillColor = 'none'; el.label = ''; }
+  if (S.pendType === 'circle') { el.r = 50; el.lineType = 'solid'; el.strokeWidth = 2; el.fillColor = 'none'; el.label = ''; }
+  S.EL.push(el); render(); selectEl(el.id); S.pendType = null; setMode('select'); updateStat();
 }
-
-// ========== Delete Selection ==========
 
 export function delSel() {
-  if (!sel && multiSel.size === 0) return;
-  saveState('delete');
-  if (multiSel.size > 0) {
-    const ids = new Set(multiSel);
-    setEL(EL.filter(e => !ids.has(e.id)));
-    setCN(CN.filter(c => !ids.has(c.id) && !ids.has(c.fromElId) && !ids.has(c.toElId)));
-    multiSel.clear();
-    setSel(null);
+  if (!S.sel && S.multiSel.size === 0) return; saveState('delete');
+  if (S.multiSel.size > 0) {
+    const ids = new Set(S.multiSel);
+    S.EL = S.EL.filter(e => !ids.has(e.id));
+    S.CN = S.CN.filter(c => !ids.has(c.id) && !ids.has(c.fromElId) && !ids.has(c.toElId));
+    S.multiSel.clear(); S.sel = null;
   } else {
-    setEL(EL.filter(e => e.id !== sel));
-    setCN(CN.filter(c => c.id !== sel && c.fromElId !== sel && c.toElId !== sel));
-    setSel(null);
+    S.EL = S.EL.filter(e => e.id !== S.sel);
+    S.CN = S.CN.filter(c => c.id !== S.sel && c.fromElId !== S.sel && c.toElId !== S.sel);
+    S.sel = null;
   }
-  render();
-  callbacks.updateProps?.();
-  callbacks.updateStat?.();
+  render(); updateProps(); updateStat();
 }
 
-// ========== Update Selected Element Property ==========
-
 export function updSel(k, v) {
-  if (!sel) return;
-  const o = EL.find(e => e.id === sel) || CN.find(c => c.id === sel);
+  if (!S.sel) return;
+  const o = S.EL.find(e => e.id === S.sel) || S.CN.find(c => c.id === S.sel);
   if (o) { o[k] = v; render(); }
 }
 
-// ========== Rotate Selected Element ==========
-
 export function rotateSel(d) {
-  const e = EL.find(x => x.id === sel);
-  if (e) {
-    setRotationAbs((e.rotation || 0) + d);
-  }
+  const e = S.EL.find(x => x.id === S.sel);
+  if (e) setRotationAbs((e.rotation || 0) + d);
 }
 
 export function setRotationAbs(v) {
-  const e = EL.find(x => x.id === sel);
+  const e = S.EL.find(x => x.id === S.sel);
   if (e) {
     e.rotation = (v % 360 + 360) % 360;
-    updateConnectedCables(e);
-    render();
+    updateConnectedCables(e); render();
     const rn = document.getElementById('p-rot-num'), rs = document.getElementById('p-rot-slider');
     if (rn && rn.value != e.rotation) rn.value = e.rotation;
     if (rs && rs.value != e.rotation) rs.value = e.rotation;
   }
 }
 
-// ========== Update Connected Cables ==========
+export function selectEl(id) { S.sel = id; render(); updateProps(); }
 
 export function updateConnectedCables(el) {
-  CN.forEach(cn => {
+  S.CN.forEach(cn => {
     if (cn.fromElId === el.id && cn.fromTerm && cn.path.length >= 1) {
       const wp = termWorldPos(el, cn.fromTerm.cx, cn.fromTerm.cy);
       cn.path[0] = { x: wp.x, y: wp.y };
@@ -112,203 +155,135 @@ export function updateConnectedCables(el) {
       cn.path[cn.path.length - 1] = { x: wp.x, y: wp.y };
     }
     if (cn.from === el.id && !cn.fromElId && cn.path.length >= 1) {
-      const { terms } = sym(el);
-      const fp = cn.path[0];
-      let best = Infinity, bw = null;
-      terms.forEach(t => {
-        const wp = termWorldPos(el, t.cx, t.cy);
-        const d = Math.hypot(wp.x - fp.x, wp.y - fp.y);
-        if (d < best) { best = d; bw = wp; }
-      });
+      const { terms } = sym(el); const fp = cn.path[0]; let best = Infinity, bw = null;
+      terms.forEach(t => { const wp = termWorldPos(el, t.cx, t.cy); const d = Math.hypot(wp.x - fp.x, wp.y - fp.y); if (d < best) { best = d; bw = wp; } });
       if (bw && best < 80) cn.path[0] = { x: bw.x, y: bw.y };
     }
     if (cn.to === el.id && !cn.toElId && cn.path.length >= 1) {
-      const { terms } = sym(el);
-      const lp = cn.path[cn.path.length - 1];
-      let best = Infinity, bw = null;
-      terms.forEach(t => {
-        const wp = termWorldPos(el, t.cx, t.cy);
-        const d = Math.hypot(wp.x - lp.x, wp.y - lp.y);
-        if (d < best) { best = d; bw = wp; }
-      });
+      const { terms } = sym(el); const lp = cn.path[cn.path.length - 1]; let best = Infinity, bw = null;
+      terms.forEach(t => { const wp = termWorldPos(el, t.cx, t.cy); const d = Math.hypot(wp.x - lp.x, wp.y - lp.y); if (d < best) { best = d; bw = wp; } });
       if (bw && best < 80) cn.path[cn.path.length - 1] = { x: bw.x, y: bw.y };
     }
   });
 }
 
-// ========== Check if Connection is Active ==========
-
-export function isConnectionActive(el, term) {
-  if (!el || !term || !el.fuses) return true;
-  const { terms } = sym(el);
-  const idx = terms.findIndex(t => Math.abs(t.cx - term.cx) < 1 && Math.abs(t.cy - term.cy) < 1);
-  if (idx === -1) return true;
-  if (el.type.startsWith('firida_')) return el.fuses[idx] !== false;
-  if (el.type === 'ptab_1t') { if (idx >= 2 && idx <= 9) return el.fuses[idx] !== false; }
-  if (el.type === 'ptab_2t') { if (idx >= 2 && idx <= 9) return el.fuses[idx] !== false; if (idx >= 12 && idx <= 19) return el.fuses[12 + (idx - 10)] !== false; }
-  return true;
-}
-
-// ========== Toggle Fuse ==========
-
-export function toggleFuse(elId, idx, val) {
-  const el = EL.find(x => x.id === elId);
-  if (!el || !el.fuses) return;
-  saveState('toggle fuse');
-  el.fuses[idx] = val;
-  render();
-}
-
-export function cdAllFuses(elId, num, val) {
-  const el = EL.find(x => x.id === elId);
-  if (!el || !el.fuses) return;
-  saveState('all fuses');
-  for (let i = 1; i <= num; i++) el.fuses[i] = val;
-  render();
-}
-
-
-
-// ========== Start Place Mode ==========
-
-export function startPlace(t) {
-  setPendType(t);
-  setMode('place');
-  document.body.classList.add('place-active');
-  document.getElementById('btn-sel')?.classList.remove('active');
-  toast('Click pe planșă pentru a plasa', 'ac');
-  setStat();
-}
-
-// ========== Toggle Submenu ==========
-
-export function toggleSub(id) {
-  const e = document.getElementById(id);
-  if (e) e.style.display = e.style.display === 'flex' ? 'none' : 'flex';
-}
-
-// ========== Copy Selection ==========
-
-export function copyEl() {
-  const toCopyEls = EL.filter(e => multiSel.has(e.id) || sel === e.id);
-  const toCopyCns = CN.filter(c => multiSel.has(c.id) || sel === c.id);
-  if (toCopyEls.length === 0 && toCopyCns.length === 0) { toast('Selectează ceva', 'ac'); return; }
-  setClipboard({ els: JSON.parse(JSON.stringify(toCopyEls)), cns: JSON.parse(JSON.stringify(toCopyCns)) });
-  toast('⧉ ' + (toCopyEls.length + toCopyCns.length) + ' obiecte copiate!', 'ok');
-}
-
-// ========== Paste Selection ==========
-
-export function pasteEl() {
-  if (!clipboard || ((clipboard.els||[]).length === 0 && (clipboard.cns||[]).length === 0)) { toast('Clipboard gol', 'ac'); return; }
-  saveState('paste');
-  multiSel.clear();
-  setSel(null);
-  const idMap = {};
-  (clipboard.els||[]).forEach(orig => {
-    const n = JSON.parse(JSON.stringify(orig));
-    const newId = uid() + Math.floor(Math.random()*1000);
-    idMap[orig.id] = newId;
-    n.id = newId;
-    n.x = (n.x||0) + 40;
-    n.y = (n.y||0) + 40;
-    if (n.label && !['rect','circle','polyline'].includes(n.type)) n.label = n.label + '_cp';
-    EL.push(n);
-    multiSel.add(newId);
-  });
-  (clipboard.cns||[]).forEach(orig => {
-    const n = JSON.parse(JSON.stringify(orig));
-    const newId = uid() + Math.floor(Math.random()*1000);
-    idMap[orig.id] = newId;
-    n.id = newId;
-    if (n.path && Array.isArray(n.path)) n.path.forEach(p => { p.x += 40; p.y += 40; });
-    if (n.fromElId && idMap[n.fromElId]) n.fromElId = idMap[n.fromElId]; else n.fromElId = null;
-    if (n.toElId && idMap[n.toElId]) n.toElId = idMap[n.toElId]; else n.toElId = null;
-    if (n.from && idMap[n.from]) n.from = idMap[n.from]; else n.from = null;
-    n.label = n.label ? n.label + '_cp' : 'C' + (CN.length + 1);
-    CN.push(n);
-    multiSel.add(newId);
-  });
-  if (multiSel.size === 1) { sel = Array.from(multiSel)[0]; multiSel.clear(); }
-  render();
-  updateProps();
-  updateStat();
-  toast('⎘ ' + ((clipboard.els||[]).length + (clipboard.cns||[]).length) + ' obiecte lipite!', 'ok');
-}
-
-// ========== Get Circuit Chain ==========
-
-export function getCircuitChain(cdElId, circuitNum) {
-  const results = { cables: [], elements: [], totalLength: 0, totalConsumatori: 0, branches: [] };
-  const visitedCables = new Set();
-  const seedCables = CN.filter(cn => (cn.fromElId === cdElId && cn.fromCircuit === circuitNum) || (cn.toElId === cdElId && cn.toCircuit === circuitNum));
-  if (!seedCables.length) return results;
-  const traceGroup = seedCables[0].circuitGroup || 'C' + circuitNum;
-
-  function getOtherEnd(cn, fromId) {
-    if (cn.fromElId === fromId) return cn.toElId;
-    if (cn.toElId === fromId) return cn.fromElId;
-    return cn.from || null;
+export function finalConn() {
+  if (!S.connStart || S.connPts.length < 2) return; saveState('connect');
+  let cableName = `C${S.CN.length + 1}`;
+  const circSrc = S.connFromCircuit ? S.connFromEl : (S.connToCircuit ? S.connToEl : null);
+  const circNum = S.connFromCircuit || S.connToCircuit;
+  if (circSrc && circNum) {
+    const cdEl = S.EL.find(x => x.id === circSrc);
+    if (cdEl) cableName = `${cdEl.label || 'CD'}-C${circNum}`;
   }
+  const autoLenM = parseFloat((calcPathLen(S.connPts) / S.pxPerMeter).toFixed(1));
+  S.CN.push({
+    id: uid(), fromElId: S.connFromEl, fromTerm: S.connFromTerm, toElId: S.connToEl, toTerm: S.connToTerm,
+    path: [...S.connPts], label: cableName, length: autoLenM, color: '#ef4444', fillColor: 'none',
+    lineType: 'solid', strokeWidth: 2, fromCircuit: S.connFromCircuit, toCircuit: S.connToCircuit,
+    tipConductor: 'Clasic Al', sectiune: 16, tipRetea: 'Trifazat', putereConc: 0
+  });
+  S.connStart = null; S.connPts = []; S.connFromEl = null; S.connFromTerm = null;
+  S.connToEl = null; S.connToTerm = null; S.connFromCircuit = null; S.connToCircuit = null;
+  setMode('select'); render(); updateStat();
+}
 
-  function dfs(elId, cameFromCable, accLen, accCons, pathLabels, depth) {
-    if (depth > 50) return;
-    const currentEl = EL.find(x => x.id === elId);
-    if (currentEl) {
-      const currentTerm = (cameFromCable && cameFromCable.fromElId === elId) ? cameFromCable.fromTerm : ((cameFromCable && cameFromCable.toElId === elId) ? cameFromCable.toTerm : null);
-      if (!isConnectionActive(currentEl, currentTerm)) return;
+window.baraStatieTerUpd = function (elId, idx, key, val) {
+  const el = S.EL.find(x => x.id === elId); if (!el || !el.terminale) return;
+  saveState('edit terminal bara');
+  el.terminale[idx][key] = val;
+  updateConnectedCables(el); render(); updateProps();
+};
+
+window.baraStatieTerAdd = function (elId) {
+  const el = S.EL.find(x => x.id === elId); if (!el) return;
+  saveState('add terminal bara');
+  if (!el.terminale) el.terminale = [];
+  const used = el.terminale.map(t => t.pct).sort((a, b) => a - b);
+  let newPct = 50;
+  if (used.length > 0) {
+    const gaps = [];
+    if (used[0] > 5) gaps.push({ start: 0, end: used[0] });
+    for (let i = 0; i < used.length - 1; i++) if (used[i + 1] - used[i] > 10) gaps.push({ start: used[i], end: used[i + 1] });
+    if (used[used.length - 1] < 95) gaps.push({ start: used[used.length - 1], end: 100 });
+    if (gaps.length > 0) {
+      const best = gaps.reduce((a, b) => (b.end - b.start) > (a.end - a.start) ? b : a);
+      newPct = Math.round((best.start + best.end) / 2);
     }
-
-    const cables = CN.filter(cn => cn.id !== (cameFromCable ? cameFromCable.id : null) && (cn.fromElId === elId || cn.toElId === elId || cn.from === elId));
-    const nextCables = cables.filter(cn => {
-      if (visitedCables.has(cn.id)) return false;
-      if (cn.circuitGroup && cn.circuitGroup !== traceGroup && cn.circuitGroup !== circuitNum.toString()) return false;
-      if ((cn.fromElId === cdElId && cn.fromCircuit !== circuitNum) || (cn.toElId === cdElId && cn.toCircuit !== circuitNum)) return false;
-      const outTerm = (cn.fromElId === elId) ? cn.fromTerm : (cn.toElId === elId) ? cn.toTerm : null;
-      if (currentEl && !isConnectionActive(currentEl, outTerm)) return false;
-      return true;
-    });
-
-    if (nextCables.length === 0) { results.branches.push({ path: [...pathLabels], length: accLen, consumatori: accCons }); return; }
-
-    nextCables.forEach(cn => {
-      visitedCables.add(cn.id);
-      if (!results.cables.find(x => x.id === cn.id)) { results.cables.push(cn); results.totalLength += parseFloat(cn.length) || 0; }
-      const nextElId = getOtherEnd(cn, elId);
-      const nextEl = nextElId ? EL.find(x => x.id === nextElId) : null;
-      const cLen = parseFloat(cn.length) || 0;
-      const newLen = accLen + cLen;
-      let cons = 0;
-      if (nextEl) {
-        if (nextEl.cons_dict) {
-          if (nextEl.cons_dict[traceGroup] !== undefined) cons = parseInt(nextEl.cons_dict[traceGroup]) || 0;
-          else if (nextEl.cons_dict['Implicit'] !== undefined) cons = parseInt(nextEl.cons_dict['Implicit']) || 0;
-        } else { cons = parseInt(nextEl.consumatori) || 0; }
-      }
-      const newCons = accCons + cons;
-      if (nextEl && !results.elements.find(x => x.id === nextEl.id)) { results.elements.push(nextEl); results.totalConsumatori += cons; }
-      const newPath = [...pathLabels, (nextEl ? nextEl.label : cn.label) || '?'];
-      let shouldContinue = true;
-      if (nextEl) {
-        const childTerm = (cn.fromElId === nextElId) ? cn.fromTerm : (cn.toElId === nextElId) ? cn.toTerm : null;
-        if (!isConnectionActive(nextEl, childTerm)) shouldContinue = false;
-      }
-      if (nextElId && shouldContinue) dfs(nextElId, cn, newLen, newCons, newPath, depth + 1);
-      else results.branches.push({ path: newPath, length: newLen, consumatori: newCons });
-    });
   }
+  el.terminale.push({ pct: newPct, label: '' });
+  render(); updateProps();
+};
 
-  dfs(cdElId, null, 0, 0, [], 0);
-  return results;
-}
+window.baraStatieTerDel = function (elId, idx) {
+  const el = S.EL.find(x => x.id === elId); if (!el || !el.terminale) return;
+  if (el.terminale.length <= 1) { toast('Minim un terminal!', 'ac'); return; }
+  saveState('del terminal bara');
+  el.terminale.splice(idx, 1);
+  render(); updateProps();
+};
 
+window.ptabMonoUpdCell = function (elId, idx, key, val) {
+  const el = S.EL.find(x => x.id === elId); if (!el || !el.celule) return;
+  saveState('edit celula');
+  el.celule[idx][key] = val;
+  render(); updateProps();
+};
 
-// ========== Populate Renderer Callbacks ==========
+window.ptabMonoAddCell = function (elId, tip) {
+  const el = S.EL.find(x => x.id === elId); if (!el) return;
+  saveState('add celula');
+  if (!el.celule) el.celule = [];
+  const n = el.celule.filter(c => c.tip === tip).length + 1;
+  if (tip === 'T') el.celule.push({ tip: 'T', label: `T${n}`, curent: '16A', putere: '100kVA', volt: '20/0.4kV', stare: true });
+  else el.celule.push({ tip: 'L', label: `L${n}`, curent: '400A', tensiune: '20kV', stare: true });
+  render(); updateProps(); updateStat();
+};
 
-callbacks.addElem = addElem;
-callbacks.delSel = delSel;
-callbacks.updSel = updSel;
-callbacks.setRotationAbs = setRotationAbs;
-callbacks.updateConnectedCables = updateConnectedCables;
-callbacks.toggleFuse = toggleFuse;
-callbacks.cdAllFuses = cdAllFuses;
+window.ptabMonoDelCell = function (elId, idx) {
+  const el = S.EL.find(x => x.id === elId); if (!el || !el.celule) return;
+  if (el.celule.length <= 1) { toast('Minim o celulă!', 'ac'); return; }
+  saveState('del celula');
+  el.celule.splice(idx, 1);
+  render(); updateProps(); updateStat();
+};
+
+window.ptabMonoMoveCell = function (elId, idx, dir) {
+  const el = S.EL.find(x => x.id === elId); if (!el || !el.celule) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= el.celule.length) return;
+  saveState('move celula');
+  const tmp = el.celule[idx]; el.celule[idx] = el.celule[newIdx]; el.celule[newIdx] = tmp;
+  render(); updateProps();
+};
+
+window.toggleFuse = function (id, idx, state) {
+  saveState('toggle fuse');
+  const el = S.EL.find(x => x.id === id);
+  if (el) {
+    if (!el.fuses) {
+      if (el.type === 'firida_e2_4') el.fuses = new Array(6).fill(true);
+      if (el.type === 'firida_e3_4') el.fuses = new Array(7).fill(true);
+      if (el.type === 'firida_e3_0') el.fuses = new Array(3).fill(true);
+      if (el.type === 'ptab_1t') el.fuses = new Array(10).fill(true);
+      if (el.type === 'ptab_2t') el.fuses = new Array(21).fill(true);
+      if (el.type === 'cd4') el.fuses = new Array(5).fill(true);
+      if (el.type === 'cd5') el.fuses = new Array(6).fill(true);
+      if (el.type === 'cd8') el.fuses = new Array(9).fill(true);
+    }
+    el.fuses[idx] = state; render();
+    if (S.flowAnimOn) renderFlowLayer();
+    if (document.getElementById('vd-panel').style.display === 'flex' && document.getElementById('vd-src').value) runVD();
+  }
+};
+
+window.cdAllFuses = function (id, np, state) {
+  saveState('toggle all fuses');
+  const el = S.EL.find(x => x.id === id); if (!el) return;
+  if (!el.fuses) el.fuses = new Array(np + 1).fill(true);
+  for (let i = 1; i <= np; i++) el.fuses[i] = state;
+  render();
+  if (S.flowAnimOn) renderFlowLayer();
+  updateProps();
+  toast(state ? '✅ Toate circuitele închise' : '🔴 Toate circuitele deschise', state ? 'ok' : 'ac');
+};
