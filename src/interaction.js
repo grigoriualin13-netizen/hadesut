@@ -2,10 +2,64 @@ import { S } from './state.js';
 import { svgPt, sn, toast, applyView, termWorldPos, setMode, updateStat } from './utils.js';
 import { isConnectionActive } from './elements.js';
 import { render, renderFlowLayer, toggleFlowAnim } from './renderer.js';
-import { saveState, addElem, delSel, rotateSel, copyEl, pasteEl, finalConn, updateConnectedCables, selectEl } from './element-manager.js';
+import { saveState, addElem, delSel, rotateSel, copyEl, pasteEl, finalConn, updateConnectedCables, selectEl, placeMTSpanAt } from './element-manager.js';
 import { updateProps } from './ui.js';
 import { doExportPNG, doExportPDF, doExportSVG } from './export.js';
 import { save, saveAsNew } from './project.js';
+
+// ── Measure tool ─────────────────────────────────────────────────────────────
+let _mpt1 = null;
+
+function _renderMeasure(pt2 = null) {
+  const layer = document.getElementById('MEAS');
+  if (!layer) return;
+  if (!_mpt1) { layer.innerHTML = ''; return; }
+  const dark = !S.lightMode;
+  const mC   = dark ? '#ffd700' : '#b85000';
+  if (!pt2) {
+    layer.innerHTML = `
+      <circle cx="${_mpt1.x.toFixed(1)}" cy="${_mpt1.y.toFixed(1)}" r="4"
+              fill="${mC}" opacity="0.9"/>
+      <line x1="${(_mpt1.x-10).toFixed(1)}" y1="${_mpt1.y.toFixed(1)}"
+            x2="${(_mpt1.x+10).toFixed(1)}" y2="${_mpt1.y.toFixed(1)}"
+            stroke="${mC}" stroke-width="1.3"/>
+      <line x1="${_mpt1.x.toFixed(1)}" y1="${(_mpt1.y-10).toFixed(1)}"
+            x2="${_mpt1.x.toFixed(1)}" y2="${(_mpt1.y+10).toFixed(1)}"
+            stroke="${mC}" stroke-width="1.3"/>`;
+    return;
+  }
+  const dx = pt2.x-_mpt1.x, dy = pt2.y-_mpt1.y;
+  const dist = Math.hypot(dx, dy);
+  const ppm  = S.pxPerMeter || 5;
+  const distM = (dist / ppm).toFixed(2);
+  const mx = (_mpt1.x+pt2.x)/2, my = (_mpt1.y+pt2.y)/2;
+  const ux = dist>0 ? dx/dist : 1, uy = dist>0 ? dy/dist : 0;
+  const lx = (mx - uy*16).toFixed(1), ly = (my + ux*16).toFixed(1);
+  layer.innerHTML = `
+    <line x1="${_mpt1.x.toFixed(1)}" y1="${_mpt1.y.toFixed(1)}"
+          x2="${pt2.x.toFixed(1)}" y2="${pt2.y.toFixed(1)}"
+          stroke="${mC}" stroke-width="1.6" stroke-dasharray="7,4"/>
+    <circle cx="${_mpt1.x.toFixed(1)}" cy="${_mpt1.y.toFixed(1)}" r="3.5"
+            fill="${mC}" opacity="0.9"/>
+    <circle cx="${pt2.x.toFixed(1)}" cy="${pt2.y.toFixed(1)}" r="3.5"
+            fill="${mC}" opacity="0.9"/>
+    <text x="${lx}" y="${ly}"
+          font-size="11" fill="${mC}" font-family="JetBrains Mono,monospace"
+          font-weight="700" text-anchor="middle"
+          paint-order="stroke" stroke="#000a" stroke-width="2.5"
+          stroke-linecap="round">${distM} m</text>`;
+}
+
+export function toggleMeasure() {
+  if (S.mode === 'measure') {
+    setMode('select'); _mpt1 = null; _renderMeasure();
+  } else {
+    setMode('measure'); _mpt1 = null; _renderMeasure();
+    toast('Clic punct 1, clic punct 2 → distanță. Esc = anulare.', 'ok');
+  }
+  const btn = document.getElementById('btn-measure');
+  if (btn) btn.classList.toggle('active', S.mode === 'measure');
+}
 
 export function onDn(e) {
   const pt = svgPt(e);
@@ -35,6 +89,17 @@ export function onDn(e) {
     return;
   }
   if (S.mode === 'place') { addElem(pt.x, pt.y); return; }
+  if (S.mode === 'mt_span') { placeMTSpanAt(pt.x, pt.y); return; }
+  if (S.mode === 'measure') {
+    if (!_mpt1) { _mpt1 = { x: pt.x, y: pt.y }; _renderMeasure(); }
+    else {
+      _renderMeasure(pt);
+      const d = (Math.hypot(pt.x - _mpt1.x, pt.y - _mpt1.y) / (S.pxPerMeter || 5)).toFixed(2);
+      toast(`${d} m`, 'ok');
+      _mpt1 = null;
+    }
+    return;
+  }
   if (S.mode === 'draw_poly') {
     S.arrPts.push({ x: sn(pt.x), y: sn(pt.y) });
     if (S.arrPts.length === 1) toast('Click stânga pt. puncte, click dreapta pt. finalizare', 'ac');
@@ -79,6 +144,7 @@ export function onMv(e) {
     if (img) { img.style.left = S.bgData.x + 'px'; img.style.top = S.bgData.y + 'px'; }
     return;
   }
+  if (S.mode === 'measure' && _mpt1) { _renderMeasure(pt); return; }
   if (S.mode === 'calibrate' && S.calibPts.length === 1) {
     const tp = document.getElementById('tpoly'); tp.style.display = 'block';
     tp.setAttribute('points', `${S.calibPts[0].x},${S.calibPts[0].y} ${pt.x},${pt.y}`); return;
@@ -264,7 +330,7 @@ export function initKeyboard() {
     }
     if (!inp) {
       if (e.key === 'Delete' || e.key === 'Backspace') delSel();
-      if (e.key === 'Escape') { S.multiSel.clear(); S.sel = null; setMode('select'); render(); updateProps(); }
+      if (e.key === 'Escape') { S.multiSel.clear(); S.sel = null; setMode('select'); render(); updateProps(); _mpt1 = null; _renderMeasure(); }
       if (e.key === 's') setMode('select');
       if (e.key === 'c') setMode('connect');
       if (e.key === 'r') rotateSel(90);

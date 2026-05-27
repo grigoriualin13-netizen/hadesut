@@ -5,6 +5,26 @@ import { sym, nextLbl } from './elements.js';
 import { render, renderFlowLayer } from './renderer.js';
 import { updateProps, runVD } from './ui.js';
 
+// ── Pending MT phase for next connection ──────────────────────────────────
+let _pendingFaza = null;
+let _pendingSecMT = 70;
+
+const FAZA_COL = { R: '#ef4444', S: '#22c55e', T: '#3b82f6' };
+
+export function setMTConnect(faza) {
+  _pendingFaza  = faza;
+  _pendingSecMT = parseInt(document.getElementById('mt-sec-sel')?.value) || 70;
+  setMode('connect');
+  // Highlight active phase button
+  ['R', 'S', 'T'].forEach(f => {
+    const btn = document.getElementById(`btn-mt-${f}`);
+    if (!btn) return;
+    btn.style.borderColor  = f === faza ? FAZA_COL[f] : 'var(--border2)';
+    btn.style.background   = f === faza ? FAZA_COL[f] + '22' : '';
+  });
+  toast(`Connect MT — Faza ${faza} · OL-AL ${_pendingSecMT}mm²`, 'ok');
+}
+
 export function saveState(lbl) {
   S.undoStack.push({ lbl, E: JSON.stringify(S.EL), C: JSON.stringify(S.CN) });
   if (S.undoStack.length > MAX_UNDO) S.undoStack.shift();
@@ -144,6 +164,83 @@ export function setRotationAbs(v) {
 
 export function selectEl(id) { S.sel = id; render(); updateProps(); }
 
+// ── MT Span placement ──────────────────────────────────────────────────────
+
+let _mtSpanPrevId = null;
+let _mtSpanType   = 'stalp_mt_se5t';
+let _mtSpanSec    = 70;
+
+export function startMTSpan() {
+  _mtSpanPrevId = null;
+  _mtSpanType   = document.getElementById('mt-stalp-type')?.value || 'stalp_mt_se5t';
+  _mtSpanSec    = parseInt(document.getElementById('mt-sec-sel')?.value) || 70;
+  setMode('mt_span');
+  toast('Tronson MT — clic: stâlp 1, clic: stâlp 2 … Esc stop', 'ok');
+}
+
+export function addMTSpanFrom(fromPoleId) {
+  const el = S.EL.find(e => e.id === fromPoleId);
+  if (!el) return;
+  _mtSpanPrevId = fromPoleId;
+  _mtSpanType   = el.type;
+  _mtSpanSec    = parseInt(document.getElementById('mt-sec-sel')?.value) || 70;
+  setMode('mt_span');
+  toast(`Prelungire MT de la ${el.label || el.type} — clic: stâlp nou. Esc stop`, 'ok');
+}
+
+export function placeMTSpanAt(x, y) {
+  saveState('mt span');
+  const newEl = {
+    id: uid(), type: _mtSpanType,
+    x: sn(x), y: sn(y), rotation: 0, scale: 1,
+    label: nextLbl(_mtSpanType),
+    color: '#555', fillColor: 'none', stare: 'existent',
+  };
+  S.EL.push(newEl);
+
+  if (_mtSpanPrevId) {
+    const prev = S.EL.find(e => e.id === _mtSpanPrevId);
+    if (prev) _connectMTPoles(prev, newEl, _mtSpanSec);
+  }
+
+  _mtSpanPrevId = newEl.id;
+  selectEl(newEl.id);
+  render(); updateStat();
+}
+
+function _connectMTPoles(fromEl, toEl, sec) {
+  const dx = toEl.x - fromEl.x, dy = toEl.y - fromEl.y;
+  const horiz = Math.abs(dx) >= Math.abs(dy);
+  let ftx, fty, ttx, tty;
+  if (horiz) {
+    ftx = dx > 0 ?  22 : -22;  fty = 0;
+    ttx = dx > 0 ? -22 :  22;  tty = 0;
+  } else {
+    fty = dy > 0 ?  22 : -22;  ftx = 0;
+    tty = dy > 0 ? -22 :  22;  ttx = 0;
+  }
+  const wp0 = termWorldPos(fromEl, ftx, fty);
+  const wp1 = termWorldPos(toEl,   ttx, tty);
+  const lenM = parseFloat((Math.hypot(dx, dy) / (S.pxPerMeter || 5)).toFixed(1));
+  const idx  = S.CN.length;
+
+  ['R', 'S', 'T'].forEach((faza, i) => {
+    S.CN.push({
+      id: uid(),
+      fromElId: fromEl.id, fromTerm: { cx: ftx, cy: fty },
+      toElId:   toEl.id,   toTerm:   { cx: ttx, cy: tty },
+      path:     [{ x: wp0.x, y: wp0.y }, { x: wp1.x, y: wp1.y }],
+      label:    `L${idx + i + 1}`, length: lenM,
+      color:    FAZA_COL[faza], fillColor: 'none',
+      lineType: 'solid', strokeWidth: 2.5,
+      tipConductor: 'OL-AL', sectiune: sec,
+      tipRetea: 'Trifazat', putereConc: 0, faza,
+    });
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+
 export function updateConnectedCables(el) {
   S.CN.forEach(cn => {
     if (cn.fromElId === el.id && cn.fromTerm && cn.path.length >= 1) {
@@ -177,11 +274,17 @@ export function finalConn() {
     if (cdEl) cableName = `${cdEl.label || 'CD'}-C${circNum}`;
   }
   const autoLenM = parseFloat((calcPathLen(S.connPts) / S.pxPerMeter).toFixed(1));
+  const isMT = !!_pendingFaza;
   S.CN.push({
     id: uid(), fromElId: S.connFromEl, fromTerm: S.connFromTerm, toElId: S.connToEl, toTerm: S.connToTerm,
-    path: [...S.connPts], label: cableName, length: autoLenM, color: '#ef4444', fillColor: 'none',
-    lineType: 'solid', strokeWidth: 2, fromCircuit: S.connFromCircuit, toCircuit: S.connToCircuit,
-    tipConductor: 'Clasic Al', sectiune: 16, tipRetea: 'Trifazat', putereConc: 0
+    path: [...S.connPts], label: cableName, length: autoLenM,
+    color: isMT ? FAZA_COL[_pendingFaza] : '#ef4444', fillColor: 'none',
+    lineType: 'solid', strokeWidth: isMT ? 2.5 : 2,
+    fromCircuit: S.connFromCircuit, toCircuit: S.connToCircuit,
+    tipConductor: isMT ? 'OL-AL'    : 'Clasic Al',
+    sectiune:     isMT ? _pendingSecMT : 16,
+    tipRetea: 'Trifazat', putereConc: 0,
+    ...(isMT ? { faza: _pendingFaza } : {}),
   });
   S.connStart = null; S.connPts = []; S.connFromEl = null; S.connFromTerm = null;
   S.connToEl = null; S.connToTerm = null; S.connFromCircuit = null; S.connToCircuit = null;

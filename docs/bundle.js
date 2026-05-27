@@ -109,7 +109,8 @@
         "Clasic Al": { 2.5: 11800, 4: 7320, 6: 4900, 10: 2940, 16: 1802, 25: 1181, 35: 833, 50: 579, 70: 437, 95: 309, 120: 246, 150: 196, 185: 158, 240: 119 },
         "Torsadat Al": { 10: 3080, 16: 1910, 25: 1200, 35: 868, 50: 591, 70: 410, 95: 320, 120: 253, 150: 206 },
         "Cablu Al": { 2.5: 11800, 4: 7812, 6: 5208, 10: 3125, 16: 1953, 25: 1250, 35: 892, 50: 525, 70: 445, 95: 328, 120: 260, 150: 208, 185: 169, 240: 130 },
-        "Cablu Cu": { 2.5: 7130, 4: 4470, 6: 2970, 10: 1786, 16: 1123, 25: 738, 35: 525, 50: 372, 70: 271, 95: 192, 120: 153, 150: 122, 185: 98, 240: 78 }
+        "Cablu Cu": { 2.5: 7130, 4: 4470, 6: 2970, 10: 1786, 16: 1123, 25: 738, 35: 525, 50: 372, 70: 271, 95: 192, 120: 153, 150: 122, 185: 98, 240: 78 },
+        "OL-AL": { 35: 834, 50: 593, 70: 423, 95: 312, 120: 247 }
       };
       KS_RURAL = {
         0: 0,
@@ -333,6 +334,19 @@
       stalp_sc10005: "SC10005",
       stalp_rotund: "SR",
       stalp_rotund_special: "SRS",
+      stalp_mt_sc10001: "SC10001",
+      stalp_mt_sc15006: "SC15006",
+      stalp_mt_sc15007: "SC15007",
+      stalp_mt_sc15014: "SC15014",
+      stalp_mt_sc15015: "SC15015",
+      stalp_mt_se4t: "SE4T",
+      stalp_mt_se5t: "SE5T",
+      stalp_mt_se6t: "SE6T",
+      stalp_mt_se7t: "SE7T",
+      stalp_mt_se8t: "SE8T",
+      stalp_mt_se9t: "SE9T",
+      stalp_mt_se10t: "SE10T",
+      stalp_mt_se11t: "SE11T",
       separator: "SEP",
       separator_mt: "SMT",
       manson: "M",
@@ -531,6 +545,47 @@
       case "stalp_rotund_special":
         inner = `<circle class="sel-r" cx="0" cy="0" r="22" fill="${bg}" stroke="${c}" stroke-width="2.5"/><line x1="-16" y1="-16" x2="16" y2="16" stroke="${c}" stroke-width="2"/><line x1="16" y1="-16" x2="-16" y2="16" stroke="${c}" stroke-width="2"/>` + td(-22, -13) + td(-22, 0) + td(-22, 13) + td(22, -13) + td(22, 0) + td(22, 13) + td(-13, -22) + td(0, -22) + td(13, -22) + td(-13, 22) + td(0, 22) + td(13, 22);
         break;
+      // ── Stâlpi MT — SC centrifugați (cerc dublu)
+      case "stalp_mt_sc10001":
+        inner = `<circle class="sel-r" cx="0" cy="0" r="22" fill="${bg}" stroke="${c}" stroke-width="2.5"/><circle cx="0" cy="0" r="13" fill="none" stroke="${c}" stroke-width="1.5"/>` + td(-22, -13) + td(-22, 0) + td(-22, 13) + td(22, -13) + td(22, 0) + td(22, 13) + td(-13, -22) + td(0, -22) + td(13, -22) + td(-13, 22) + td(0, 22) + td(13, 22);
+        break;
+      case "stalp_mt_sc15006":
+        inner = `<circle class="sel-r" cx="0" cy="0" r="22" fill="${bg}" stroke="${c}" stroke-width="2.5"/><circle cx="0" cy="0" r="13" fill="none" stroke="${c}" stroke-width="1.5"/><line x1="-9" y1="0" x2="9" y2="0" stroke="${c}" stroke-width="2"/>` + td(-22, -13) + td(-22, 0) + td(-22, 13) + td(22, -13) + td(22, 0) + td(22, 13) + td(-13, -22) + td(0, -22) + td(13, -22) + td(-13, 22) + td(0, 22) + td(13, 22);
+        break;
+      case "stalp_mt_sc15007":
+        inner = `<circle class="sel-r" cx="0" cy="0" r="22" fill="${bg}" stroke="${c}" stroke-width="2.5"/><circle cx="0" cy="0" r="13" fill="none" stroke="${c}" stroke-width="1.5"/><line x1="0" y1="-9" x2="0" y2="9" stroke="${c}" stroke-width="2"/>` + td(-22, -13) + td(-22, 0) + td(-22, 13) + td(22, -13) + td(22, 0) + td(22, 13) + td(-13, -22) + td(0, -22) + td(13, -22) + td(-13, 22) + td(0, 22) + td(13, 22);
+        break;
+      case "stalp_mt_sc15014":
+        inner = `<circle class="sel-r" cx="0" cy="0" r="22" fill="${bg}" stroke="${c}" stroke-width="2.5"/><circle cx="0" cy="0" r="13" fill="none" stroke="${c}" stroke-width="1.5"/><line x1="-9" y1="-9" x2="9" y2="9" stroke="${c}" stroke-width="2"/><line x1="9" y1="-9" x2="-9" y2="9" stroke="${c}" stroke-width="2"/>` + td(-22, -13) + td(-22, 0) + td(-22, 13) + td(22, -13) + td(22, 0) + td(22, 13) + td(-13, -22) + td(0, -22) + td(13, -22) + td(-13, 22) + td(0, 22) + td(13, 22);
+        break;
+      case "stalp_mt_sc15015":
+        inner = `<circle class="sel-r" cx="0" cy="0" r="22" fill="${bg}" stroke="${c}" stroke-width="2.5"/><circle cx="0" cy="0" r="13" fill="none" stroke="${c}" stroke-width="1.5"/><line x1="-9" y1="-9" x2="9" y2="9" stroke="${c}" stroke-width="2"/><line x1="9" y1="-9" x2="-9" y2="9" stroke="${c}" stroke-width="2"/><line x1="-9" y1="0" x2="9" y2="0" stroke="${c}" stroke-width="2"/><line x1="0" y1="-9" x2="0" y2="9" stroke="${c}" stroke-width="2"/>` + td(-22, -13) + td(-22, 0) + td(-22, 13) + td(22, -13) + td(22, 0) + td(22, 13) + td(-13, -22) + td(0, -22) + td(13, -22) + td(-13, 22) + td(0, 22) + td(13, 22);
+        break;
+      // ── Stâlpi MT — SE vibro-precomprimați (pătrat dublu)
+      case "stalp_mt_se4t":
+        inner = `<rect class="sel-r" x="-22" y="-22" width="44" height="44" fill="${bg}" stroke="${c}" stroke-width="2.5"/><rect x="-13" y="-13" width="26" height="26" fill="none" stroke="${c}" stroke-width="1.5"/>` + td(-22, -13) + td(-22, 0) + td(-22, 13) + td(22, -13) + td(22, 0) + td(22, 13) + td(-13, -22) + td(0, -22) + td(13, -22) + td(-13, 22) + td(0, 22) + td(13, 22);
+        break;
+      case "stalp_mt_se5t":
+        inner = `<rect class="sel-r" x="-22" y="-22" width="44" height="44" fill="${bg}" stroke="${c}" stroke-width="2.5"/><rect x="-13" y="-13" width="26" height="26" fill="none" stroke="${c}" stroke-width="1.5"/><line x1="-9" y1="0" x2="9" y2="0" stroke="${c}" stroke-width="2"/>` + td(-22, -13) + td(-22, 0) + td(-22, 13) + td(22, -13) + td(22, 0) + td(22, 13) + td(-13, -22) + td(0, -22) + td(13, -22) + td(-13, 22) + td(0, 22) + td(13, 22);
+        break;
+      case "stalp_mt_se6t":
+        inner = `<rect class="sel-r" x="-22" y="-22" width="44" height="44" fill="${bg}" stroke="${c}" stroke-width="2.5"/><rect x="-13" y="-13" width="26" height="26" fill="none" stroke="${c}" stroke-width="1.5"/><line x1="0" y1="-9" x2="0" y2="9" stroke="${c}" stroke-width="2"/>` + td(-22, -13) + td(-22, 0) + td(-22, 13) + td(22, -13) + td(22, 0) + td(22, 13) + td(-13, -22) + td(0, -22) + td(13, -22) + td(-13, 22) + td(0, 22) + td(13, 22);
+        break;
+      case "stalp_mt_se7t":
+        inner = `<rect class="sel-r" x="-22" y="-22" width="44" height="44" fill="${bg}" stroke="${c}" stroke-width="2.5"/><rect x="-13" y="-13" width="26" height="26" fill="none" stroke="${c}" stroke-width="1.5"/><line x1="-9" y1="-9" x2="9" y2="9" stroke="${c}" stroke-width="2"/><line x1="9" y1="-9" x2="-9" y2="9" stroke="${c}" stroke-width="2"/>` + td(-22, -13) + td(-22, 0) + td(-22, 13) + td(22, -13) + td(22, 0) + td(22, 13) + td(-13, -22) + td(0, -22) + td(13, -22) + td(-13, 22) + td(0, 22) + td(13, 22);
+        break;
+      case "stalp_mt_se8t":
+        inner = `<rect class="sel-r" x="-22" y="-22" width="44" height="44" fill="${bg}" stroke="${c}" stroke-width="2.5"/><rect x="-13" y="-13" width="26" height="26" fill="none" stroke="${c}" stroke-width="1.5"/><line x1="-9" y1="-9" x2="9" y2="9" stroke="${c}" stroke-width="2"/><line x1="9" y1="-9" x2="-9" y2="9" stroke="${c}" stroke-width="2"/><line x1="-9" y1="0" x2="9" y2="0" stroke="${c}" stroke-width="2"/>` + td(-22, -13) + td(-22, 0) + td(-22, 13) + td(22, -13) + td(22, 0) + td(22, 13) + td(-13, -22) + td(0, -22) + td(13, -22) + td(-13, 22) + td(0, 22) + td(13, 22);
+        break;
+      case "stalp_mt_se9t":
+        inner = `<rect class="sel-r" x="-22" y="-22" width="44" height="44" fill="${bg}" stroke="${c}" stroke-width="2.5"/><rect x="-13" y="-13" width="26" height="26" fill="none" stroke="${c}" stroke-width="1.5"/><line x1="-9" y1="-9" x2="9" y2="9" stroke="${c}" stroke-width="2"/><line x1="9" y1="-9" x2="-9" y2="9" stroke="${c}" stroke-width="2"/><line x1="0" y1="-9" x2="0" y2="9" stroke="${c}" stroke-width="2"/>` + td(-22, -13) + td(-22, 0) + td(-22, 13) + td(22, -13) + td(22, 0) + td(22, 13) + td(-13, -22) + td(0, -22) + td(13, -22) + td(-13, 22) + td(0, 22) + td(13, 22);
+        break;
+      case "stalp_mt_se10t":
+        inner = `<rect class="sel-r" x="-22" y="-22" width="44" height="44" fill="${bg}" stroke="${c}" stroke-width="2.5"/><rect x="-13" y="-13" width="26" height="26" fill="none" stroke="${c}" stroke-width="1.5"/><line x1="-9" y1="0" x2="9" y2="0" stroke="${c}" stroke-width="2"/><line x1="0" y1="-9" x2="0" y2="9" stroke="${c}" stroke-width="2"/>` + td(-22, -13) + td(-22, 0) + td(-22, 13) + td(22, -13) + td(22, 0) + td(22, 13) + td(-13, -22) + td(0, -22) + td(13, -22) + td(-13, 22) + td(0, 22) + td(13, 22);
+        break;
+      case "stalp_mt_se11t":
+        inner = `<rect class="sel-r" x="-22" y="-22" width="44" height="44" fill="${bg}" stroke="${c}" stroke-width="2.5"/><rect x="-13" y="-13" width="26" height="26" fill="none" stroke="${c}" stroke-width="1.5"/><line x1="-9" y1="-9" x2="9" y2="9" stroke="${c}" stroke-width="2"/><line x1="9" y1="-9" x2="-9" y2="9" stroke="${c}" stroke-width="2"/><line x1="-9" y1="0" x2="9" y2="0" stroke="${c}" stroke-width="2"/><line x1="0" y1="-9" x2="0" y2="9" stroke="${c}" stroke-width="2"/>` + td(-22, -13) + td(-22, 0) + td(-22, 13) + td(22, -13) + td(22, 0) + td(22, 13) + td(-13, -22) + td(0, -22) + td(13, -22) + td(-13, 22) + td(0, 22) + td(13, 22);
+        break;
       case "priza_pamant":
         if (bg !== "none") inner += `<rect x="-25" y="-32" width="50" height="58" fill="${bg}" stroke="none" rx="4"/>`;
         inner += `<rect class="sel-r" x="-25" y="-32" width="50" height="58" fill="none" stroke="transparent"/><line x1="0" y1="-32" x2="0" y2="0" stroke="${c}" stroke-width="2.5"/><line x1="-22" y1="0" x2="22" y2="0" stroke="${c}" stroke-width="2.5"/><line x1="-15" y1="8" x2="15" y2="8" stroke="${c}" stroke-width="2"/><line x1="-8" y1="16" x2="8" y2="16" stroke="${c}" stroke-width="1.5"/>` + td(0, -32);
@@ -725,6 +780,41 @@
   var init_elements = __esm({
     "src/elements.js"() {
       init_state();
+    }
+  });
+
+  // src/pole-catalog.js
+  function getPoleData(el) {
+    if (!el) return { H: null, T_max: null, desc: "?", catH: null, catT: null };
+    const cat = POLE_CATALOG[el.type] ?? {};
+    return {
+      H: el.h_prindere_ovr != null ? el.h_prindere_ovr : cat.H ?? null,
+      T_max: el.T_max_ovr != null ? el.T_max_ovr : cat.T_max ?? null,
+      desc: cat.desc ?? el.type,
+      catH: cat.H ?? null,
+      catT: cat.T_max ?? null
+    };
+  }
+  var POLE_CATALOG;
+  var init_pole_catalog = __esm({
+    "src/pole-catalog.js"() {
+      POLE_CATALOG = {
+        // ── Stâlpi circulari centrifugați (SC) ──────────────────────────────────
+        stalp_mt_sc10001: { desc: "SC 10/1 \u2014 intermediar N", H: 8.5, T_max: null },
+        stalp_mt_sc15006: { desc: "SC 10/6 \u2014 ancoraj u\u0219or", H: 8.5, T_max: null },
+        stalp_mt_sc15007: { desc: "SC 10/7 \u2014 ancoraj", H: 8.5, T_max: null },
+        stalp_mt_sc15014: { desc: "SC 12/14 \u2014 ancoraj", H: 10.5, T_max: null },
+        stalp_mt_sc15015: { desc: "SC 12/15 \u2014 ancoraj \xEEnalt", H: 10.5, T_max: null },
+        // ── Stâlpi vibroprecomprimați (SE) ──────────────────────────────────────
+        stalp_mt_se4t: { desc: "SE 4T", H: 7.5, T_max: null },
+        stalp_mt_se5t: { desc: "SE 5T", H: 8, T_max: null },
+        stalp_mt_se6t: { desc: "SE 6T", H: 8.5, T_max: null },
+        stalp_mt_se7t: { desc: "SE 7T", H: 9, T_max: null },
+        stalp_mt_se8t: { desc: "SE 8T", H: 9.5, T_max: null },
+        stalp_mt_se9t: { desc: "SE 9T", H: 10, T_max: null },
+        stalp_mt_se10t: { desc: "SE 10T", H: 10.5, T_max: null },
+        stalp_mt_se11t: { desc: "SE 11T", H: 11, T_max: null }
+      };
     }
   });
 
@@ -2268,6 +2358,62 @@ ${(r * 0.1).toFixed(4)}
   });
 
   // src/interaction.js
+  function _renderMeasure(pt2 = null) {
+    const layer = document.getElementById("MEAS");
+    if (!layer) return;
+    if (!_mpt1) {
+      layer.innerHTML = "";
+      return;
+    }
+    const dark = !S.lightMode;
+    const mC = dark ? "#ffd700" : "#b85000";
+    if (!pt2) {
+      layer.innerHTML = `
+      <circle cx="${_mpt1.x.toFixed(1)}" cy="${_mpt1.y.toFixed(1)}" r="4"
+              fill="${mC}" opacity="0.9"/>
+      <line x1="${(_mpt1.x - 10).toFixed(1)}" y1="${_mpt1.y.toFixed(1)}"
+            x2="${(_mpt1.x + 10).toFixed(1)}" y2="${_mpt1.y.toFixed(1)}"
+            stroke="${mC}" stroke-width="1.3"/>
+      <line x1="${_mpt1.x.toFixed(1)}" y1="${(_mpt1.y - 10).toFixed(1)}"
+            x2="${_mpt1.x.toFixed(1)}" y2="${(_mpt1.y + 10).toFixed(1)}"
+            stroke="${mC}" stroke-width="1.3"/>`;
+      return;
+    }
+    const dx = pt2.x - _mpt1.x, dy = pt2.y - _mpt1.y;
+    const dist = Math.hypot(dx, dy);
+    const ppm = S.pxPerMeter || 5;
+    const distM = (dist / ppm).toFixed(2);
+    const mx = (_mpt1.x + pt2.x) / 2, my = (_mpt1.y + pt2.y) / 2;
+    const ux = dist > 0 ? dx / dist : 1, uy = dist > 0 ? dy / dist : 0;
+    const lx = (mx - uy * 16).toFixed(1), ly = (my + ux * 16).toFixed(1);
+    layer.innerHTML = `
+    <line x1="${_mpt1.x.toFixed(1)}" y1="${_mpt1.y.toFixed(1)}"
+          x2="${pt2.x.toFixed(1)}" y2="${pt2.y.toFixed(1)}"
+          stroke="${mC}" stroke-width="1.6" stroke-dasharray="7,4"/>
+    <circle cx="${_mpt1.x.toFixed(1)}" cy="${_mpt1.y.toFixed(1)}" r="3.5"
+            fill="${mC}" opacity="0.9"/>
+    <circle cx="${pt2.x.toFixed(1)}" cy="${pt2.y.toFixed(1)}" r="3.5"
+            fill="${mC}" opacity="0.9"/>
+    <text x="${lx}" y="${ly}"
+          font-size="11" fill="${mC}" font-family="JetBrains Mono,monospace"
+          font-weight="700" text-anchor="middle"
+          paint-order="stroke" stroke="#000a" stroke-width="2.5"
+          stroke-linecap="round">${distM} m</text>`;
+  }
+  function toggleMeasure() {
+    if (S.mode === "measure") {
+      setMode("select");
+      _mpt1 = null;
+      _renderMeasure();
+    } else {
+      setMode("measure");
+      _mpt1 = null;
+      _renderMeasure();
+      toast("Clic punct 1, clic punct 2 \u2192 distan\u021B\u0103. Esc = anulare.", "ok");
+    }
+    const btn = document.getElementById("btn-measure");
+    if (btn) btn.classList.toggle("active", S.mode === "measure");
+  }
   function onDn(e) {
     const pt = svgPt(e);
     if (e.button === 2) {
@@ -2311,6 +2457,22 @@ ${(r * 0.1).toFixed(4)}
     }
     if (S.mode === "place") {
       addElem(pt.x, pt.y);
+      return;
+    }
+    if (S.mode === "mt_span") {
+      placeMTSpanAt(pt.x, pt.y);
+      return;
+    }
+    if (S.mode === "measure") {
+      if (!_mpt1) {
+        _mpt1 = { x: pt.x, y: pt.y };
+        _renderMeasure();
+      } else {
+        _renderMeasure(pt);
+        const d = (Math.hypot(pt.x - _mpt1.x, pt.y - _mpt1.y) / (S.pxPerMeter || 5)).toFixed(2);
+        toast(`${d} m`, "ok");
+        _mpt1 = null;
+      }
       return;
     }
     if (S.mode === "draw_poly") {
@@ -2373,6 +2535,10 @@ ${(r * 0.1).toFixed(4)}
         img.style.left = S.bgData.x + "px";
         img.style.top = S.bgData.y + "px";
       }
+      return;
+    }
+    if (S.mode === "measure" && _mpt1) {
+      _renderMeasure(pt);
       return;
     }
     if (S.mode === "calibrate" && S.calibPts.length === 1) {
@@ -2688,6 +2854,8 @@ ${(r * 0.1).toFixed(4)}
           setMode("select");
           render();
           updateProps();
+          _mpt1 = null;
+          _renderMeasure();
         }
         if (e.key === "s") setMode("select");
         if (e.key === "c") setMode("connect");
@@ -2718,6 +2886,7 @@ ${(r * 0.1).toFixed(4)}
     toast(msg, "ok");
     if (dir && !S.flowAnimOn) toggleFlowAnim();
   }
+  var _mpt1;
   var init_interaction = __esm({
     "src/interaction.js"() {
       init_state();
@@ -2728,6 +2897,7 @@ ${(r * 0.1).toFixed(4)}
       init_ui();
       init_export();
       init_project();
+      _mpt1 = null;
     }
   });
 
@@ -2755,7 +2925,7 @@ ${(r * 0.1).toFixed(4)}
     </div>`;
       const selCns = S.CN.filter((c) => S.multiSel.has(c.id));
       if (selCns.length > 0) {
-        const tcOpts = ["Clasic Al", "Torsadat Al", "Cablu Al", "Cablu Cu"];
+        const tcOpts = ["Clasic Al", "Torsadat Al", "Cablu Al", "Cablu Cu", "OL-AL"];
         const secOpts = [2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240];
         const secOptHtml = secOpts.map((s) => `<option value="${s}">${s} mm\xB2</option>`).join("");
         html += `<div class="psec"><div class="psh">\u26A1 Editare Multipl\u0103 Cabluri (${selCns.length})</div>
@@ -3063,7 +3233,62 @@ ${(r * 0.1).toFixed(4)}
         let inputsHtml = groups.map((g) => `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;"><span style="font-size:9px;color:var(--text2)">${g === "Implicit" ? "Grup implicit / Toate" : `Grup ${g}`}</span><input class="pi p-cons-grp" data-grp="${g}" type="number" style="width:60px;padding:3px" min="0" value="${el.cons_dict[g] || 0}"></div>`).join("");
         let pvInputsHtml = groups.map((g) => `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;"><span style="font-size:9px;color:var(--text2)">${g === "Implicit" ? "Grup implicit / Toate" : `Grup ${g}`}</span><input class="pi p-pv-grp" data-grp="${g}" type="number" step="0.1" style="width:60px;padding:3px" min="0" value="${el.pv_dict[g] || 0}"></div>`).join("");
         let poleTypeHtml = "", csFuseHtml = "";
-        if (isStalp) {
+        const isMTStalp = el.type.startsWith("stalp_mt_");
+        if (isMTStalp) {
+          const catD = getPoleData(el);
+          poleTypeHtml = `
+          <div class="pr" style="background:rgba(192,112,0,.08);border-left:3px solid #c07000;padding-left:8px">
+            <div class="pl" style="color:#c07000">St\xE2lp MT 20kV</div>
+            <select class="pi" id="p-st-type">
+              <optgroup label="SC Centrifuga\u021Bi">
+                <option value="stalp_mt_sc10001" ${el.type === "stalp_mt_sc10001" ? "selected" : ""}>SC 10001</option>
+                <option value="stalp_mt_sc15006" ${el.type === "stalp_mt_sc15006" ? "selected" : ""}>SC 15006</option>
+                <option value="stalp_mt_sc15007" ${el.type === "stalp_mt_sc15007" ? "selected" : ""}>SC 15007</option>
+                <option value="stalp_mt_sc15014" ${el.type === "stalp_mt_sc15014" ? "selected" : ""}>SC 15014</option>
+                <option value="stalp_mt_sc15015" ${el.type === "stalp_mt_sc15015" ? "selected" : ""}>SC 15015</option>
+              </optgroup>
+              <optgroup label="SE Vibro-Precomprima\u021Bi">
+                <option value="stalp_mt_se4t" ${el.type === "stalp_mt_se4t" ? "selected" : ""}>SE 4T</option>
+                <option value="stalp_mt_se5t" ${el.type === "stalp_mt_se5t" ? "selected" : ""}>SE 5T</option>
+                <option value="stalp_mt_se6t" ${el.type === "stalp_mt_se6t" ? "selected" : ""}>SE 6T</option>
+                <option value="stalp_mt_se7t" ${el.type === "stalp_mt_se7t" ? "selected" : ""}>SE 7T</option>
+                <option value="stalp_mt_se8t" ${el.type === "stalp_mt_se8t" ? "selected" : ""}>SE 8T</option>
+                <option value="stalp_mt_se9t" ${el.type === "stalp_mt_se9t" ? "selected" : ""}>SE 9T</option>
+                <option value="stalp_mt_se10t" ${el.type === "stalp_mt_se10t" ? "selected" : ""}>SE 10T</option>
+                <option value="stalp_mt_se11t" ${el.type === "stalp_mt_se11t" ? "selected" : ""}>SE 11T</option>
+              </optgroup>
+            </select>
+            <div style="font-size:7.5px;color:var(--text3);margin-top:3px">${catD.desc}</div>
+          </div>
+          <div class="pr" style="background:rgba(192,112,0,.05);border-left:3px solid #c07000;padding-left:8px">
+            <div style="display:flex;gap:8px;align-items:flex-end">
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <span style="font-size:7.5px;font-weight:700;color:#c07000;text-transform:uppercase">H prindere [m]</span>
+                <input class="pi" id="p-h-prindere" type="number" min="2" max="25" step="0.5"
+                       style="width:62px"
+                       placeholder="${catD.catH != null ? catD.catH : "?"}"
+                       value="${el.h_prindere_ovr != null ? el.h_prindere_ovr : ""}"
+                       title="\xCEn\u0103l\u021Bimea punctului de prindere fa\u021B\u0103 de sol [m]. Catalog: ${catD.catH ?? "?"}m. Gol = din catalog.">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <span style="font-size:7.5px;font-weight:700;color:#c07000;text-transform:uppercase">T_max horiz. [daN]</span>
+                <input class="pi" id="p-T-max-horiz" type="number" min="0" max="99999" step="50"
+                       style="width:72px"
+                       placeholder="${catD.catT != null ? catD.catT : "\u221E"}"
+                       value="${el.T_max_ovr != null ? el.T_max_ovr : ""}"
+                       title="Trac\u021Biunea orizontal\u0103 max. admis\u0103 [daN] pentru st\xE2lpi de ancorare. Gol = f\u0103r\u0103 limitare (st\xE2lpi N sus\u021Binere).">
+              </div>
+            </div>
+          </div>
+          <div class="pr">
+            <button class="pi" id="p-mt-extend"
+              style="width:100%;padding:7px;background:rgba(192,112,0,.15);border:1px solid #c07000;
+                border-radius:5px;color:#c07000;font-weight:800;font-size:9px;cursor:pointer;letter-spacing:.05em"
+              title="Adaug\u0103 un st\xE2lp nou \u0219i 3 conexiuni RST pornind de la acest st\xE2lp">
+              + Adaug\u0103 deschidere de la acest st\xE2lp
+            </button>
+          </div>`;
+        } else if (isStalp) {
           poleTypeHtml = `<div class="pr"><div class="pl">\u{1F3D7}\uFE0F Tip St\xE2lp</div><select class="pi" id="p-st-type">
           <option value="stalp_se4" ${el.type === "stalp_se4" ? "selected" : ""}>SE 4 (P\u0103trat Gol)</option>
           <option value="stalp_se10" ${el.type === "stalp_se10" ? "selected" : ""}>SE 10 (P\u0103trat cu X)</option>
@@ -3261,6 +3486,9 @@ ${(r * 0.1).toFixed(4)}
       });
       if (isStalp || el.type.startsWith("firida_")) {
         document.getElementById("p-nod")?.addEventListener("change", (ev) => updSel("nod", ev.target.value));
+        document.getElementById("p-mt-extend")?.addEventListener("click", () => {
+          addMTSpanFrom(el.id);
+        });
         document.getElementById("p-cs-fuse")?.addEventListener("input", (ev) => {
           el.cs_fuse = parseFloat(ev.target.value) || 100;
           if (document.getElementById("vd-panel").style.display === "flex") runVD();
@@ -3279,13 +3507,28 @@ ${(r * 0.1).toFixed(4)}
             render();
             updateProps();
             if (document.getElementById("vd-panel").style.display === "flex") runVD();
+            window.runSagMT?.();
           }
+        });
+        document.getElementById("p-h-prindere")?.addEventListener("change", (ev) => {
+          const ve = S.EL.find((x) => x.id === S.sel);
+          if (!ve) return;
+          const v = parseFloat(ev.target.value);
+          ve.h_prindere_ovr = isFinite(v) && v > 0 ? v : void 0;
+          window.runSagMT?.();
+        });
+        document.getElementById("p-T-max-horiz")?.addEventListener("change", (ev) => {
+          const ve = S.EL.find((x) => x.id === S.sel);
+          if (!ve) return;
+          const v = parseFloat(ev.target.value);
+          ve.T_max_ovr = isFinite(v) && v > 0 ? v : void 0;
+          window.runSagMT?.();
         });
       }
       buildColors(el.color, (c) => updSel("color", c), "p-crow-color", false);
       buildColors(el.fillColor, (c) => updSel("fillColor", c), "p-crow-fill", true);
     } else {
-      const tcOpts = ["Clasic Al", "Torsadat Al", "Cablu Al", "Cablu Cu"];
+      const tcOpts = ["Clasic Al", "Torsadat Al", "Cablu Al", "Cablu Cu", "OL-AL"];
       const secOpts = [2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240];
       const availSec = Object.keys(R0_TABLES[cn.tipConductor || "Clasic Al"] || {}).map(Number).sort((a, b) => a - b);
       const secOptHtml = secOpts.map((s) => `<option value="${s}" ${parseFloat(cn.sectiune || 16) === s ? "selected" : ""} ${!availSec.includes(s) ? 'disabled style="color:#555"' : ""}>${s} mm\xB2</option>`).join("");
@@ -3310,6 +3553,7 @@ ${(r * 0.1).toFixed(4)}
         <div class="pr"><div class="pl">Tip conductor</div><select class="pi" id="p-tc">${tcOpts.map((t) => `<option value="${t}" ${(cn.tipConductor || "Clasic Al") === t ? "selected" : ""}>${t}</option>`).join("")}</select></div>
         <div class="pr"><div class="pl">Sec\u021Biune (mm\xB2)</div><select class="pi" id="p-sec">${secOptHtml}</select></div>
         <div class="pr"><div class="pl">Tip re\u021Bea</div><select class="pi" id="p-tr"><option value="Trifazat" ${(cn.tipRetea || "Trifazat") === "Trifazat" ? "selected" : ""}>Trifazat (3\xD7Un=0.4kV)</option><option value="Bifazat" ${cn.tipRetea === "Bifazat" ? "selected" : ""}>Bifazat (2\xD7Un=0.4kV)</option><option value="Monofazat" ${cn.tipRetea === "Monofazat" ? "selected" : ""}>Monofazat (Un=0.23kV)</option></select></div>
+        <div class="pr"><div class="pl">Faz\u0103 MT (RST)</div><select class="pi" id="p-faza" style="font-weight:700;color:${cn.faza === "R" ? "#ef4444" : cn.faza === "S" ? "#22c55e" : cn.faza === "T" ? "#3b82f6" : "var(--text)"}"><option value="" ${!cn.faza ? "selected" : ""} style="color:var(--text)">\u2014 (nedefinit)</option><option value="R" ${cn.faza === "R" ? "selected" : ""} style="color:#ef4444">R (faza R)</option><option value="S" ${cn.faza === "S" ? "selected" : ""} style="color:#22c55e">S (faza S)</option><option value="T" ${cn.faza === "T" ? "selected" : ""} style="color:#3b82f6">T (faza T)</option></select></div>
         <div class="pr"><div class="pl">r\u2080 (rezisten\u021B\u0103 specific\u0103)</div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accentg);padding:4px 7px;background:var(--bg2);border-radius:4px" id="p-r0disp">${r0disp}</div></div>
         <div class="pr"><div class="pl">Putere concentrat\u0103 nod final (kW)</div><input class="pi" type="number" step="0.1" id="p-pc" value="${cn.putereConc || 0}"></div>
       </div>
@@ -3365,6 +3609,11 @@ ${(r * 0.1).toFixed(4)}
         if (d) d.textContent = r0 ? (r0 / 1e3).toFixed(4) + " \u03A9/km" : "\u2014";
       });
       document.getElementById("p-tr").addEventListener("change", (ev) => updSel("tipRetea", ev.target.value));
+      document.getElementById("p-faza").addEventListener("change", (ev) => {
+        const v = ev.target.value;
+        updSel("faza", v || void 0);
+        ev.target.style.color = v === "R" ? "#ef4444" : v === "S" ? "#22c55e" : v === "T" ? "#3b82f6" : "var(--text)";
+      });
       document.getElementById("p-flow")?.addEventListener("change", (ev) => {
         updSel("flowDir", ev.target.value);
         renderFlowLayer();
@@ -4318,6 +4567,7 @@ ${(r * 0.1).toFixed(4)}
     "src/ui.js"() {
       init_state();
       init_config();
+      init_pole_catalog();
       init_calculations();
       init_elements();
       init_renderer();
@@ -4331,19 +4581,35 @@ ${(r * 0.1).toFixed(4)}
   var element_manager_exports = {};
   __export(element_manager_exports, {
     addElem: () => addElem,
+    addMTSpanFrom: () => addMTSpanFrom,
     copyEl: () => copyEl,
     delSel: () => delSel,
     finalConn: () => finalConn,
     pasteEl: () => pasteEl,
+    placeMTSpanAt: () => placeMTSpanAt,
     redo: () => redo,
     rotateSel: () => rotateSel,
     saveState: () => saveState,
     selectEl: () => selectEl,
+    setMTConnect: () => setMTConnect,
     setRotationAbs: () => setRotationAbs,
+    startMTSpan: () => startMTSpan,
     undo: () => undo,
     updSel: () => updSel,
     updateConnectedCables: () => updateConnectedCables
   });
+  function setMTConnect(faza) {
+    _pendingFaza = faza;
+    _pendingSecMT = parseInt(document.getElementById("mt-sec-sel")?.value) || 70;
+    setMode("connect");
+    ["R", "S", "T"].forEach((f) => {
+      const btn = document.getElementById(`btn-mt-${f}`);
+      if (!btn) return;
+      btn.style.borderColor = f === faza ? FAZA_COL[f] : "var(--border2)";
+      btn.style.background = f === faza ? FAZA_COL[f] + "22" : "";
+    });
+    toast(`Connect MT \u2014 Faza ${faza} \xB7 OL-AL ${_pendingSecMT}mm\xB2`, "ok");
+  }
   function saveState(lbl) {
     S.undoStack.push({ lbl, E: JSON.stringify(S.EL), C: JSON.stringify(S.CN) });
     if (S.undoStack.length > MAX_UNDO) S.undoStack.shift();
@@ -4570,6 +4836,87 @@ ${(r * 0.1).toFixed(4)}
     render();
     updateProps();
   }
+  function startMTSpan() {
+    _mtSpanPrevId = null;
+    _mtSpanType = document.getElementById("mt-stalp-type")?.value || "stalp_mt_se5t";
+    _mtSpanSec = parseInt(document.getElementById("mt-sec-sel")?.value) || 70;
+    setMode("mt_span");
+    toast("Tronson MT \u2014 clic: st\xE2lp 1, clic: st\xE2lp 2 \u2026 Esc stop", "ok");
+  }
+  function addMTSpanFrom(fromPoleId) {
+    const el = S.EL.find((e) => e.id === fromPoleId);
+    if (!el) return;
+    _mtSpanPrevId = fromPoleId;
+    _mtSpanType = el.type;
+    _mtSpanSec = parseInt(document.getElementById("mt-sec-sel")?.value) || 70;
+    setMode("mt_span");
+    toast(`Prelungire MT de la ${el.label || el.type} \u2014 clic: st\xE2lp nou. Esc stop`, "ok");
+  }
+  function placeMTSpanAt(x, y) {
+    saveState("mt span");
+    const newEl = {
+      id: uid(),
+      type: _mtSpanType,
+      x: sn(x),
+      y: sn(y),
+      rotation: 0,
+      scale: 1,
+      label: nextLbl(_mtSpanType),
+      color: "#555",
+      fillColor: "none",
+      stare: "existent"
+    };
+    S.EL.push(newEl);
+    if (_mtSpanPrevId) {
+      const prev = S.EL.find((e) => e.id === _mtSpanPrevId);
+      if (prev) _connectMTPoles(prev, newEl, _mtSpanSec);
+    }
+    _mtSpanPrevId = newEl.id;
+    selectEl(newEl.id);
+    render();
+    updateStat();
+  }
+  function _connectMTPoles(fromEl, toEl, sec) {
+    const dx = toEl.x - fromEl.x, dy = toEl.y - fromEl.y;
+    const horiz = Math.abs(dx) >= Math.abs(dy);
+    let ftx, fty, ttx, tty;
+    if (horiz) {
+      ftx = dx > 0 ? 22 : -22;
+      fty = 0;
+      ttx = dx > 0 ? -22 : 22;
+      tty = 0;
+    } else {
+      fty = dy > 0 ? 22 : -22;
+      ftx = 0;
+      tty = dy > 0 ? -22 : 22;
+      ttx = 0;
+    }
+    const wp0 = termWorldPos(fromEl, ftx, fty);
+    const wp1 = termWorldPos(toEl, ttx, tty);
+    const lenM = parseFloat((Math.hypot(dx, dy) / (S.pxPerMeter || 5)).toFixed(1));
+    const idx = S.CN.length;
+    ["R", "S", "T"].forEach((faza, i) => {
+      S.CN.push({
+        id: uid(),
+        fromElId: fromEl.id,
+        fromTerm: { cx: ftx, cy: fty },
+        toElId: toEl.id,
+        toTerm: { cx: ttx, cy: tty },
+        path: [{ x: wp0.x, y: wp0.y }, { x: wp1.x, y: wp1.y }],
+        label: `L${idx + i + 1}`,
+        length: lenM,
+        color: FAZA_COL[faza],
+        fillColor: "none",
+        lineType: "solid",
+        strokeWidth: 2.5,
+        tipConductor: "OL-AL",
+        sectiune: sec,
+        tipRetea: "Trifazat",
+        putereConc: 0,
+        faza
+      });
+    });
+  }
   function updateConnectedCables(el) {
     S.CN.forEach((cn) => {
       if (cn.fromElId === el.id && cn.fromTerm && cn.path.length >= 1) {
@@ -4621,6 +4968,7 @@ ${(r * 0.1).toFixed(4)}
       if (cdEl) cableName = `${cdEl.label || "CD"}-C${circNum}`;
     }
     const autoLenM = parseFloat((calcPathLen(S.connPts) / S.pxPerMeter).toFixed(1));
+    const isMT = !!_pendingFaza;
     S.CN.push({
       id: uid(),
       fromElId: S.connFromEl,
@@ -4630,16 +4978,17 @@ ${(r * 0.1).toFixed(4)}
       path: [...S.connPts],
       label: cableName,
       length: autoLenM,
-      color: "#ef4444",
+      color: isMT ? FAZA_COL[_pendingFaza] : "#ef4444",
       fillColor: "none",
       lineType: "solid",
-      strokeWidth: 2,
+      strokeWidth: isMT ? 2.5 : 2,
       fromCircuit: S.connFromCircuit,
       toCircuit: S.connToCircuit,
-      tipConductor: "Clasic Al",
-      sectiune: 16,
+      tipConductor: isMT ? "OL-AL" : "Clasic Al",
+      sectiune: isMT ? _pendingSecMT : 16,
       tipRetea: "Trifazat",
-      putereConc: 0
+      putereConc: 0,
+      ...isMT ? { faza: _pendingFaza } : {}
     });
     S.connStart = null;
     S.connPts = [];
@@ -4653,6 +5002,7 @@ ${(r * 0.1).toFixed(4)}
     render();
     updateStat();
   }
+  var _pendingFaza, _pendingSecMT, FAZA_COL, _mtSpanPrevId, _mtSpanType, _mtSpanSec;
   var init_element_manager = __esm({
     "src/element-manager.js"() {
       init_state();
@@ -4661,6 +5011,12 @@ ${(r * 0.1).toFixed(4)}
       init_elements();
       init_renderer();
       init_ui();
+      _pendingFaza = null;
+      _pendingSecMT = 70;
+      FAZA_COL = { R: "#ef4444", S: "#22c55e", T: "#3b82f6" };
+      _mtSpanPrevId = null;
+      _mtSpanType = "stalp_mt_se5t";
+      _mtSpanSec = 70;
       window.baraStatieTerUpd = function(elId, idx, key, val) {
         const el = S.EL.find((x) => x.id === elId);
         if (!el || !el.terminale) return;
@@ -4785,6 +5141,7 @@ ${(r * 0.1).toFixed(4)}
   // src/renderer.js
   var renderer_exports = {};
   __export(renderer_exports, {
+    MT_PHASE_PX: () => MT_PHASE_PX,
     clearBg: () => clearBg,
     closeCalib: () => closeCalib,
     confirmCalib: () => confirmCalib,
@@ -4816,6 +5173,17 @@ ${(r * 0.1).toFixed(4)}
   }
   function mk(t) {
     return document.createElementNS("http://www.w3.org/2000/svg", t);
+  }
+  function _mtOffsetPath(path, faza) {
+    const dir = _MT_FAZA_DIR[faza];
+    if (!dir || path.length < 2) return path;
+    const p0 = path[0], pn = path[path.length - 1];
+    const dx = pn.x - p0.x, dy = pn.y - p0.y;
+    const len = Math.hypot(dx, dy);
+    if (len < 1) return path;
+    const nx = -dy / len, ny = dx / len;
+    const off = dir * MT_PHASE_PX;
+    return path.map((p) => ({ x: p.x + nx * off, y: p.y + ny * off }));
   }
   function renderBg() {
     const bgL = document.getElementById("bg-layer");
@@ -5007,10 +5375,11 @@ ${(r * 0.1).toFixed(4)}
     _CL.innerHTML = "";
     S.CN.forEach((cn) => {
       const isSel = cn.id === S.sel || S.multiSel.has(cn.id), col = cn.color || "#ef4444", sw = cn.strokeWidth || 2, dash = cn.lineType === "dashed" ? 'stroke-dasharray="10,5"' : "";
+      const rp = cn.faza ? _mtOffsetPath(cn.path, cn.faza) : cn.path;
       let dStr = "", JUMP_R = 6;
-      if (cn.path.length > 0) {
-        for (let i = 0; i < cn.path.length - 1; i++) {
-          const p1 = cn.path[i], p2 = cn.path[i + 1];
+      if (rp.length > 0) {
+        for (let i = 0; i < rp.length - 1; i++) {
+          const p1 = rp[i], p2 = rp[i + 1];
           if (i === 0) dStr += `M ${p1.x},${p1.y} `;
           let inters = [];
           S.CN.forEach((otherCn) => {
@@ -5056,16 +5425,16 @@ ${(r * 0.1).toFixed(4)}
           }
         }
       }
-      const pts = cn.path.map((p) => `${p.x},${p.y}`).join(" ");
+      const pts = rp.map((p) => `${p.x},${p.y}`).join(" ");
       g.innerHTML = `<polyline class="hb" points="${pts}" fill="none" stroke="transparent" stroke-width="16" style="pointer-events:stroke;cursor:pointer"/>${hlPath}<path class="cl" d="${dStr}" fill="none" stroke="${col}" stroke-width="${isSel ? sw + 2 : sw}" ${finalDash} pointer-events="none"/>${demXmarks}`;
-      if (cn.path.length >= 2) {
-        let maxLen = -1, bestP1 = cn.path[0], bestP2 = cn.path[1];
-        for (let i = 0; i < cn.path.length - 1; i++) {
-          let d = Math.hypot(cn.path[i + 1].x - cn.path[i].x, cn.path[i + 1].y - cn.path[i].y);
+      if (rp.length >= 2) {
+        let maxLen = -1, bestP1 = rp[0], bestP2 = rp[1];
+        for (let i = 0; i < rp.length - 1; i++) {
+          let d = Math.hypot(rp[i + 1].x - rp[i].x, rp[i + 1].y - rp[i].y);
           if (d > maxLen) {
             maxLen = d;
-            bestP1 = cn.path[i];
-            bestP2 = cn.path[i + 1];
+            bestP1 = rp[i];
+            bestP2 = rp[i + 1];
           }
         }
         let mx = (bestP1.x + bestP2.x) / 2, my = (bestP1.y + bestP2.y) / 2;
@@ -5080,6 +5449,11 @@ ${(r * 0.1).toFixed(4)}
         let tr = rot ? `transform="rotate(${rot} ${tx} ${ty})"` : "";
         let hlStyle = cn.fillColor && cn.fillColor !== "none" ? `stroke:${cn.fillColor}; stroke-width:3px; paint-order:stroke fill;` : "";
         g.innerHTML += `<text class="el-lbl" x="${tx}" y="${ty}" text-anchor="middle" dominant-baseline="central" font-size="9" fill="${col}" font-family="JetBrains Mono,monospace" font-weight="700" pointer-events="none" style="${hlStyle}" ${tr}>L=${cn.length || 0}m</text>`;
+        if (cn.faza) {
+          const fazaCol = { R: "#ef4444", S: "#22c55e", T: "#3b82f6" }[cn.faza] || "#888";
+          const bx = isHoriz ? mx + 18 : mx + 18, by = isHoriz ? my - 7 : my + 12;
+          g.innerHTML += `<circle cx="${bx}" cy="${by}" r="6" fill="${fazaCol}" stroke="rgba(0,0,0,.25)" stroke-width="1" pointer-events="none"/><text x="${bx}" y="${by}" text-anchor="middle" dominant-baseline="central" font-size="7.5" fill="white" font-weight="bold" pointer-events="none">${cn.faza}</text>`;
+        }
       }
       g.querySelector(".hb").addEventListener("mousedown", (ev) => {
         ev.stopPropagation();
@@ -5287,7 +5661,7 @@ ${(r * 0.1).toFixed(4)}
     if (S.vdOverlayOn && S.vdResults) renderVDOverlay();
     if (S.flowAnimOn) renderFlowLayer();
   }
-  var _svgEl2, _VP2, _NL, _CL, _GL;
+  var _svgEl2, _VP2, _NL, _CL, _GL, MT_PHASE_PX, _MT_FAZA_DIR;
   var init_renderer = __esm({
     "src/renderer.js"() {
       init_state();
@@ -5295,6 +5669,8 @@ ${(r * 0.1).toFixed(4)}
       init_elements();
       init_element_manager();
       init_ui();
+      MT_PHASE_PX = 14;
+      _MT_FAZA_DIR = { R: 1, S: 0, T: -1 };
     }
   });
 
@@ -8326,6 +8702,1076 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
     toast(`Import OK \u2014 ${totalStalpi} st\xE2lpi, ${totalCn} tronso\u0430\u043D\u0435 din "${postName}"`, "ok");
   }
 
+  // src/sag-mt.js
+  init_state();
+  init_utils();
+  init_renderer();
+
+  // src/calc-catenary.js
+  var CONDUCTORS = {
+    "ACSR 35/6": { A: 41.55, d: 8.4, gc: 0.1475, E: 7600, alpha: 189e-7, RTS: 1240 },
+    "ACSR 50/8": { A: 56.29, d: 9.6, gc: 0.199, E: 7428.2, alpha: 188e-7, RTS: 1681 },
+    "ACSR 70/11": { A: 81.09, d: 11.4, gc: 0.2874, E: 7300, alpha: 19e-6, RTS: 2290 },
+    "ACSR 95/16": { A: 111.9, d: 13.5, gc: 0.3921, E: 7300, alpha: 19e-6, RTS: 3080 },
+    "ACSR 120/7": { A: 127.9, d: 15, gc: 0.456, E: 7600, alpha: 189e-7, RTS: 3660 },
+    "ACSR 150/8": { A: 158.1, d: 16.6, gc: 0.568, E: 7600, alpha: 189e-7, RTS: 4300 }
+  };
+  var METEO_ZONES = {
+    // zona: { V_b [m/s] fara chiciura, V_b_ice [m/s] cu chiciura, b_ch [mm], rho_ch [kg/m3] }
+    "A.b.1": { Vb: 22, Vb_ice: 11, b_ch: 10, rho_ch: 600 },
+    "B.b.2": { Vb: 26, Vb_ice: 14, b_ch: 15, rho_ch: 700 },
+    "C.b.3": { Vb: 30, Vb_ice: 15, b_ch: 20, rho_ch: 700 },
+    "D.b.4": { Vb: 37, Vb_ice: 17, b_ch: 27, rho_ch: 700 },
+    "E.b.5": { Vb: 42, Vb_ice: 20, b_ch: 35, rho_ch: 700 }
+  };
+  var GAMMA_CH = 2.857;
+  var GAMMA_V = 2.5;
+  var TERRAIN_Z0 = { I: 0.01, II: 0.05, III: 0.3, IV: 1 };
+  var TERRAIN_ZMIN = { I: 1, II: 4, III: 8, IV: 16 };
+  var RHO_AIR = 1.25;
+  function calcWindPressure(V_b, H, terrain = "II") {
+    const z0 = TERRAIN_Z0[terrain] ?? 0.05;
+    const zmin = TERRAIN_ZMIN[terrain] ?? 4;
+    const z = Math.max(H, zmin);
+    const kr = 0.19 * (z0 / 0.05) ** 0.07;
+    const cr = kr * Math.log(z / z0);
+    const Iv = kr / cr;
+    const qb = 0.5 * RHO_AIR * V_b ** 2;
+    const qp = (1 + 7 * Iv) * cr ** 2 * qb;
+    return qp / 10;
+  }
+  function calcSpanFactor(Av) {
+    const A = 0.719 * 60 ** 0.2;
+    return Math.min(1, A * Av ** -0.2);
+  }
+  function calcLoads(cd, met) {
+    const { d, gc } = cd;
+    const { b_ch, rho_ch } = met;
+    let Pw_max, Pw_ice;
+    if (met.Pw_max !== void 0) {
+      Pw_max = met.Pw_max;
+      Pw_ice = met.Pw_ice;
+    } else {
+      Pw_max = calcWindPressure(met.Vb, met.H, met.terrain ?? "II");
+      Pw_ice = calcWindPressure(met.Vb_ice, met.H, met.terrain ?? "II");
+    }
+    const GL = met.GL !== void 0 ? met.GL : calcSpanFactor(met.Av ?? 60);
+    const d_bare = d / 1e3;
+    const d_ice = (d + 2 * b_ch) / 1e3;
+    const g1_c = gc;
+    const g1_n = gc;
+    const A_ice = Math.PI * b_ch * (d + b_ch);
+    const g2_phys = rho_ch * A_ice * 981e-9;
+    const g2_c = g2_phys;
+    const g2_n = g2_c / GAMMA_CH;
+    const g3_c = g1_c + g2_c;
+    const g3_n = g1_n + g2_n;
+    const g4_c = Pw_max * d_bare * GL;
+    const g4_n = g4_c / GAMMA_V;
+    const g5_c = Pw_ice * d_ice * GL * 1.1;
+    const g5_n = g5_c / GAMMA_V;
+    const g6_c = Math.hypot(g1_c, g4_c);
+    const g6_n = Math.hypot(g1_n, g4_n);
+    const g7_c = Math.hypot(g3_c, g5_c);
+    const g7_n = Math.hypot(g3_n, g5_n);
+    const Pw_av = Pw_ice / 4;
+    const g8_c = Pw_av * d_ice * GL * 1.1;
+    const g9_c = Math.hypot(g3_c, g8_c);
+    return {
+      Pw_max,
+      Pw_ice,
+      GL,
+      normate: { g1: g1_n, g2: g2_n, g3: g3_n, g4: g4_n, g5: g5_n, g6: g6_n, g7: g7_n },
+      calcul: {
+        g1: g1_c,
+        g2: g2_c,
+        g3: g3_c,
+        g4: g4_c,
+        g5: g5_c,
+        g6: g6_c,
+        g7: g7_c,
+        g8: g8_c,
+        g9: g9_c
+      }
+    };
+  }
+  function solveStateEquation(q1, T1, theta1, q2, theta2, L, EA, alpha) {
+    const K = T1 - q1 * q1 * L * L * EA / (24 * T1 * T1) - EA * alpha * (theta2 - theta1);
+    const C = q2 * q2 * L * L * EA / 24;
+    let T = Math.max(T1, Math.cbrt(C), 1);
+    for (let i = 0; i < 40; i++) {
+      const f = T * T * T - K * T * T - C;
+      const fp = 3 * T * T - 2 * K * T;
+      if (Math.abs(fp) < 1e-12) break;
+      const dT = f / fp;
+      T -= dT;
+      if (Math.abs(dT) < 1e-8) break;
+    }
+    return Math.max(T, 0.01);
+  }
+  var TEMP_STATES = [
+    { theta: -30, label: "-30\xB0C", qKey: "g1" },
+    { theta: -20, label: "-20\xB0C", qKey: "g1" },
+    { theta: -10, label: "-10\xB0C", qKey: "g1" },
+    { theta: -5, label: "-5\xB0C", qKey: "g1" },
+    { theta: 0, label: "0\xB0C", qKey: "g1" },
+    { theta: 5, label: "+5\xB0C", qKey: "g1" },
+    { theta: 10, label: "+10\xB0C", qKey: "g1" },
+    { theta: 15, label: "+15\xB0C", qKey: "g1" },
+    { theta: 20, label: "+20\xB0C", qKey: "g1" },
+    { theta: 25, label: "+25\xB0C", qKey: "g1" },
+    { theta: 30, label: "+30\xB0C", qKey: "g1" },
+    { theta: 35, label: "+35\xB0C", qKey: "g1" },
+    { theta: 40, label: "+40\xB0C", qKey: "g1" },
+    // starea max săgeată gabarit
+    { theta: -5, label: "-5+ch", qKey: "g3" },
+    // conductor+chiciură
+    { theta: -5, label: "-5+ch+v", qKey: "g7" },
+    // dimensionantă
+    { theta: 15, label: "+15+vmax", qKey: "g6" }
+    // conductor+vânt max
+  ];
+  function calcTensionTable(cd, loads, L, dh, T0_dim) {
+    const EA = cd.E * cd.A;
+    const alpha = cd.alpha;
+    const T_norm_ref = solveStateEquation(
+      loads.calcul.g7,
+      T0_dim,
+      -5,
+      loads.normate.g7,
+      /* theta2 */
+      -5,
+      L,
+      EA,
+      alpha
+    );
+    return TEMP_STATES.map(({ theta, label, qKey }) => {
+      const q_n = loads.normate[qKey] ?? loads.normate.g1;
+      const q_c = loads.calcul[qKey] ?? loads.calcul.g1;
+      const T_n = solveStateEquation(loads.normate.g7, T_norm_ref, -5, q_n, theta, L, EA, alpha);
+      const T_c = solveStateEquation(loads.calcul.g7, T0_dim, -5, q_c, theta, L, EA, alpha);
+      const sag_mid = q_n * L * L / (8 * T_n);
+      const x_max = L / 2 - dh * T_n / (q_n * L);
+      const sag_max = x_max > 0 && x_max < L ? q_n * x_max * (L - x_max) / (2 * T_n) : sag_mid;
+      return {
+        label,
+        theta,
+        q_norm: q_n,
+        q_calc: q_c,
+        T_norm: T_n,
+        T_calc: T_c,
+        sigma_norm: T_n / cd.A,
+        sigma_calc: T_c / cd.A,
+        sag_mid,
+        sag_max
+      };
+    });
+  }
+  function findCriticalTemperature(cd, loads, L, dh, T0_dim) {
+    const EA = cd.E * cd.A;
+    const T_norm_ref = solveStateEquation(
+      loads.calcul.g7,
+      T0_dim,
+      -5,
+      loads.normate.g7,
+      -5,
+      L,
+      EA,
+      cd.alpha
+    );
+    const q_g1 = loads.normate.g1;
+    const q_g3 = loads.normate.g3;
+    const q_ref = loads.normate.g7;
+    const T_ch = solveStateEquation(q_ref, T_norm_ref, -5, q_g3, -5, L, EA, cd.alpha);
+    const sag_ch = q_g3 * L * L / (8 * T_ch);
+    let lo = -40, hi = 100;
+    for (let i = 0; i < 60; i++) {
+      const mid = (lo + hi) / 2;
+      const T_m = solveStateEquation(q_ref, T_norm_ref, -5, q_g1, mid, L, EA, cd.alpha);
+      const sag_m = q_g1 * L * L / (8 * T_m);
+      if (sag_m < sag_ch) lo = mid;
+      else hi = mid;
+      if (hi - lo < 0.01) break;
+    }
+    return (lo + hi) / 2;
+  }
+  function findT0dim(cd, loads, L, {
+    KP_dim = 0.47,
+    KP_30 = 0.24,
+    KP_15 = 0.155,
+    f_creep = 0.95,
+    dh = 0
+  } = {}) {
+    const EA = cd.E * cd.A;
+    const adh = Math.abs(dh);
+    function toHoriz(T_cl, q) {
+      let Th = T_cl * 0.999;
+      for (let i = 0; i < 25; i++) {
+        const V = q * L / 2 + Th * adh / L;
+        const disc = T_cl * T_cl - V * V;
+        if (disc <= 0) return Math.max(T_cl * 0.95, 1);
+        const Th_new = Math.sqrt(disc);
+        if (Math.abs(Th_new - Th) < 1e-3) return Th_new;
+        Th = 0.5 * (Th + Th_new);
+      }
+      return Th;
+    }
+    const T_cl_dim = KP_dim * cd.RTS * f_creep;
+    const T0_direct = toHoriz(T_cl_dim, loads.calcul.g7);
+    const T_cl_30 = KP_30 * cd.RTS * f_creep;
+    const T_h_30 = toHoriz(T_cl_30, loads.normate.g1);
+    const T0_from30 = solveStateEquation(
+      loads.normate.g1,
+      T_h_30,
+      -30,
+      loads.calcul.g7,
+      -5,
+      L,
+      EA,
+      cd.alpha
+    );
+    const T_cl_15 = KP_15 * cd.RTS * f_creep;
+    const T_h_15 = toHoriz(T_cl_15, loads.normate.g1);
+    const T0_from15 = solveStateEquation(
+      loads.normate.g1,
+      T_h_15,
+      15,
+      loads.calcul.g7,
+      -5,
+      L,
+      EA,
+      cd.alpha
+    );
+    return Math.min(T0_direct, T0_from30, T0_from15);
+  }
+  function calcGabarit(T40, q40, L, dh, y_left, y_right, terrain = []) {
+    const N_pts = 200;
+    let minGab = Infinity, x_min = L / 2, y_cond_min = 0, y_ter_min = 0;
+    for (let i = 0; i <= N_pts; i++) {
+      const x = i / N_pts * L;
+      const y_chord = y_left + (y_right - y_left) * (x / L);
+      const sag = q40 * x * (L - x) / (2 * T40);
+      const y_c = y_chord - sag;
+      let y_t = y_left - dh * (x / L) - (y_right - y_left) * (x / L);
+      if (terrain.length >= 2) {
+        const seg = terrain.findIndex((p) => p.x > x);
+        if (seg > 0) {
+          const p0 = terrain[seg - 1], p1 = terrain[seg];
+          const t = (x - p0.x) / (p1.x - p0.x);
+          y_t = p0.y + t * (p1.y - p0.y);
+        } else if (seg === -1) {
+          y_t = terrain[terrain.length - 1].y;
+        } else {
+          y_t = terrain[0].y;
+        }
+      } else {
+        y_t = 0;
+      }
+      const gab = y_c - y_t;
+      if (gab < minGab) {
+        minGab = gab;
+        x_min = x;
+        y_cond_min = y_c;
+        y_ter_min = y_t;
+      }
+    }
+    return {
+      gabarit: minGab,
+      x_min,
+      y_cond: y_cond_min,
+      y_teren: y_ter_min,
+      sag_at_x: q40 * x_min * (L - x_min) / (2 * T40)
+    };
+  }
+  function calcSpan(conductor, meteo, span, KP_dim = null, T_max_horiz = null) {
+    const cd = typeof conductor === "string" ? { ...CONDUCTORS[conductor] } : { ...conductor };
+    if (!cd || !cd.A) throw new Error(`Conductor necunoscut: ${conductor}`);
+    let met = { ...meteo };
+    if (met.zone && METEO_ZONES[met.zone]) {
+      Object.assign(met, METEO_ZONES[met.zone]);
+    }
+    const loads = calcLoads(cd, met);
+    const { L, dh = 0, h_left = 9, h_right = 9, terrain_profile = [] } = span;
+    let T0_dim;
+    if (KP_dim !== null) {
+      T0_dim = findT0dim(cd, loads, L, {
+        KP_dim,
+        dh,
+        f_creep: 0.95,
+        KP_30: 0.24,
+        KP_15: 0.155
+      });
+    } else {
+      T0_dim = findT0dim(cd, loads, L, { dh });
+    }
+    if (T_max_horiz !== null && T0_dim > T_max_horiz) {
+      T0_dim = Math.max(T_max_horiz, 0.1);
+    }
+    const tension_table = calcTensionTable(cd, loads, L, dh, T0_dim);
+    const T_crit = findCriticalTemperature(cd, loads, L, dh, T0_dim);
+    const row40 = tension_table.find((r) => r.label === "+40\xB0C");
+    const T40 = row40.T_norm;
+    const sigma40 = T40 / cd.A;
+    const sag40 = row40.sag_max;
+    let gabaritResult = null;
+    if (terrain_profile.length >= 2) {
+      const y_left = terrain_profile[0].y + h_left;
+      const y_right = terrain_profile[terrain_profile.length - 1].y + h_right;
+      gabaritResult = calcGabarit(
+        T40,
+        loads.normate.g1,
+        L,
+        dh,
+        y_left,
+        y_right,
+        terrain_profile
+      );
+    }
+    return {
+      loads,
+      T0_dim,
+      sigma0_dim: T0_dim / cd.A,
+      KP_dim: T0_dim / cd.RTS,
+      tension_table,
+      T_crit,
+      T40,
+      sigma40,
+      sag40,
+      gabarit: gabaritResult
+    };
+  }
+
+  // src/sag-mt.js
+  init_pole_catalog();
+  var SECTION_TO_ACSR = {
+    35: "ACSR 35/6",
+    50: "ACSR 50/8",
+    70: "ACSR 70/11",
+    95: "ACSR 95/16",
+    120: "ACSR 120/7",
+    150: "ACSR 150/8"
+  };
+  var _visible = false;
+  var _zone = "D.b.4";
+  var _H = 7;
+  var _kpdim = null;
+  var L_IZ_MT = 0.79;
+  var _twindOverrides = /* @__PURE__ */ new Map();
+  function spanKey(cns2) {
+    const a = cns2[0].fromElId || "", b = cns2[0].toElId || "";
+    return a && b ? a < b ? `${a}|${b}` : `${b}|${a}` : cns2[0].id || "";
+  }
+  function calcSag(L, g_vert, g_horiz, T0) {
+    const fg = g_vert * L * L / (8 * T0);
+    const delta = g_horiz * L * L / (8 * T0);
+    const fr = Math.sqrt(fg * fg + delta * delta);
+    const theta = Math.atan2(delta, fg) * (180 / Math.PI);
+    return { fg, delta, fr, theta };
+  }
+  function computeSpan(sec, L, H_span, T_max_horiz) {
+    const key = SECTION_TO_ACSR[sec] || "ACSR 70/11";
+    const cd = CONDUCTORS[key];
+    const met = { ...METEO_ZONES[_zone], H: H_span ?? _H, Av: Math.max(L, 40), terrain: "II" };
+    const loads = calcLoads(cd, met);
+    const opts = _kpdim !== null ? { dh: 0, KP_dim: _kpdim } : { dh: 0 };
+    let T0 = findT0dim(cd, loads, L, opts);
+    if (T_max_horiz != null && T_max_horiz < T0) T0 = T_max_horiz;
+    const EA = cd.E * cd.A;
+    const T_norm_ref = solveStateEquation(loads.calcul.g7, T0, -5, loads.normate.g7, -5, L, EA, cd.alpha);
+    const T_wind = solveStateEquation(loads.normate.g7, T_norm_ref, -5, loads.normate.g6, 15, L, EA, cd.alpha);
+    return { T0, T_wind, KP: T0 / cd.RTS, cd, loads };
+  }
+  function getMTConns() {
+    const mtIds = new Set(S.EL.filter((e) => e.type.startsWith("stalp_mt_") || e.type === "separator_mt" || e.type === "bara_statie_mt").map((e) => e.id));
+    return S.CN.filter(
+      (cn) => cn.tipConductor === "OL-AL" || cn.fromElId && mtIds.has(cn.fromElId) || cn.toElId && mtIds.has(cn.toElId)
+    );
+  }
+  function groupBySpan(cns) {
+    const map = /* @__PURE__ */ new Map();
+    cns.forEach((cn) => {
+      const a = cn.fromElId || "", b = cn.toElId || "";
+      const key = a && b ? a < b ? `${a}|${b}` : `${b}|${a}` : cn.id;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(cn);
+    });
+    return map;
+  }
+  function elLabel(id) {
+    const e = S.EL.find((x) => x.id === id);
+    return e ? e.label || e.type : "?";
+  }
+  function getSpanPoleData(fromElId, toElId) {
+    const pL = getPoleData(S.EL.find((x) => x.id === fromElId));
+    const pR = getPoleData(S.EL.find((x) => x.id === toElId));
+    const HL = pL.H ?? _H;
+    const HR = pR.H ?? _H;
+    let T_max = null;
+    if (pL.T_max !== null && pR.T_max !== null) T_max = Math.min(pL.T_max, pR.T_max);
+    else if (pL.T_max !== null) T_max = pL.T_max;
+    else if (pR.T_max !== null) T_max = pR.T_max;
+    return { H: (HL + HR) / 2, HL, HR, T_max };
+  }
+  function openSagMT() {
+    const p = document.getElementById("sag-mt-panel");
+    if (p) {
+      p.style.display = "flex";
+      runSagMT();
+    }
+  }
+  function closeSagMT() {
+    const p = document.getElementById("sag-mt-panel");
+    if (p) p.style.display = "none";
+  }
+  function runSagMT() {
+    _zone = document.getElementById("sag-zone")?.value || "D.b.4";
+    _H = parseFloat(document.getElementById("sag-h")?.value) || 7;
+    _kpdim = parseFloat(document.getElementById("sag-kpdim")?.value) || null;
+    const body = document.getElementById("sag-body");
+    if (!body) return;
+    const cns = getMTConns();
+    if (cns.length === 0) {
+      body.innerHTML = `<div style="color:var(--text3);font-size:9px;padding:14px;text-align:center">
+      Nu exist\u0103 conexiuni MT pe schem\u0103.<br>
+      Deseneaz\u0103 conexiuni cu <b>Tip conductor = OL-AL</b> \xEEntre st\xE2lpi MT.</div>`;
+      if (_visible) renderSagLayer();
+      return;
+    }
+    const th = (s) => `<th style="padding:4px 6px;border:1px solid var(--border2);font-size:8px;white-space:nowrap;background:var(--bg3);color:var(--text2);text-align:center">${s}</th>`;
+    const tdr = (s, extra = "") => `<td style="padding:3px 6px;border:1px solid var(--border2);font-size:8.5px;text-align:right;font-family:'JetBrains Mono',monospace${extra}">${s}</td>`;
+    const tdc = (s, extra = "") => `<td style="padding:3px 6px;border:1px solid var(--border2);font-size:8.5px;text-align:center${extra}">${s}</td>`;
+    const spanMap = groupBySpan(cns);
+    let rows = "";
+    spanMap.forEach((cns2) => {
+      const L = parseFloat(cns2[0].length) || 0;
+      const sec = parseFloat(cns2[0].sectiune) || 70;
+      const key = spanKey(cns2);
+      const acsr_key = SECTION_TO_ACSR[sec] || "ACSR 70/11";
+      const cd = CONDUCTORS[acsr_key];
+      const spanPole = getSpanPoleData(cns2[0].fromElId, cns2[0].toElId);
+      let T0, KP, sag40, T_crit, delta, fg, T_wind_calc;
+      try {
+        const res = calcSpan(
+          acsr_key,
+          { zone: _zone, H: spanPole.H, Av: Math.max(L, 40), terrain: "II" },
+          { L, dh: 0 },
+          _kpdim,
+          spanPole.T_max
+        );
+        T0 = res.T0_dim;
+        KP = res.KP_dim * 100;
+        sag40 = res.sag40;
+        T_crit = res.T_crit;
+        const row_wind = res.tension_table?.find((r) => r.label === "+15+vmax");
+        T_wind_calc = row_wind?.T_norm ?? T0;
+        const T_wind_used = _twindOverrides.get(key) ?? T_wind_calc;
+        const g4n = res.loads.normate.g4;
+        const g6n = res.loads.normate.g6;
+        delta = g4n * L * L / (8 * T_wind_used) + L_IZ_MT * (g4n / g6n);
+        fg = res.loads.normate.g1 * L * L / (8 * T0);
+      } catch (e) {
+        rows += `<tr><td colspan="11" style="color:#ef4444;padding:4px;font-size:8px">${acsr_key} \u2014 eroare calcul: ${e.message}</td></tr>`;
+        return;
+      }
+      const fromLbl = elLabel(cns2[0].fromElId);
+      const toLbl = elLabel(cns2[0].toElId);
+      const warnD = delta > 1.5;
+      const fazeLbl = cns2.map((cn) => cn.faza || "?").sort().join("/");
+      const KPcol = KP > 45 ? ";color:#ef4444;font-weight:bold" : KP > 35 ? ";color:#ff9f43" : ";color:#22c55e";
+      const isOvr = _twindOverrides.has(key);
+      const T_wind_disp = isOvr ? _twindOverrides.get(key) : T_wind_calc;
+      const twindCell = `<td style="padding:2px 4px;border:1px solid var(--border2);text-align:center">
+      <input type="number" class="twind-inp" data-key="${key}"
+             placeholder="${T_wind_calc.toFixed(1)}"
+             value="${isOvr ? T_wind_disp.toFixed(1) : ""}"
+             min="0.1" max="9999" step="0.1"
+             title="T_wind calculat: ${T_wind_calc.toFixed(1)} daN. Introdu valoarea din breviar CALMECO pt. a suprascrie."
+             style="width:52px;border:1px solid ${isOvr ? "#ff9f43" : "var(--border)"};
+                    background:${isOvr ? "rgba(255,159,67,0.15)" : "var(--bg2)"};
+                    color:${isOvr ? "#ff9f43" : "var(--text2)"};
+                    font-size:8px;padding:2px 3px;border-radius:3px;
+                    font-family:'JetBrains Mono',monospace">
+    </td>`;
+      const tMaxActive = spanPole.T_max !== null && T0 >= spanPole.T_max * 0.99;
+      const hInfo = `H=${spanPole.H.toFixed(1)}m (${spanPole.HL.toFixed(1)}+${spanPole.HR.toFixed(1)})`;
+      const tMaxInfo = spanPole.T_max !== null ? ` | T_max=${spanPole.T_max}daN${tMaxActive ? " \u2190 ACTIV" : ""}` : "";
+      rows += `<tr>
+      ${tdc(`${fromLbl} \u2192 ${toLbl}`, ";font-size:7.5px;color:var(--text2)")}
+      ${tdc(fazeLbl)}
+      ${tdr(`${L.toFixed(0)} m`)}
+      ${tdr(acsr_key, ";font-size:8px;color:var(--text2)")}
+      <td style="padding:3px 6px;border:1px solid var(--border2);font-size:8.5px;text-align:right;font-family:'JetBrains Mono',monospace${KPcol}" title="${hInfo}${tMaxInfo}">${T0.toFixed(0)} daN${KP > 45 ? " \u26A0" : ""}${tMaxActive ? " \u2B07" : ""}</td>
+      ${tdr(`${KP.toFixed(1)}%`, KPcol)}
+      ${tdr(`${spanPole.H.toFixed(1)} m`, ";color:var(--text3);font-size:8px")}
+      ${twindCell}
+      ${tdr(`${sag40.toFixed(2)} m`, ";color:var(--accent)")}
+      ${tdr(`${delta.toFixed(2)} m${warnD ? " \u26A0" : ""}`, warnD ? ";color:#ef4444;font-weight:bold" : ";color:#22c55e;font-weight:bold")}
+      ${tdr(`${T_crit.toFixed(1)}\xB0C`, ";color:var(--text2)")}
+    </tr>`;
+    });
+    const metZ = METEO_ZONES[_zone] || {};
+    body.innerHTML = `
+    <table style="border-collapse:collapse;width:100%">
+      <thead><tr>
+        ${th("Tronson")}${th("Faze")}${th("L")}${th("Conductor")}
+        ${th("T\u2080 [daN]")}${th("KP")}
+        ${th("H [m]")}
+        ${th("T_wind [daN]")}
+        ${th("f_max 40\xB0C [m]")}${th("\u03B4 v\xE2nt max [m]")}${th("T_crit [\xB0C]")}
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="font-size:7.5px;color:var(--text3);padding:5px 4px;border-top:1px solid var(--border)">
+      ${!_kpdim || _kpdim === 0.23 ? "NTE 003/2015 (KP=23%)" : "SR EN 50341-2-24 (KP=47%)"} | Zon\u0103 ${_zone}: Vb=${metZ.Vb ?? "?"}m/s \xB7 ch=${metZ.b_ch ?? "?"}mm \xB7 \u03C1=${metZ.rho_ch ?? "?"}kg/m\xB3 | H=${_H}m &nbsp;|&nbsp;
+      T\u2080=min(KP_dim\xB7RTS, EDS, T_max_stalp) &nbsp;|&nbsp; H=per st\xE2lp din catalog (hover T\u2080 pt. detalii) &nbsp;|&nbsp; f_max=40\xB0C &nbsp;|&nbsp; \u03B4=catenary(+15+vmax)+lan\u021B(${L_IZ_MT}m) &nbsp;|&nbsp;
+      <span style="color:#ff9f43">T_wind: placeholder=calculat, portocaliu=breviar CALMECO</span> &nbsp;|&nbsp;
+      <span style="color:#a855f7">H implicit (pentru st\xE2lpi f\u0103r\u0103 catalog): ${_H}m</span>
+    </div>`;
+    body.querySelectorAll("input.twind-inp").forEach((inp) => {
+      inp.addEventListener("change", () => {
+        const k = inp.dataset.key;
+        const val = parseFloat(inp.value);
+        if (val > 0 && isFinite(val)) {
+          _twindOverrides.set(k, val);
+        } else {
+          _twindOverrides.delete(k);
+        }
+        runSagMT();
+      });
+    });
+    if (_visible) renderSagLayer();
+  }
+  function copySagMT() {
+    const tbl = document.querySelector("#sag-body table");
+    if (!tbl) {
+      toast("Nu exist\u0103 date de copiat", "ac");
+      return;
+    }
+    const lines = [...tbl.querySelectorAll("tr")].map((tr) => [...tr.querySelectorAll("th,td")].map((c) => c.textContent.trim()).join("	"));
+    navigator.clipboard.writeText(lines.join("\n")).then(() => toast("Tabel copiat \xEEn clipboard", "ok"));
+  }
+  function exportSagCalcDetails() {
+    _zone = document.getElementById("sag-zone")?.value || "D.b.4";
+    _H = parseFloat(document.getElementById("sag-h")?.value) || 7;
+    _kpdim = parseFloat(document.getElementById("sag-kpdim")?.value) || null;
+    const cns = getMTConns();
+    if (cns.length === 0) {
+      toast("Nu exist\u0103 conexiuni MT pe schem\u0103", "ac");
+      return;
+    }
+    const spanMap = groupBySpan(cns);
+    const KP_dim_val = _kpdim !== null ? _kpdim : 0.47;
+    const KP_30 = 0.24;
+    const KP_15 = 0.155;
+    const f_creep = 0.95;
+    const metZ = METEO_ZONES[_zone] || {};
+    const lines = [];
+    lines.push("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
+    lines.push("  CALCUL PAS CU PAS \u2014 S\u0102GEAT\u0102 + DEVIA\u021AIE MT \u2014 LEA 20kV");
+    lines.push("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
+    lines.push(`  Zon\u0103: ${_zone} | Vb=${metZ.Vb}m/s | ch=${metZ.b_ch}mm | \u03C1_ch=${metZ.rho_ch}kg/m\xB3`);
+    lines.push(`  H teren: ${_H}m | KP_dim: ${(KP_dim_val * 100).toFixed(0)}% (${KP_dim_val >= 0.46 ? "SR EN 50341-2-24:2019" : "NTE 003/2015"})`);
+    lines.push(`  EDS: KP_30=${(KP_30 * 100).toFixed(0)}% la -30\xB0C | KP_15=${(KP_15 * 100).toFixed(0)}% la +15\xB0C | f_creep=${f_creep}`);
+    lines.push(`  Lan\u021B izolatoare MT 20kV (LDI-20-II-CTS 40): L_iz = ${L_IZ_MT} m`);
+    lines.push("");
+    let idx = 0;
+    spanMap.forEach((cns2) => {
+      idx++;
+      const L = parseFloat(cns2[0].length) || 0;
+      const sec = parseFloat(cns2[0].sectiune) || 70;
+      const key = spanKey(cns2);
+      const acsr_key = SECTION_TO_ACSR[sec] || "ACSR 70/11";
+      const fromLbl = elLabel(cns2[0].fromElId);
+      const toLbl = elLabel(cns2[0].toElId);
+      const fazeLbl = cns2.map((cn) => cn.faza || "?").sort().join("/");
+      const Av = Math.max(L, 40);
+      const spanPoleExp = getSpanPoleData(cns2[0].fromElId, cns2[0].toElId);
+      lines.push("\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500");
+      lines.push(`  TRONSON ${idx}: ${fromLbl} \u2192 ${toLbl}   (Faze: ${fazeLbl})`);
+      lines.push(`  Conductor: ${acsr_key}   L = ${L.toFixed(1)} m   Av = max(L,40) = ${Av.toFixed(1)} m`);
+      lines.push(`  St\xE2lp stg. H=${spanPoleExp.HL.toFixed(1)}m | St\xE2lp dr. H=${spanPoleExp.HR.toFixed(1)}m | H_calcul=${spanPoleExp.H.toFixed(2)}m${spanPoleExp.T_max !== null ? " | T_max=" + spanPoleExp.T_max + " daN" : ""}`);
+      lines.push("");
+      let res;
+      try {
+        res = calcSpan(
+          acsr_key,
+          { zone: _zone, H: spanPoleExp.H, Av, terrain: "II" },
+          { L, dh: 0 },
+          _kpdim,
+          spanPoleExp.T_max
+        );
+      } catch (e) {
+        lines.push(`  *** EROARE CALCUL: ${e.message} ***`);
+        lines.push("");
+        return;
+      }
+      const { loads, T0_dim, tension_table } = res;
+      const cd = CONDUCTORS[acsr_key];
+      const EA = cd.E * cd.A;
+      const b_ch = metZ.b_ch || 0;
+      lines.push("  [1] \xCENC\u0102RC\u0102RI UNITARE [daN/m]");
+      lines.push(`      Pw_max = ${loads.Pw_max.toFixed(4)} daN/m\xB2  (Eurocode EN 1991-1-4, H=${spanPoleExp.H.toFixed(2)}m, teren II, Vb=${metZ.Vb}m/s)`);
+      lines.push(`      GL     = ${loads.GL.toFixed(5)}  (factor deschidere: 1.631\xD7Av^-0.2, Av=${Av.toFixed(1)}m)`);
+      lines.push(`      d_bare = ${cd.d}mm = ${(cd.d / 1e3).toFixed(4)}m`);
+      lines.push(`      d_ice  = ${cd.d}+2\xD7${b_ch} = ${cd.d + 2 * b_ch}mm = ${((cd.d + 2 * b_ch) / 1e3).toFixed(4)}m`);
+      lines.push("      NORMATE (limita caracteristic\u0103 / sarcini fizice):");
+      lines.push(`        g1_n = gc = ${loads.normate.g1.toFixed(4)} daN/m`);
+      lines.push(`        g2_n = g2_phys/2.857 = ${loads.normate.g2.toFixed(4)} daN/m  [chiciur\u0103 ${b_ch}mm]`);
+      lines.push(`        g3_n = g1_n+g2_n = ${loads.normate.g3.toFixed(4)} daN/m  [cond.+chiciur\u0103]`);
+      lines.push(`        g4_n = Pw_max\xD7d_bare\xD7GL/2.5 = ${loads.normate.g4.toFixed(4)} daN/m  [v\xE2nt max \u2194]`);
+      lines.push(`        g5_n = Pw_ice\xD7d_ice\xD7GL\xD71.1/2.5 = ${loads.normate.g5.toFixed(4)} daN/m  [v\xE2nt+chiciur\u0103 \u2194]`);
+      lines.push(`        g6_n = \u221A(g1_n\xB2+g4_n\xB2) = \u221A(${loads.normate.g1.toFixed(4)}\xB2+${loads.normate.g4.toFixed(4)}\xB2) = ${loads.normate.g6.toFixed(4)} daN/m`);
+      lines.push(`        g7_n = \u221A(g3_n\xB2+g5_n\xB2) = \u221A(${loads.normate.g3.toFixed(4)}\xB2+${loads.normate.g5.toFixed(4)}\xB2) = ${loads.normate.g7.toFixed(4)} daN/m  [stare dim. normate]`);
+      lines.push("      CALCUL (pentru verificare structuri):");
+      lines.push(`        g4_c = Pw_max\xD7d_bare\xD7GL = ${loads.calcul.g4.toFixed(4)} daN/m  [= g4_n\xD72.5]`);
+      lines.push(`        g7_c = \u221A(g3_c\xB2+g5_c\xB2) = ${loads.calcul.g7.toFixed(4)} daN/m  [stare dim. calcul]`);
+      lines.push("");
+      const T_cl_dim = KP_dim_val * cd.RTS * f_creep;
+      const V_dim = loads.calcul.g7 * L / 2;
+      const disc_dim = T_cl_dim * T_cl_dim - V_dim * V_dim;
+      const T0_direct = disc_dim > 0 ? Math.sqrt(disc_dim) : T_cl_dim * 0.95;
+      const T_cl_30 = KP_30 * cd.RTS * f_creep;
+      const V_30 = loads.normate.g1 * L / 2;
+      const disc_30 = T_cl_30 * T_cl_30 - V_30 * V_30;
+      const T_h_30 = disc_30 > 0 ? Math.sqrt(disc_30) : T_cl_30 * 0.95;
+      const T0_from30 = solveStateEquation(
+        loads.normate.g1,
+        T_h_30,
+        -30,
+        loads.calcul.g7,
+        -5,
+        L,
+        EA,
+        cd.alpha
+      );
+      const T_cl_15 = KP_15 * cd.RTS * f_creep;
+      const V_15 = loads.normate.g1 * L / 2;
+      const disc_15 = T_cl_15 * T_cl_15 - V_15 * V_15;
+      const T_h_15 = disc_15 > 0 ? Math.sqrt(disc_15) : T_cl_15 * 0.95;
+      const T0_from15 = solveStateEquation(
+        loads.normate.g1,
+        T_h_15,
+        15,
+        loads.calcul.g7,
+        -5,
+        L,
+        EA,
+        cd.alpha
+      );
+      const minT0 = Math.min(T0_direct, T0_from30, T0_from15);
+      const gov = Math.abs(T0_dim - T0_direct) < 0.1 ? "KP_dim" : Math.abs(T0_dim - T0_from30) < 0.1 ? "EDS -30\xB0C" : "EDS +15\xB0C";
+      lines.push("  [2] TRAC\u021AIUNEA DIMENSIONANT\u0102 T\u2080  (starea -5\xB0C+ch+v, calcul)");
+      lines.push(`      RTS=${cd.RTS} daN | A=${cd.A} mm\xB2 | E=${cd.E} daN/mm\xB2 | \u03B1=${(cd.alpha * 1e6).toFixed(1)}e-6/\xB0C | EA=${EA.toFixed(0)} daN`);
+      lines.push("");
+      lines.push(`      a) Limita KP_dim=${(KP_dim_val * 100).toFixed(0)}%  (starea -5\xB0C+ch+v calcul):`);
+      lines.push(`         T_clema = KP_dim\xD7RTS\xD7f_creep = ${KP_dim_val}\xD7${cd.RTS}\xD7${f_creep} = ${T_cl_dim.toFixed(3)} daN`);
+      lines.push(`         V = g7_c\xD7L/2 = ${loads.calcul.g7.toFixed(4)}\xD7${(L / 2).toFixed(2)} = ${V_dim.toFixed(4)} daN`);
+      lines.push(`         T0_direct = \u221A(T_cl\xB2\u2212V\xB2) = \u221A(${T_cl_dim.toFixed(3)}\xB2\u2212${V_dim.toFixed(4)}\xB2) = ${T0_direct.toFixed(3)} daN`);
+      lines.push("");
+      lines.push(`      b) EDS la -30\xB0C  (conductor gol, KP_30=${(KP_30 * 100).toFixed(0)}%):`);
+      lines.push(`         T_cl_30 = ${KP_30}\xD7${cd.RTS}\xD7${f_creep} = ${T_cl_30.toFixed(3)} daN`);
+      lines.push(`         V = g1_n\xD7L/2 = ${loads.normate.g1.toFixed(4)}\xD7${(L / 2).toFixed(2)} = ${V_30.toFixed(4)} daN`);
+      lines.push(`         T_h_30 = \u221A(T_cl_30\xB2\u2212V\xB2) = ${T_h_30.toFixed(3)} daN`);
+      lines.push(`         Lam\xE9: (-30\xB0C, q=g1_n=${loads.normate.g1.toFixed(4)}) \u2192 (-5\xB0C, q=g7_c=${loads.calcul.g7.toFixed(4)}), L=${L}m`);
+      lines.push(`         T0_from30 = ${T0_from30.toFixed(3)} daN`);
+      lines.push("");
+      lines.push(`      c) EDS la +15\xB0C  (conductor gol, KP_15=${(KP_15 * 100).toFixed(0)}%):`);
+      lines.push(`         T_cl_15 = ${KP_15}\xD7${cd.RTS}\xD7${f_creep} = ${T_cl_15.toFixed(3)} daN`);
+      lines.push(`         V = g1_n\xD7L/2 = ${loads.normate.g1.toFixed(4)}\xD7${(L / 2).toFixed(2)} = ${V_15.toFixed(4)} daN`);
+      lines.push(`         T_h_15 = \u221A(T_cl_15\xB2\u2212V\xB2) = ${T_h_15.toFixed(3)} daN`);
+      lines.push(`         Lam\xE9: (+15\xB0C, q=g1_n=${loads.normate.g1.toFixed(4)}) \u2192 (-5\xB0C, q=g7_c=${loads.calcul.g7.toFixed(4)}), L=${L}m`);
+      lines.push(`         T0_from15 = ${T0_from15.toFixed(3)} daN`);
+      lines.push("");
+      const hasT_maxExp = spanPoleExp.T_max !== null;
+      const minEDS = Math.min(T0_direct, T0_from30, T0_from15);
+      const t_maxLbl = hasT_maxExp ? `, ${spanPoleExp.T_max.toFixed(0)}` : "";
+      lines.push(`      T\u2080 = min(T0_direct, T0_from30, T0_from15${hasT_maxExp ? ", T_max_stalp" : ""})`);
+      lines.push(`         = min(${T0_direct.toFixed(3)}, ${T0_from30.toFixed(3)}, ${T0_from15.toFixed(3)}${t_maxLbl})`);
+      lines.push(`         = ${T0_dim.toFixed(3)} daN  \u2190 ${hasT_maxExp && spanPoleExp.T_max <= minEDS + 0.1 ? "T_max_stalp \u2190 ACTIV" : gov + " guverneaz\u0103"}`);
+      lines.push(`      KP = T\u2080/RTS = ${T0_dim.toFixed(3)}/${cd.RTS} = ${(T0_dim / cd.RTS * 100).toFixed(2)}%`);
+      lines.push("");
+      const rowNormRef = tension_table.find((r) => r.label === "-5+ch+v");
+      const rowWind = tension_table.find((r) => r.label === "+15+vmax");
+      const T_norm_ref = rowNormRef?.T_norm ?? 0;
+      const T_wind_calc = rowWind?.T_norm ?? T0_dim;
+      const K1 = T0_dim - loads.calcul.g7 ** 2 * L ** 2 * EA / (24 * T0_dim ** 2);
+      const C1 = loads.normate.g7 ** 2 * L ** 2 * EA / 24;
+      const K2 = T_norm_ref - loads.normate.g7 ** 2 * L ** 2 * EA / (24 * T_norm_ref ** 2) - EA * cd.alpha * 20;
+      const C2 = loads.normate.g6 ** 2 * L ** 2 * EA / 24;
+      lines.push("  [3] LAN\u021AUL LAM\xC9 (2 pa\u0219i)  \u2014  T\u2082\xB3 \u2212 K\xB7T\u2082\xB2 \u2212 C = 0");
+      lines.push("      Pas 1: T\u2080_dim (calcul, -5\xB0C+ch+v) \u2192 T_norm_ref (normate, -5\xB0C+ch+v)");
+      lines.push(`        q1=g7_c=${loads.calcul.g7.toFixed(4)} daN/m, T1=T\u2080=${T0_dim.toFixed(3)} daN, \u03B81=-5\xB0C`);
+      lines.push(`        q2=g7_n=${loads.normate.g7.toFixed(4)} daN/m, \u03B82=-5\xB0C  \u2192 \u0394\u03B8=0, EA\xB7\u03B1\xB7\u0394\u03B8=0`);
+      lines.push(`        K = ${T0_dim.toFixed(3)} \u2212 (${loads.calcul.g7.toFixed(4)}\xB2\xB7${L}\xB2\xB7${EA.toFixed(0)})/(24\xB7${T0_dim.toFixed(3)}\xB2) = ${K1.toFixed(3)}`);
+      lines.push(`        C = (${loads.normate.g7.toFixed(4)}\xB2\xB7${L}\xB2\xB7${EA.toFixed(0)})/24 = ${C1.toFixed(3)}`);
+      lines.push(`        T_norm_ref = ${T_norm_ref.toFixed(4)} daN  (\u03C3 = ${(T_norm_ref / cd.A).toFixed(5)} daN/mm\xB2)`);
+      lines.push("");
+      lines.push("      Pas 2: T_norm_ref (normate, -5\xB0C+ch+v) \u2192 T_wind (normate, +15\xB0C+vmax)");
+      lines.push(`        q1=g7_n=${loads.normate.g7.toFixed(4)} daN/m, T1=${T_norm_ref.toFixed(4)} daN, \u03B81=-5\xB0C`);
+      lines.push(`        q2=g6_n=${loads.normate.g6.toFixed(4)} daN/m, \u03B82=+15\xB0C  \u2192 \u0394\u03B8=20\xB0C`);
+      lines.push(`        EA\xB7\u03B1\xB7\u0394\u03B8 = ${EA.toFixed(0)}\xD7${(cd.alpha * 1e6).toFixed(1)}e-6\xD720 = ${(EA * cd.alpha * 20).toFixed(3)} daN`);
+      lines.push(`        K = ${T_norm_ref.toFixed(4)} \u2212 (${loads.normate.g7.toFixed(4)}\xB2\xB7L\xB2\xB7EA)/(24\xB7T\xB2) \u2212 ${(EA * cd.alpha * 20).toFixed(3)} = ${K2.toFixed(3)}`);
+      lines.push(`        C = (${loads.normate.g6.toFixed(4)}\xB2\xB7${L}\xB2\xB7${EA.toFixed(0)})/24 = ${C2.toFixed(3)}`);
+      lines.push(`        T_wind_calc = ${T_wind_calc.toFixed(4)} daN  (\u03C3 = ${(T_wind_calc / cd.A).toFixed(5)} daN/mm\xB2)`);
+      lines.push("");
+      const isOvr = _twindOverrides.has(key);
+      const T_wind_used = isOvr ? _twindOverrides.get(key) : T_wind_calc;
+      const g4n = loads.normate.g4;
+      const g6n = loads.normate.g6;
+      const delta_cat = g4n * L * L / (8 * T_wind_used);
+      const delta_iz = L_IZ_MT * (g4n / g6n);
+      const delta_tot = delta_cat + delta_iz;
+      lines.push("  [4] DEVIA\u021AIE LATERAL\u0102 \u03B4  (starea +15\xB0C+vmax normate)");
+      if (isOvr) {
+        lines.push(`      \u26A0 T_wind OVERRIDE: ${T_wind_used.toFixed(2)} daN (introdus manual \u2014 calculat: ${T_wind_calc.toFixed(4)} daN)`);
+      } else {
+        lines.push(`      T_wind = ${T_wind_used.toFixed(4)} daN  (calculat prin Lam\xE9)`);
+      }
+      lines.push(`      g4_n = ${g4n.toFixed(4)} daN/m  (v\xE2nt orizontal normat)`);
+      lines.push(`      g6_n = ${g6n.toFixed(4)} daN/m  (rez. cond.+v\xE2nt normat)`);
+      lines.push("");
+      lines.push("      \u03B4_catenary = g4_n \xD7 L\xB2 / (8 \xD7 T_wind)");
+      lines.push(`               = ${g4n.toFixed(4)} \xD7 ${L.toFixed(1)}\xB2 / (8 \xD7 ${T_wind_used.toFixed(4)})`);
+      lines.push(`               = ${g4n.toFixed(4)} \xD7 ${(L * L).toFixed(2)} / ${(8 * T_wind_used).toFixed(4)}`);
+      lines.push(`               = ${delta_cat.toFixed(5)} m`);
+      lines.push("");
+      lines.push("      \u03B4_lan\u021B    = L_iz \xD7 (g4_n / g6_n)");
+      lines.push(`               = ${L_IZ_MT} \xD7 (${g4n.toFixed(4)} / ${g6n.toFixed(4)})`);
+      lines.push(`               = ${L_IZ_MT} \xD7 ${(g4n / g6n).toFixed(6)}`);
+      lines.push(`               = ${delta_iz.toFixed(5)} m`);
+      lines.push("");
+      lines.push(`      \u03B4_total   = ${delta_cat.toFixed(5)} + ${delta_iz.toFixed(5)}`);
+      lines.push(`               = ${delta_tot.toFixed(5)} m  \u2192  ${delta_tot.toFixed(2)} m`);
+      lines.push("");
+      const row40 = tension_table.find((r) => r.label === "+40\xB0C");
+      if (row40) {
+        const T40 = row40.T_norm;
+        lines.push("  [5] S\u0102GEAT\u0102 GABARIT la +40\xB0C");
+        lines.push(`      T_40\xB0C = ${T40.toFixed(4)} daN  (Lam\xE9: g7_n,-5\xB0C \u2192 g1_n,+40\xB0C)`);
+        lines.push("      f_max = g1_n \xD7 L\xB2 / (8 \xD7 T_40\xB0C)");
+        lines.push(`            = ${loads.normate.g1.toFixed(4)} \xD7 ${(L * L).toFixed(2)} / (8 \xD7 ${T40.toFixed(4)})`);
+        lines.push(`            = ${(loads.normate.g1 * L * L / (8 * T40)).toFixed(5)} m  \u2192  ${res.sag40.toFixed(2)} m`);
+        lines.push(`      T_crit = ${res.T_crit.toFixed(2)}\xB0C  (temp. la care sag_termic = sag_chiciur\u0103)`);
+      }
+      lines.push("");
+    });
+    lines.push("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
+    lines.push("  ElectroCAD Pro v12  \u2014  Calcul conform SR EN 50341-2-24:2019");
+    lines.push("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
+    const text = lines.join("\n");
+    const win = window.open("", "_blank", "width=960,height=720,scrollbars=yes");
+    if (!win) {
+      navigator.clipboard.writeText(text).then(() => toast("Detalii copiate \xEEn clipboard (popup blocat)", "ok"));
+      return;
+    }
+    win.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <title>Calcul Detaliat \u2014 S\u0103geat\u0103 + Devia\u021Bie MT</title>
+    <style>
+      *{box-sizing:border-box}
+      body{background:#0f1117;color:#c9d8ff;font-family:'Courier New',Courier,monospace;
+           font-size:12.5px;padding:0;margin:0;line-height:1.55}
+      .bar{position:sticky;top:0;background:#0f1117;border-bottom:1px solid #1e2a4a;
+           padding:8px 16px;display:flex;gap:8px;align-items:center;z-index:10}
+      .bar span{font-size:11px;color:#5a7aaa;margin-left:4px}
+      button{padding:6px 14px;border:none;border-radius:5px;cursor:pointer;
+             font-size:12px;font-weight:700;font-family:inherit}
+      .bc{background:#3b82f6;color:#fff} .bc:hover{background:#2563eb}
+      .bp{background:#374151;color:#d1d5db} .bp:hover{background:#4b5563}
+      pre{padding:16px;margin:0;white-space:pre}
+    </style>
+  </head><body>
+  <div class="bar">
+    <button class="bc" id="cbtn" onclick="copyAll()">\u{1F4CB} Copiaz\u0103 tot</button>
+    <button class="bp" onclick="window.print()">\u{1F5A8} Print / PDF</button>
+    <span>ElectroCAD Pro v12 \u2014 Calcul detaliat S\u0103geat\u0103 + Devia\u021Bie MT</span>
+  </div>
+  <pre id="ct"></pre>
+  <script>
+    document.getElementById('ct').textContent=${JSON.stringify(text)};
+    function copyAll(){
+      navigator.clipboard.writeText(document.getElementById('ct').textContent).then(()=>{
+        const b=document.getElementById('cbtn');
+        b.textContent='\u2713 Copiat!';
+        setTimeout(()=>{b.textContent='\u{1F4CB} Copiaz\u0103 tot'},1800);
+      });
+    }
+  <\/script></body></html>`);
+    win.document.close();
+  }
+  function buildSpanChains(spanMap) {
+    const adj = /* @__PURE__ */ new Map();
+    spanMap.forEach((cns2) => {
+      const a = cns2[0].fromElId, b = cns2[0].toElId;
+      if (!a || !b) return;
+      if (!adj.has(a)) adj.set(a, []);
+      if (!adj.has(b)) adj.set(b, []);
+      adj.get(a).push({ nbr: b, cns2 });
+      adj.get(b).push({ nbr: a, cns2 });
+    });
+    const visited = /* @__PURE__ */ new Set();
+    const chains = [];
+    function walkFrom(prevId, startId) {
+      const chain = [];
+      let prev = prevId, cur = startId;
+      while (cur && !visited.has(cur)) {
+        visited.add(cur);
+        const edges = adj.get(cur) || [];
+        const next = edges.find((e) => e.nbr !== prev && !visited.has(e.nbr));
+        if (prev !== null) {
+          const edge = (adj.get(prev) || []).find((e) => e.nbr === cur);
+          if (edge) chain.push({
+            fromId: prev,
+            toId: cur,
+            cns2: edge.cns2,
+            reversed: edge.cns2[0].fromElId !== prev
+          });
+        }
+        prev = cur;
+        cur = next ? next.nbr : null;
+      }
+      return chain;
+    }
+    adj.forEach((edges, id) => {
+      if (!visited.has(id) && edges.length === 1) {
+        visited.add(id);
+        const c = walkFrom(id, edges[0].nbr);
+        if (c.length) chains.push(c);
+      }
+    });
+    adj.forEach((edges, id) => {
+      if (!visited.has(id) && edges.length) {
+        visited.add(id);
+        const c = walkFrom(id, edges[0].nbr);
+        if (c.length) chains.push(c);
+      }
+    });
+    return chains;
+  }
+  function toggleSagOverlay(on) {
+    _visible = on;
+    renderSagLayer();
+  }
+  function renderSagLayer() {
+    const layer = document.getElementById("SAG");
+    if (!layer) return;
+    layer.innerHTML = "";
+    if (!_visible) return;
+    const cns = getMTConns();
+    if (!cns.length) return;
+    const dark = !S.lightMode;
+    const outlineC = dark ? "rgba(210,225,255,0.82)" : "rgba(20,50,120,0.78)";
+    const hatchC = dark ? "rgba(190,210,255,0.28)" : "rgba(20,50,120,0.20)";
+    const dimC = dark ? "#90b8ff" : "#1e3a8a";
+    const arrC = dark ? "#90b8ff" : "#1e3a8a";
+    const safeC = dark ? "rgba(251,191,36,0.80)" : "rgba(180,90,0,0.82)";
+    const safeFillC = dark ? "rgba(251,191,36,0.05)" : "rgba(251,191,36,0.04)";
+    const safeHatchC = dark ? "rgba(251,191,36,0.20)" : "rgba(180,90,0,0.18)";
+    const svgEl = document.getElementById("svg");
+    let defsEl = svgEl?.querySelector(".sag-defs-group");
+    if (defsEl) defsEl.remove();
+    defsEl = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    defsEl.setAttribute("class", "sag-defs-group");
+    svgEl?.insertBefore(defsEl, svgEl.firstChild);
+    defsEl.innerHTML = `
+    <marker id="sag-arr" markerWidth="7" markerHeight="5"
+            refX="6" refY="2.5" orient="auto">
+      <polygon points="0 0, 7 2.5, 0 5" fill="${arrC}"/>
+    </marker>
+    <marker id="sag-arr2" markerWidth="7" markerHeight="5"
+            refX="1" refY="2.5" orient="auto">
+      <polygon points="7 0, 0 2.5, 7 5" fill="${arrC}"/>
+    </marker>
+    <marker id="safe-arr" markerWidth="7" markerHeight="5"
+            refX="6" refY="2.5" orient="auto">
+      <polygon points="0 0, 7 2.5, 0 5" fill="${safeC}"/>
+    </marker>`;
+    let clipIdx = 0;
+    const spanMap = groupBySpan(cns);
+    const SAFETY_M = 12;
+    const ppmGlobal = S.pxPerMeter || 5;
+    const safetyPx = SAFETY_M * ppmGlobal;
+    const chains = buildSpanChains(spanMap);
+    chains.forEach((chain) => {
+      const upperPts = [], lowerPts = [], midData = [];
+      chain.forEach(({ fromId, toId, cns2, reversed }) => {
+        if (!cns2[0].path?.length) return;
+        const starts = cns2.map((cn) => cn.path[0]);
+        const ends = cns2.map((cn) => cn.path[cn.path.length - 1]);
+        let p0 = {
+          x: starts.reduce((s, p) => s + p.x, 0) / starts.length,
+          y: starts.reduce((s, p) => s + p.y, 0) / starts.length
+        };
+        let p1 = {
+          x: ends.reduce((s, p) => s + p.x, 0) / ends.length,
+          y: ends.reduce((s, p) => s + p.y, 0) / ends.length
+        };
+        if (reversed) [p0, p1] = [p1, p0];
+        const dx = p1.x - p0.x, dy = p1.y - p0.y, len = Math.hypot(dx, dy);
+        if (len < 5) return;
+        const ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
+        upperPts.push({ x: p0.x + safetyPx * nx, y: p0.y + safetyPx * ny });
+        upperPts.push({ x: p1.x + safetyPx * nx, y: p1.y + safetyPx * ny });
+        lowerPts.push({ x: p0.x - safetyPx * nx, y: p0.y - safetyPx * ny });
+        lowerPts.push({ x: p1.x - safetyPx * nx, y: p1.y - safetyPx * ny });
+        const hasFazaC = cns2.some((cn) => cn.faza);
+        const nProjsC = hasFazaC ? cns2.map((cn) => ({ R: MT_PHASE_PX, S: 0, T: -MT_PHASE_PX })[cn.faza] ?? 0) : [0];
+        const hsC = Math.max(0, ...nProjsC.map(Math.abs));
+        midData.push({ cx: (p0.x + p1.x) / 2, cy: (p0.y + p1.y) / 2, nx, ny, ux, uy, hs: hsC });
+      });
+      if (upperPts.length < 2) return;
+      const allPts = [...upperPts, ...[...lowerPts].reverse()];
+      const polyD = allPts.map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ") + " Z";
+      const zid = `sz${clipIdx++}`;
+      const zcp = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+      zcp.setAttribute("id", zid);
+      const zcpPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      zcpPath.setAttribute("d", polyD);
+      zcp.appendChild(zcpPath);
+      defsEl.appendChild(zcp);
+      const xs = allPts.map((p) => p.x), ys = allPts.map((p) => p.y);
+      const bx0 = Math.min(...xs) - 4, by0 = Math.min(...ys) - 4;
+      const bx1 = Math.max(...xs) + 4, by1 = Math.max(...ys) + 4;
+      const bh = by1 - by0, bw = bx1 - bx0, zspc = Math.max(20, safetyPx / 5);
+      let zLines = "";
+      for (let k = -bh; k <= bw + bh; k += zspc)
+        zLines += `<line x1="${(bx0 + k).toFixed(1)}" y1="${by0.toFixed(1)}" x2="${(bx0 + k + bh).toFixed(1)}" y2="${by1.toFixed(1)}"/>`;
+      const mid = midData[Math.floor(midData.length / 2)];
+      const { cx: mcx, cy: mcy, nx: mnx, ny: mny, ux: mux, uy: muy, hs: mhs } = mid;
+      const rCX = mcx + mhs * mnx, rCY = mcy + mhs * mny;
+      const rBX = mcx + safetyPx * mnx, rBY = mcy + safetyPx * mny;
+      const tCX = mcx - mhs * mnx, tCY = mcy - mhs * mny;
+      const tBX = mcx - safetyPx * mnx, tBY = mcy - safetyPx * mny;
+      const zLX = ((rCX + rBX) / 2 + 10 * mux).toFixed(1);
+      const zLY = ((rCY + rBY) / 2 + 10 * muy).toFixed(1);
+      const zg = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      zg.setAttribute("pointer-events", "none");
+      zg.innerHTML = `
+      <path d="${polyD}" fill="${safeFillC}" stroke="${safeC}" stroke-width="1.2" stroke-dasharray="8,5"/>
+      <g clip-path="url(#${zid})">
+        <g stroke="${safeHatchC}" stroke-width="0.8" fill="none">${zLines}</g>
+      </g>
+      <line x1="${(rCX - 5 * mux).toFixed(1)}" y1="${(rCY - 5 * muy).toFixed(1)}"
+            x2="${(rCX + 5 * mux).toFixed(1)}" y2="${(rCY + 5 * muy).toFixed(1)}"
+            stroke="${safeC}" stroke-width="1.6" opacity="0.9"/>
+      <line x1="${rCX.toFixed(1)}" y1="${rCY.toFixed(1)}"
+            x2="${rBX.toFixed(1)}" y2="${rBY.toFixed(1)}"
+            stroke="${safeC}" stroke-width="1.0" marker-end="url(#safe-arr)"/>
+      <line x1="${(tCX - 5 * mux).toFixed(1)}" y1="${(tCY - 5 * muy).toFixed(1)}"
+            x2="${(tCX + 5 * mux).toFixed(1)}" y2="${(tCY + 5 * muy).toFixed(1)}"
+            stroke="${safeC}" stroke-width="1.6" opacity="0.9"/>
+      <line x1="${tCX.toFixed(1)}" y1="${tCY.toFixed(1)}"
+            x2="${tBX.toFixed(1)}" y2="${tBY.toFixed(1)}"
+            stroke="${safeC}" stroke-width="1.0" marker-end="url(#safe-arr)"/>
+      <text x="${zLX}" y="${zLY}" font-size="9" fill="${safeC}"
+            font-family="JetBrains Mono,monospace" font-weight="600"
+            text-anchor="start">12m</text>`;
+      layer.appendChild(zg);
+    });
+    spanMap.forEach((cns2) => {
+      if (!cns2[0].path?.length) return;
+      const L = parseFloat(cns2[0].length) || 0;
+      if (L < 1) return;
+      const starts = cns2.map((cn) => cn.path[0]);
+      const ends = cns2.map((cn) => cn.path[cn.path.length - 1]);
+      const p0 = {
+        x: starts.reduce((s, p) => s + p.x, 0) / starts.length,
+        y: starts.reduce((s, p) => s + p.y, 0) / starts.length
+      };
+      const p1 = {
+        x: ends.reduce((s, p) => s + p.x, 0) / ends.length,
+        y: ends.reduce((s, p) => s + p.y, 0) / ends.length
+      };
+      const dx = p1.x - p0.x, dy = p1.y - p0.y;
+      const spanPx = Math.hypot(dx, dy);
+      if (spanPx < 10) return;
+      const ux = dx / spanPx, uy = dy / spanPx;
+      const nx = -uy, ny = ux;
+      const cx = (p0.x + p1.x) / 2;
+      const cy = (p0.y + p1.y) / 2;
+      const hasFaza = cns2.some((cn) => cn.faza);
+      const normalProjs = hasFaza ? cns2.map((cn) => ({ R: MT_PHASE_PX, S: 0, T: -MT_PHASE_PX })[cn.faza] ?? 0) : cns2.map((cn) => {
+        const mx = (cn.path[0].x + cn.path[cn.path.length - 1].x) / 2;
+        const my = (cn.path[0].y + cn.path[cn.path.length - 1].y) / 2;
+        return (mx - cx) * nx + (my - cy) * ny;
+      });
+      const halfSpread = Math.max(0, ...normalProjs.map(Math.abs));
+      const sec = parseFloat(cns2[0].sectiune) || 70;
+      const spanPoleRender = getSpanPoleData(cns2[0].fromElId, cns2[0].toElId);
+      const { T0, T_wind: T_wind_calc, loads } = computeSpan(sec, L, spanPoleRender.H, spanPoleRender.T_max);
+      const T_wind = _twindOverrides.get(spanKey(cns2)) ?? T_wind_calc;
+      const { delta: delta_cond } = calcSag(L, loads.normate.g1, loads.normate.g4, T_wind);
+      const delta = delta_cond + L_IZ_MT * (loads.normate.g4 / loads.normate.g6);
+      const ppm = S.pxPerMeter || 5;
+      const deltaPx = delta * ppm;
+      const minVis = Math.max(14, halfSpread * 0.55);
+      const eyeHalf = halfSpread + Math.max(deltaPx, minVis);
+      const p0R = { x: p0.x + halfSpread * nx, y: p0.y + halfSpread * ny };
+      const p1R = { x: p1.x + halfSpread * nx, y: p1.y + halfSpread * ny };
+      const p0T = { x: p0.x - halfSpread * nx, y: p0.y - halfSpread * ny };
+      const p1T = { x: p1.x - halfSpread * nx, y: p1.y - halfSpread * ny };
+      const c1x = cx + eyeHalf * nx, c1y = cy + eyeHalf * ny;
+      const c2x = cx - eyeHalf * nx, c2y = cy - eyeHalf * ny;
+      const eyeD = [
+        `M ${p0R.x.toFixed(2)},${p0R.y.toFixed(2)}`,
+        `Q ${c1x.toFixed(2)},${c1y.toFixed(2)} ${p1R.x.toFixed(2)},${p1R.y.toFixed(2)}`,
+        `L ${p1T.x.toFixed(2)},${p1T.y.toFixed(2)}`,
+        `Q ${c2x.toFixed(2)},${c2y.toFixed(2)} ${p0T.x.toFixed(2)},${p0T.y.toFixed(2)}`,
+        "Z"
+      ].join(" ");
+      const cid = `sc${clipIdx++}`;
+      const cp = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+      cp.setAttribute("id", cid);
+      const cpPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      cpPath.setAttribute("d", eyeD);
+      cp.appendChild(cpPath);
+      defsEl.appendChild(cp);
+      const pad = eyeHalf + 4;
+      const bx0 = Math.min(p0.x, p1.x) - pad, by0 = Math.min(p0.y, p1.y) - pad;
+      const bx1 = Math.max(p0.x, p1.x) + pad, by1 = Math.max(p0.y, p1.y) + pad;
+      const bh = by1 - by0, bw = bx1 - bx0;
+      const spc = Math.max(7, eyeHalf / 8);
+      let hLines = "";
+      for (let k = -bh; k <= bw + bh; k += spc) {
+        hLines += `<line x1="${(bx0 + k).toFixed(1)}" y1="${by0.toFixed(1)}" x2="${(bx0 + k + bh).toFixed(1)}" y2="${by1.toFixed(1)}"/>`;
+      }
+      const s1x = cx + halfSpread * nx, s1y = cy + halfSpread * ny;
+      const s2x = cx - halfSpread * nx, s2y = cy - halfSpread * ny;
+      const e1x = cx + eyeHalf * nx, e1y = cy + eyeHalf * ny;
+      const e2x = cx - eyeHalf * nx, e2y = cy - eyeHalf * ny;
+      const labMx = (s1x + e1x) / 2;
+      const labMy = (s1y + e1y) / 2;
+      const labX = (labMx + 12 * ux).toFixed(1);
+      const labY = (labMy + 12 * uy).toFixed(1);
+      const deltaM = delta.toFixed(2);
+      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      g.setAttribute("pointer-events", "none");
+      g.innerHTML = `
+      <g clip-path="url(#${cid})">
+        <g stroke="${hatchC}" stroke-width="0.9" fill="none">${hLines}</g>
+      </g>
+      <path d="${eyeD}" fill="none" stroke="${outlineC}" stroke-width="1.8"/>
+      <line x1="${(s1x - 6 * ux).toFixed(1)}" y1="${(s1y - 6 * uy).toFixed(1)}"
+            x2="${(s1x + 6 * ux).toFixed(1)}" y2="${(s1y + 6 * uy).toFixed(1)}"
+            stroke="${dimC}" stroke-width="1.8" opacity="0.9"/>
+      <line x1="${(s2x - 6 * ux).toFixed(1)}" y1="${(s2y - 6 * uy).toFixed(1)}"
+            x2="${(s2x + 6 * ux).toFixed(1)}" y2="${(s2y + 6 * uy).toFixed(1)}"
+            stroke="${dimC}" stroke-width="1.8" opacity="0.9"/>
+      <line x1="${s1x.toFixed(1)}" y1="${s1y.toFixed(1)}"
+            x2="${e1x.toFixed(1)}" y2="${e1y.toFixed(1)}"
+            stroke="${dimC}" stroke-width="1.2"
+            marker-end="url(#sag-arr)"/>
+      <line x1="${s2x.toFixed(1)}" y1="${s2y.toFixed(1)}"
+            x2="${e2x.toFixed(1)}" y2="${e2y.toFixed(1)}"
+            stroke="${dimC}" stroke-width="1.2"
+            marker-end="url(#sag-arr)"/>
+      <text x="${labX}" y="${labY}"
+            font-size="9" fill="${dimC}" font-family="JetBrains Mono,monospace"
+            font-weight="700" text-anchor="start">\u03B4=${deltaM}m</text>`;
+      layer.appendChild(g);
+    });
+  }
+
   // src/app.js
   function init() {
     const svgEl = document.getElementById("svg");
@@ -8429,6 +9875,9 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
   window.selectEl = selectEl;
   window.updateConnectedCables = updateConnectedCables;
   window.finalConn = finalConn;
+  window.setMTConnect = setMTConnect;
+  window.startMTSpan = startMTSpan;
+  window.addMTSpanFrom = addMTSpanFrom;
   window.updateProps = updateProps;
   window.clearAll = clearAll;
   window.toggleLeg = toggleLeg;
@@ -8457,6 +9906,13 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
   window.showProjectManagerAfterAuth = showProjectManagerAfterAuth;
   window.markDirty = markDirty;
   window.renderProjectList = renderProjectList;
+  window.toggleMTPanel = () => {
+    const p = document.getElementById("mt-panel");
+    const btn = document.getElementById("btn-mt-panel");
+    const show = p.style.display !== "flex";
+    p.style.display = show ? "flex" : "none";
+    if (btn) btn.classList.toggle("active", show);
+  };
   window.toggleAuthMode = toggleAuthMode;
   window.authSubmit = authSubmit;
   window.authLogout = authLogout;
@@ -8478,6 +9934,14 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
   window.closeExportMenu = closeExportMenu;
   window.generateFC = generateFC;
   window.computeCantitatiFC = computeCantitatiFC;
+  window.openSagMT = openSagMT;
+  window.closeSagMT = closeSagMT;
+  window.runSagMT = runSagMT;
+  window.copySagMT = copySagMT;
+  window.exportSagCalcDetails = exportSagCalcDetails;
+  window.toggleSagOverlay = toggleSagOverlay;
+  window.renderSagLayer = renderSagLayer;
+  window.toggleMeasure = toggleMeasure;
   window.openFSModal = openFSModal;
   window.closeFSModal = closeFSModal;
   window.resetFSForm = resetFSForm;

@@ -10,7 +10,7 @@ import {
   startCalib, confirmCalib, closeCalib,
   toggleTheme, toggleVDOverlay, toggleFlowAnim, renderFlowLayer
 } from './renderer.js';
-import { onDn, onMv, onUp, initKeyboard, setMultiFlow } from './interaction.js';
+import { onDn, onMv, onUp, initKeyboard, setMultiFlow, toggleMeasure } from './interaction.js';
 import {
   updateProps, clearAll, toggleLeg, buildLeg,
   toggleVD, runVD, populateVDCircuits, copyVDTable,
@@ -20,7 +20,8 @@ import {
 import {
   saveState, undo, redo, copyEl, pasteEl,
   addElem, delSel, updSel, rotateSel, setRotationAbs,
-  selectEl, updateConnectedCables, finalConn
+  selectEl, updateConnectedCables, finalConn,
+  setMTConnect, startMTSpan, addMTSpanFrom
 } from './element-manager.js';
 import {
   startAutoSave, save, saveAsNew, exportJSON, load,
@@ -49,6 +50,7 @@ import {
 } from './fs-module.js';
 import './prosumator.js'; // side-effect: sets window.runProsumator etc.
 import { openImportXLS } from './import-xls.js';
+import { openSagMT, closeSagMT, runSagMT, copySagMT, exportSagCalcDetails, toggleSagOverlay, renderSagLayer } from './sag-mt.js';
 
 // ── Init ──────────────────────────────────────────────────────────────────
 
@@ -175,6 +177,9 @@ window.setRotationAbs = setRotationAbs;
 window.selectEl       = selectEl;
 window.updateConnectedCables = updateConnectedCables;
 window.finalConn      = finalConn;
+window.setMTConnect   = setMTConnect;
+window.startMTSpan    = startMTSpan;
+window.addMTSpanFrom  = addMTSpanFrom;
 
 // UI
 window.updateProps       = updateProps;
@@ -209,6 +214,15 @@ window.showProjectManagerAfterAuth = showProjectManagerAfterAuth;
 window.markDirty               = markDirty;
 window.renderProjectList       = renderProjectList;
 
+// MT Panel toggle
+window.toggleMTPanel = () => {
+  const p = document.getElementById('mt-panel');
+  const btn = document.getElementById('btn-mt-panel');
+  const show = p.style.display !== 'flex';
+  p.style.display = show ? 'flex' : 'none';
+  if (btn) btn.classList.toggle('active', show);
+};
+
 // Auth
 window.toggleAuthMode    = toggleAuthMode;
 window.authSubmit        = authSubmit;
@@ -235,6 +249,16 @@ window.closeExportMenu  = closeExportMenu;
 // Fișa de Calcul
 window.generateFC         = generateFC;
 window.computeCantitatiFC = computeCantitatiFC;
+
+// Calcul Săgeată + Deviație MT
+window.openSagMT        = openSagMT;
+window.closeSagMT       = closeSagMT;
+window.runSagMT         = runSagMT;
+window.copySagMT           = copySagMT;
+window.exportSagCalcDetails = exportSagCalcDetails;
+window.toggleSagOverlay    = toggleSagOverlay;
+window.renderSagLayer   = renderSagLayer;
+window.toggleMeasure    = toggleMeasure;
 
 // Fișa de Soluție (also set by fs-module.js itself, kept here for explicitness)
 window.openFSModal      = openFSModal;

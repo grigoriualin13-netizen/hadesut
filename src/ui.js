@@ -1,9 +1,10 @@
 import { S } from './state.js';
 import { R0_TABLES } from './config.js';
+import { getPoleData } from './pole-catalog.js';
 import { getR0, getKs, getX0, calcDU_tronson } from './calculations.js';
 import { sym, symW, symH, isConnectionActive, nextLbl } from './elements.js';
 import { render, renderFlowLayer, renderVDOverlay } from './renderer.js';
-import { saveState, updSel, setRotationAbs, updateConnectedCables, delSel, copyEl, pasteEl, selectEl } from './element-manager.js';
+import { saveState, updSel, setRotationAbs, updateConnectedCables, delSel, copyEl, pasteEl, selectEl, addMTSpanFrom } from './element-manager.js';
 import { getCircuitChain } from './interaction.js';
 import { toast, updateStat, applyView, calcPathLen, uid } from './utils.js';
 
@@ -29,7 +30,7 @@ export function updateProps() {
 
     const selCns = S.CN.filter(c => S.multiSel.has(c.id));
     if (selCns.length > 0) {
-      const tcOpts = ['Clasic Al', 'Torsadat Al', 'Cablu Al', 'Cablu Cu'];
+      const tcOpts = ['Clasic Al', 'Torsadat Al', 'Cablu Al', 'Cablu Cu', 'OL-AL'];
       const secOpts = [2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240];
       const secOptHtml = secOpts.map(s => `<option value="${s}">${s} mm²</option>`).join('');
       html += `<div class="psec"><div class="psh">⚡ Editare Multiplă Cabluri (${selCns.length})</div>
@@ -321,7 +322,62 @@ export function updateProps() {
       let inputsHtml = groups.map(g => `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;"><span style="font-size:9px;color:var(--text2)">${g === 'Implicit' ? 'Grup implicit / Toate' : `Grup ${g}`}</span><input class="pi p-cons-grp" data-grp="${g}" type="number" style="width:60px;padding:3px" min="0" value="${el.cons_dict[g] || 0}"></div>`).join('');
       let pvInputsHtml = groups.map(g => `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;"><span style="font-size:9px;color:var(--text2)">${g === 'Implicit' ? 'Grup implicit / Toate' : `Grup ${g}`}</span><input class="pi p-pv-grp" data-grp="${g}" type="number" step="0.1" style="width:60px;padding:3px" min="0" value="${el.pv_dict[g] || 0}"></div>`).join('');
       let poleTypeHtml = '', csFuseHtml = '';
-      if (isStalp) {
+      const isMTStalp = el.type.startsWith('stalp_mt_');
+      if (isMTStalp) {
+        const catD = getPoleData(el);
+        poleTypeHtml = `
+          <div class="pr" style="background:rgba(192,112,0,.08);border-left:3px solid #c07000;padding-left:8px">
+            <div class="pl" style="color:#c07000">Stâlp MT 20kV</div>
+            <select class="pi" id="p-st-type">
+              <optgroup label="SC Centrifugați">
+                <option value="stalp_mt_sc10001" ${el.type==='stalp_mt_sc10001'?'selected':''}>SC 10001</option>
+                <option value="stalp_mt_sc15006" ${el.type==='stalp_mt_sc15006'?'selected':''}>SC 15006</option>
+                <option value="stalp_mt_sc15007" ${el.type==='stalp_mt_sc15007'?'selected':''}>SC 15007</option>
+                <option value="stalp_mt_sc15014" ${el.type==='stalp_mt_sc15014'?'selected':''}>SC 15014</option>
+                <option value="stalp_mt_sc15015" ${el.type==='stalp_mt_sc15015'?'selected':''}>SC 15015</option>
+              </optgroup>
+              <optgroup label="SE Vibro-Precomprimați">
+                <option value="stalp_mt_se4t" ${el.type==='stalp_mt_se4t'?'selected':''}>SE 4T</option>
+                <option value="stalp_mt_se5t" ${el.type==='stalp_mt_se5t'?'selected':''}>SE 5T</option>
+                <option value="stalp_mt_se6t" ${el.type==='stalp_mt_se6t'?'selected':''}>SE 6T</option>
+                <option value="stalp_mt_se7t" ${el.type==='stalp_mt_se7t'?'selected':''}>SE 7T</option>
+                <option value="stalp_mt_se8t" ${el.type==='stalp_mt_se8t'?'selected':''}>SE 8T</option>
+                <option value="stalp_mt_se9t" ${el.type==='stalp_mt_se9t'?'selected':''}>SE 9T</option>
+                <option value="stalp_mt_se10t" ${el.type==='stalp_mt_se10t'?'selected':''}>SE 10T</option>
+                <option value="stalp_mt_se11t" ${el.type==='stalp_mt_se11t'?'selected':''}>SE 11T</option>
+              </optgroup>
+            </select>
+            <div style="font-size:7.5px;color:var(--text3);margin-top:3px">${catD.desc}</div>
+          </div>
+          <div class="pr" style="background:rgba(192,112,0,.05);border-left:3px solid #c07000;padding-left:8px">
+            <div style="display:flex;gap:8px;align-items:flex-end">
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <span style="font-size:7.5px;font-weight:700;color:#c07000;text-transform:uppercase">H prindere [m]</span>
+                <input class="pi" id="p-h-prindere" type="number" min="2" max="25" step="0.5"
+                       style="width:62px"
+                       placeholder="${catD.catH != null ? catD.catH : '?'}"
+                       value="${el.h_prindere_ovr != null ? el.h_prindere_ovr : ''}"
+                       title="Înălțimea punctului de prindere față de sol [m]. Catalog: ${catD.catH ?? '?'}m. Gol = din catalog.">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <span style="font-size:7.5px;font-weight:700;color:#c07000;text-transform:uppercase">T_max horiz. [daN]</span>
+                <input class="pi" id="p-T-max-horiz" type="number" min="0" max="99999" step="50"
+                       style="width:72px"
+                       placeholder="${catD.catT != null ? catD.catT : '∞'}"
+                       value="${el.T_max_ovr != null ? el.T_max_ovr : ''}"
+                       title="Tracțiunea orizontală max. admisă [daN] pentru stâlpi de ancorare. Gol = fără limitare (stâlpi N susținere).">
+              </div>
+            </div>
+          </div>
+          <div class="pr">
+            <button class="pi" id="p-mt-extend"
+              style="width:100%;padding:7px;background:rgba(192,112,0,.15);border:1px solid #c07000;
+                border-radius:5px;color:#c07000;font-weight:800;font-size:9px;cursor:pointer;letter-spacing:.05em"
+              title="Adaugă un stâlp nou și 3 conexiuni RST pornind de la acest stâlp">
+              + Adaugă deschidere de la acest stâlp
+            </button>
+          </div>`;
+      } else if (isStalp) {
         poleTypeHtml = `<div class="pr"><div class="pl">🏗️ Tip Stâlp</div><select class="pi" id="p-st-type">
           <option value="stalp_se4" ${el.type === 'stalp_se4' ? 'selected' : ''}>SE 4 (Pătrat Gol)</option>
           <option value="stalp_se10" ${el.type === 'stalp_se10' ? 'selected' : ''}>SE 10 (Pătrat cu X)</option>
@@ -479,6 +535,9 @@ export function updateProps() {
 
     if (isStalp || el.type.startsWith('firida_')) {
       document.getElementById('p-nod')?.addEventListener('change', ev => updSel('nod', ev.target.value));
+      document.getElementById('p-mt-extend')?.addEventListener('click', () => {
+        addMTSpanFrom(el.id);
+      });
       document.getElementById('p-cs-fuse')?.addEventListener('input', ev => {
         el.cs_fuse = parseFloat(ev.target.value) || 100;
         if (document.getElementById('vd-panel').style.display === 'flex') runVD();
@@ -496,7 +555,22 @@ export function updateProps() {
           }
           render(); updateProps();
           if (document.getElementById('vd-panel').style.display === 'flex') runVD();
+          window.runSagMT?.();
         }
+      });
+      document.getElementById('p-h-prindere')?.addEventListener('change', ev => {
+        const ve = S.EL.find(x => x.id === S.sel);
+        if (!ve) return;
+        const v = parseFloat(ev.target.value);
+        ve.h_prindere_ovr = isFinite(v) && v > 0 ? v : undefined;
+        window.runSagMT?.();
+      });
+      document.getElementById('p-T-max-horiz')?.addEventListener('change', ev => {
+        const ve = S.EL.find(x => x.id === S.sel);
+        if (!ve) return;
+        const v = parseFloat(ev.target.value);
+        ve.T_max_ovr = isFinite(v) && v > 0 ? v : undefined;
+        window.runSagMT?.();
       });
     }
 
@@ -504,7 +578,7 @@ export function updateProps() {
     buildColors(el.fillColor, c => updSel('fillColor', c), 'p-crow-fill', true);
 
   } else {
-    const tcOpts = ['Clasic Al', 'Torsadat Al', 'Cablu Al', 'Cablu Cu'];
+    const tcOpts = ['Clasic Al', 'Torsadat Al', 'Cablu Al', 'Cablu Cu', 'OL-AL'];
     const secOpts = [2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240];
     const availSec = Object.keys(R0_TABLES[cn.tipConductor || 'Clasic Al'] || {}).map(Number).sort((a, b) => a - b);
     const secOptHtml = secOpts.map(s => `<option value="${s}" ${parseFloat(cn.sectiune || 16) === s ? 'selected' : ''} ${!availSec.includes(s) ? 'disabled style="color:#555"' : ''}>${s} mm²</option>`).join('');
@@ -529,6 +603,7 @@ export function updateProps() {
         <div class="pr"><div class="pl">Tip conductor</div><select class="pi" id="p-tc">${tcOpts.map(t => `<option value="${t}" ${(cn.tipConductor || 'Clasic Al') === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
         <div class="pr"><div class="pl">Secțiune (mm²)</div><select class="pi" id="p-sec">${secOptHtml}</select></div>
         <div class="pr"><div class="pl">Tip rețea</div><select class="pi" id="p-tr"><option value="Trifazat" ${(cn.tipRetea || 'Trifazat') === 'Trifazat' ? 'selected' : ''}>Trifazat (3×Un=0.4kV)</option><option value="Bifazat" ${cn.tipRetea === 'Bifazat' ? 'selected' : ''}>Bifazat (2×Un=0.4kV)</option><option value="Monofazat" ${cn.tipRetea === 'Monofazat' ? 'selected' : ''}>Monofazat (Un=0.23kV)</option></select></div>
+        <div class="pr"><div class="pl">Fază MT (RST)</div><select class="pi" id="p-faza" style="font-weight:700;color:${cn.faza === 'R' ? '#ef4444' : cn.faza === 'S' ? '#22c55e' : cn.faza === 'T' ? '#3b82f6' : 'var(--text)'}"><option value="" ${!cn.faza ? 'selected' : ''} style="color:var(--text)">— (nedefinit)</option><option value="R" ${cn.faza === 'R' ? 'selected' : ''} style="color:#ef4444">R (faza R)</option><option value="S" ${cn.faza === 'S' ? 'selected' : ''} style="color:#22c55e">S (faza S)</option><option value="T" ${cn.faza === 'T' ? 'selected' : ''} style="color:#3b82f6">T (faza T)</option></select></div>
         <div class="pr"><div class="pl">r₀ (rezistență specifică)</div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accentg);padding:4px 7px;background:var(--bg2);border-radius:4px" id="p-r0disp">${r0disp}</div></div>
         <div class="pr"><div class="pl">Putere concentrată nod final (kW)</div><input class="pi" type="number" step="0.1" id="p-pc" value="${cn.putereConc || 0}"></div>
       </div>
@@ -573,6 +648,7 @@ export function updateProps() {
       const d = document.getElementById('p-r0disp'); if (d) d.textContent = r0 ? (r0 / 1000).toFixed(4) + ' Ω/km' : '—';
     });
     document.getElementById('p-tr').addEventListener('change', ev => updSel('tipRetea', ev.target.value));
+    document.getElementById('p-faza').addEventListener('change', ev => { const v = ev.target.value; updSel('faza', v || undefined); ev.target.style.color = v === 'R' ? '#ef4444' : v === 'S' ? '#22c55e' : v === 'T' ? '#3b82f6' : 'var(--text)'; });
     document.getElementById('p-flow')?.addEventListener('change', ev => { updSel('flowDir', ev.target.value); renderFlowLayer(); });
     buildColors(cn.color, c => updSel('color', c), 'p-crow-color', false);
     buildColors(cn.fillColor, c => updSel('fillColor', c), 'p-crow-fill', true);

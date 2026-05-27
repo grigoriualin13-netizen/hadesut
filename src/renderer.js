@@ -13,6 +13,21 @@ export function getSvgEl() { return _svgEl; }
 
 export function mk(t) { return document.createElementNS('http://www.w3.org/2000/svg', t); }
 
+// MT phase visual offset — perpendicular to span: R=+14px, S=0, T=−14px
+export const MT_PHASE_PX = 14;
+const _MT_FAZA_DIR = { R: 1, S: 0, T: -1 };
+function _mtOffsetPath(path, faza) {
+  const dir = _MT_FAZA_DIR[faza];
+  if (!dir || path.length < 2) return path;
+  const p0 = path[0], pn = path[path.length - 1];
+  const dx = pn.x - p0.x, dy = pn.y - p0.y;
+  const len = Math.hypot(dx, dy);
+  if (len < 1) return path;
+  const nx = -dy / len, ny = dx / len;
+  const off = dir * MT_PHASE_PX;
+  return path.map(p => ({ x: p.x + nx * off, y: p.y + ny * off }));
+}
+
 // ── Background ──
 export function renderBg() {
   const bgL = document.getElementById('bg-layer');
@@ -175,10 +190,11 @@ export function render() {
 
   S.CN.forEach(cn => {
     const isSel = cn.id === S.sel || S.multiSel.has(cn.id), col = cn.color || '#ef4444', sw = cn.strokeWidth || 2, dash = cn.lineType === 'dashed' ? 'stroke-dasharray="10,5"' : '';
+    const rp = cn.faza ? _mtOffsetPath(cn.path, cn.faza) : cn.path;
     let dStr = '', JUMP_R = 6;
-    if (cn.path.length > 0) {
-      for (let i = 0; i < cn.path.length - 1; i++) {
-        const p1 = cn.path[i], p2 = cn.path[i + 1]; if (i === 0) dStr += `M ${p1.x},${p1.y} `;
+    if (rp.length > 0) {
+      for (let i = 0; i < rp.length - 1; i++) {
+        const p1 = rp[i], p2 = rp[i + 1]; if (i === 0) dStr += `M ${p1.x},${p1.y} `;
         let inters = [];
         S.CN.forEach(otherCn => {
           if (otherCn.id >= cn.id) return;
@@ -215,11 +231,11 @@ export function render() {
         }
       }
     }
-    const pts = cn.path.map(p => `${p.x},${p.y}`).join(' ');
+    const pts = rp.map(p => `${p.x},${p.y}`).join(' ');
     g.innerHTML = `<polyline class="hb" points="${pts}" fill="none" stroke="transparent" stroke-width="16" style="pointer-events:stroke;cursor:pointer"/>${hlPath}<path class="cl" d="${dStr}" fill="none" stroke="${col}" stroke-width="${isSel ? sw + 2 : sw}" ${finalDash} pointer-events="none"/>${demXmarks}`;
-    if (cn.path.length >= 2) {
-      let maxLen = -1, bestP1 = cn.path[0], bestP2 = cn.path[1];
-      for (let i = 0; i < cn.path.length - 1; i++) { let d = Math.hypot(cn.path[i + 1].x - cn.path[i].x, cn.path[i + 1].y - cn.path[i].y); if (d > maxLen) { maxLen = d; bestP1 = cn.path[i]; bestP2 = cn.path[i + 1]; } }
+    if (rp.length >= 2) {
+      let maxLen = -1, bestP1 = rp[0], bestP2 = rp[1];
+      for (let i = 0; i < rp.length - 1; i++) { let d = Math.hypot(rp[i + 1].x - rp[i].x, rp[i + 1].y - rp[i].y); if (d > maxLen) { maxLen = d; bestP1 = rp[i]; bestP2 = rp[i + 1]; } }
       let mx = (bestP1.x + bestP2.x) / 2, my = (bestP1.y + bestP2.y) / 2;
       let isHoriz = Math.abs(bestP2.x - bestP1.x) >= Math.abs(bestP2.y - bestP1.y);
       let tx = mx, ty = my, rot = 0;
@@ -227,6 +243,11 @@ export function render() {
       let tr = rot ? `transform="rotate(${rot} ${tx} ${ty})"` : '';
       let hlStyle = cn.fillColor && cn.fillColor !== 'none' ? `stroke:${cn.fillColor}; stroke-width:3px; paint-order:stroke fill;` : '';
       g.innerHTML += `<text class="el-lbl" x="${tx}" y="${ty}" text-anchor="middle" dominant-baseline="central" font-size="9" fill="${col}" font-family="JetBrains Mono,monospace" font-weight="700" pointer-events="none" style="${hlStyle}" ${tr}>L=${cn.length || 0}m</text>`;
+      if (cn.faza) {
+        const fazaCol = {R:'#ef4444',S:'#22c55e',T:'#3b82f6'}[cn.faza] || '#888';
+        const bx = isHoriz ? mx + 18 : mx + 18, by = isHoriz ? my - 7 : my + 12;
+        g.innerHTML += `<circle cx="${bx}" cy="${by}" r="6" fill="${fazaCol}" stroke="rgba(0,0,0,.25)" stroke-width="1" pointer-events="none"/><text x="${bx}" y="${by}" text-anchor="middle" dominant-baseline="central" font-size="7.5" fill="white" font-weight="bold" pointer-events="none">${cn.faza}</text>`;
+      }
     }
     g.querySelector('.hb').addEventListener('mousedown', ev => {
       ev.stopPropagation();
