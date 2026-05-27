@@ -443,6 +443,82 @@ export function buildProfilSVG(chain) {
   return s;
 }
 
+// ── Tabel sumar per deschidere ──────────────────────────────────────────────
+
+function buildSummaryTable(chain) {
+  const { poles, spans, hasCota } = chain;
+  if (!spans.length) return '';
+
+  const th = (txt, extra = '') =>
+    `<th style="padding:4px 8px;border:1px solid #1e293b;background:#0f172a;`
+    + `color:#94a3b8;font-weight:600;font-size:8.5px;text-align:center;white-space:nowrap${extra}">${txt}</th>`;
+  const td = (txt, col = '#cbd5e1', bold = false, extra = '') =>
+    `<td style="padding:3px 7px;border:1px solid #1e293b;text-align:center;`
+    + `font-size:8.5px;color:${col};${bold ? 'font-weight:700;' : ''}${extra}">${txt}</td>`;
+
+  let head = '<tr>'
+    + th('Tronson')
+    + th('L [m]')
+    + (hasCota ? th('Δh [m]') : '')
+    + th('Conductor')
+    + th('T₀ dim [daN]')
+    + th('KP [%]')
+    + th('f₄₀ [m]')
+    + th('f₁₀ [m]')
+    + (hasCota ? th('Gabarit [m]') : '')
+    + '</tr>';
+
+  let rows = spans.map((sp, i) => {
+    const fromLbl = elLabel(sp.fromId);
+    const toLbl   = elLabel(sp.toId);
+    const tronson = `${fromLbl} → ${toLbl}`;
+
+    // Gabarit la x_max (+40°C)
+    let gabaritCell = '';
+    if (hasCota && sp.sag40 != null) {
+      const a_l = poles[i].cota_teren + poles[i].H;
+      const a_r = poles[i + 1].cota_teren + poles[i + 1].H;
+      const x_max40 = (sp.q40 && sp.T40)
+        ? sp.L_m / 2 - sp.dh * sp.T40 / (sp.q40 * sp.L_m)
+        : sp.L_m / 2;
+      const t_max40     = Math.max(0.01, Math.min(0.99, x_max40 / sp.L_m));
+      const chord_max   = a_l + (a_r - a_l) * t_max40;
+      const cond40_max  = chord_max - sp.sag40;
+      const terrain_max = poles[i].cota_teren
+        + (poles[i + 1].cota_teren - poles[i].cota_teren) * t_max40;
+      const clearance   = cond40_max - terrain_max;
+      const ok          = clearance >= GABARIT_MIN;
+      gabaritCell = td(
+        clearance.toFixed(2) + (ok ? '' : ' ⚠'),
+        ok ? '#22c55e' : '#ef4444',
+        true
+      );
+    } else if (hasCota) {
+      gabaritCell = td('—', '#475569');
+    }
+
+    return '<tr>'
+      + td(tronson, '#e2e8f0', false, 'text-align:left')
+      + td(sp.L_m != null ? sp.L_m.toFixed(0) : '—')
+      + (hasCota ? td(sp.dh != null ? (sp.dh > 0 ? '+' : '') + sp.dh.toFixed(1) : '—',
+                      Math.abs(sp.dh) > 0.1 ? '#fb923c' : '#94a3b8') : '')
+      + td(sp.acsr_key || '—', '#7dd3fc')
+      + td(sp.T0_dim != null ? sp.T0_dim.toFixed(0) : '—', '#fbbf24')
+      + td(sp.KP_calc != null ? (sp.KP_calc * 100).toFixed(0) + '%' : '—', '#a78bfa')
+      + td(sp.sag40 != null ? sp.sag40.toFixed(2) : '—', '#f97316', sp.sag40 != null)
+      + td(sp.sag10 != null ? sp.sag10.toFixed(2) : '—', '#4ade80')
+      + gabaritCell
+      + '</tr>';
+  }).join('');
+
+  return `<div style="overflow-x:auto;margin-top:0;margin-bottom:2px">
+    <table style="border-collapse:collapse;background:#131c2e;width:100%;min-width:520px">
+      <thead>${head}</thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
 // ── API panou ────────────────────────────────────────────────────────────────
 
 export function openProfilLEA() {
@@ -478,7 +554,9 @@ export function runProfilLEA() {
   chains.forEach(chain => {
     const svg = buildProfilSVG(chain);
     if (!svg) return;
-    html += `<div style="margin-bottom:20px;overflow-x:auto">${svg}</div>`;
+    html += `<div style="margin-bottom:4px;overflow-x:auto">${svg}</div>`;
+    html += buildSummaryTable(chain);
+    html += '<div style="margin-bottom:24px"></div>';
   });
   container.innerHTML = html || '<div style="padding:24px;color:#64748b;font-size:11px">'
     + 'Profilul nu poate fi generat (date insuficiente).</div>';

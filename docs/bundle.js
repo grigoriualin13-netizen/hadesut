@@ -9197,15 +9197,30 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
     return e ? e.label || e.type : "?";
   }
   function getSpanPoleData(fromElId, toElId) {
-    const pL = getPoleData(S.EL.find((x) => x.id === fromElId));
-    const pR = getPoleData(S.EL.find((x) => x.id === toElId));
+    const elL = S.EL.find((x) => x.id === fromElId);
+    const elR = S.EL.find((x) => x.id === toElId);
+    const pL = getPoleData(elL);
+    const pR = getPoleData(elR);
     const HL = pL.H ?? _H;
     const HR = pR.H ?? _H;
     let T_max = null;
     if (pL.T_max !== null && pR.T_max !== null) T_max = Math.min(pL.T_max, pR.T_max);
     else if (pL.T_max !== null) T_max = pL.T_max;
     else if (pR.T_max !== null) T_max = pR.T_max;
-    return { H: (HL + HR) / 2, HL, HR, T_max, consoleL: pL.consoleDesc, consoleR: pR.consoleDesc };
+    const cotaL = elL?.cota_teren;
+    const cotaR = elR?.cota_teren;
+    const dh = cotaL != null && cotaR != null ? cotaR + HR - (cotaL + HL) : 0;
+    const hasDh = cotaL != null && cotaR != null;
+    return {
+      H: (HL + HR) / 2,
+      HL,
+      HR,
+      T_max,
+      dh,
+      hasDh,
+      consoleL: pL.consoleDesc,
+      consoleR: pR.consoleDesc
+    };
   }
   function openSagMT() {
     const p = document.getElementById("sag-mt-panel");
@@ -9250,7 +9265,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
         const res = calcSpan(
           acsr_key,
           { zone: _zone, H: spanPole.H, Av: Math.max(L, 40), terrain: "II" },
-          { L, dh: 0 },
+          { L, dh: spanPole.dh },
           span_kpdim,
           spanPole.T_max
         );
@@ -9289,7 +9304,8 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
                     font-family:'JetBrains Mono',monospace">
     </td>`;
       const tMaxActive = spanPole.T_max !== null && T0 >= spanPole.T_max * 0.99;
-      const hInfo = `H=${spanPole.H.toFixed(1)}m (${spanPole.HL.toFixed(1)}+${spanPole.HR.toFixed(1)})`;
+      const dhStr = spanPole.hasDh && Math.abs(spanPole.dh) > 0.05 ? ` | \u0394h=${spanPole.dh > 0 ? "+" : ""}${spanPole.dh.toFixed(1)}m` : "";
+      const hInfo = `H=${spanPole.H.toFixed(1)}m (${spanPole.HL.toFixed(1)}+${spanPole.HR.toFixed(1)})${dhStr}`;
       const tMaxInfo = spanPole.T_max !== null ? ` | T_max=${spanPole.T_max}daN${tMaxActive ? " \u2190 ACTIV" : ""}` : "";
       const isKpOvr = _kpdimOverrides.has(key);
       const kpOvrDec = _kpdimOverrides.get(key);
@@ -9313,7 +9329,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       ${tdr(acsr_key, ";font-size:8px;color:var(--text2)")}
       <td style="padding:3px 6px;border:1px solid var(--border2);font-size:8.5px;text-align:right;font-family:'JetBrains Mono',monospace${KPcol}" title="${hInfo}${tMaxInfo}">${T0.toFixed(0)} daN${KP > 45 ? " \u26A0" : ""}${tMaxActive ? " \u2B07" : ""}</td>
       ${kpdimCell}
-      ${tdr(`${spanPole.H.toFixed(1)} m`, ";color:var(--text3);font-size:8px")}
+      <td style="padding:3px 6px;border:1px solid var(--border2);font-size:8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--text3)" title="${hInfo}${tMaxInfo}">${spanPole.H.toFixed(1)} m${spanPole.hasDh && Math.abs(spanPole.dh) > 0.05 ? `<br><span style="font-size:7px;color:#64748b">\u0394h${spanPole.dh > 0 ? "+" : ""}${spanPole.dh.toFixed(1)}m</span>` : ""}</td>
       ${twindCell}
       ${tdr(`${sag40.toFixed(2)} m`, ";color:var(--accent)")}
       ${tdr(`${delta.toFixed(2)} m${warnD ? " \u26A0" : ""}`, warnD ? ";color:#ef4444;font-weight:bold" : ";color:#22c55e;font-weight:bold")}
@@ -9416,6 +9432,9 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       const _cslR = spanPoleExp.consoleR ? ` [${spanPoleExp.consoleR}]` : "";
       lines.push(`  St\xE2lp stg. H=${spanPoleExp.HL.toFixed(1)}m${_cslL} | St\xE2lp dr. H=${spanPoleExp.HR.toFixed(1)}m${_cslR}`);
       lines.push(`  H_calcul = (${spanPoleExp.HL.toFixed(1)}+${spanPoleExp.HR.toFixed(1)})/2 = ${spanPoleExp.H.toFixed(2)}m${spanPoleExp.T_max !== null ? " | T_max=" + spanPoleExp.T_max + " daN" : ""}`);
+      if (spanPoleExp.hasDh) {
+        lines.push(`  dh = ${spanPoleExp.dh > 0 ? "+" : ""}${spanPoleExp.dh.toFixed(2)} m  (din cota_teren st\xE2lpi \u2014 diferen\u021B\u0103 nivel prindere)`);
+      }
       const span_kpdim_exp = _kpdimOverrides.get(key) ?? _kpdim;
       if (_kpdimOverrides.has(key)) {
         lines.push(`  KP_dim: ${(_kpdimOverrides.get(key) * 100).toFixed(0)}% (OVERRIDE per deschidere; global=${_kpdim ? (_kpdim * 100).toFixed(0) + "%" : "auto"})`);
@@ -9426,7 +9445,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
         res = calcSpan(
           acsr_key,
           { zone: _zone, H: spanPoleExp.H, Av, terrain: "II" },
-          { L, dh: 0 },
+          { L, dh: spanPoleExp.dh },
           span_kpdim_exp,
           spanPoleExp.T_max
         );
@@ -10237,6 +10256,47 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
     s += "</svg>";
     return s;
   }
+  function buildSummaryTable(chain) {
+    const { poles, spans, hasCota } = chain;
+    if (!spans.length) return "";
+    const th = (txt, extra = "") => `<th style="padding:4px 8px;border:1px solid #1e293b;background:#0f172a;color:#94a3b8;font-weight:600;font-size:8.5px;text-align:center;white-space:nowrap${extra}">${txt}</th>`;
+    const td = (txt, col = "#cbd5e1", bold = false, extra = "") => `<td style="padding:3px 7px;border:1px solid #1e293b;text-align:center;font-size:8.5px;color:${col};${bold ? "font-weight:700;" : ""}${extra}">${txt}</td>`;
+    let head = "<tr>" + th("Tronson") + th("L [m]") + (hasCota ? th("\u0394h [m]") : "") + th("Conductor") + th("T\u2080 dim [daN]") + th("KP [%]") + th("f\u2084\u2080 [m]") + th("f\u2081\u2080 [m]") + (hasCota ? th("Gabarit [m]") : "") + "</tr>";
+    let rows = spans.map((sp, i) => {
+      const fromLbl = elLabel2(sp.fromId);
+      const toLbl = elLabel2(sp.toId);
+      const tronson = `${fromLbl} \u2192 ${toLbl}`;
+      let gabaritCell = "";
+      if (hasCota && sp.sag40 != null) {
+        const a_l = poles[i].cota_teren + poles[i].H;
+        const a_r = poles[i + 1].cota_teren + poles[i + 1].H;
+        const x_max40 = sp.q40 && sp.T40 ? sp.L_m / 2 - sp.dh * sp.T40 / (sp.q40 * sp.L_m) : sp.L_m / 2;
+        const t_max40 = Math.max(0.01, Math.min(0.99, x_max40 / sp.L_m));
+        const chord_max = a_l + (a_r - a_l) * t_max40;
+        const cond40_max = chord_max - sp.sag40;
+        const terrain_max = poles[i].cota_teren + (poles[i + 1].cota_teren - poles[i].cota_teren) * t_max40;
+        const clearance = cond40_max - terrain_max;
+        const ok = clearance >= GABARIT_MIN;
+        gabaritCell = td(
+          clearance.toFixed(2) + (ok ? "" : " \u26A0"),
+          ok ? "#22c55e" : "#ef4444",
+          true
+        );
+      } else if (hasCota) {
+        gabaritCell = td("\u2014", "#475569");
+      }
+      return "<tr>" + td(tronson, "#e2e8f0", false, "text-align:left") + td(sp.L_m != null ? sp.L_m.toFixed(0) : "\u2014") + (hasCota ? td(
+        sp.dh != null ? (sp.dh > 0 ? "+" : "") + sp.dh.toFixed(1) : "\u2014",
+        Math.abs(sp.dh) > 0.1 ? "#fb923c" : "#94a3b8"
+      ) : "") + td(sp.acsr_key || "\u2014", "#7dd3fc") + td(sp.T0_dim != null ? sp.T0_dim.toFixed(0) : "\u2014", "#fbbf24") + td(sp.KP_calc != null ? (sp.KP_calc * 100).toFixed(0) + "%" : "\u2014", "#a78bfa") + td(sp.sag40 != null ? sp.sag40.toFixed(2) : "\u2014", "#f97316", sp.sag40 != null) + td(sp.sag10 != null ? sp.sag10.toFixed(2) : "\u2014", "#4ade80") + gabaritCell + "</tr>";
+    }).join("");
+    return `<div style="overflow-x:auto;margin-top:0;margin-bottom:2px">
+    <table style="border-collapse:collapse;background:#131c2e;width:100%;min-width:520px">
+      <thead>${head}</thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+  }
   function openProfilLEA() {
     const panel = document.getElementById("PROFIL_LEA");
     if (panel) {
@@ -10266,7 +10326,9 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
     chains.forEach((chain) => {
       const svg = buildProfilSVG(chain);
       if (!svg) return;
-      html += `<div style="margin-bottom:20px;overflow-x:auto">${svg}</div>`;
+      html += `<div style="margin-bottom:4px;overflow-x:auto">${svg}</div>`;
+      html += buildSummaryTable(chain);
+      html += '<div style="margin-bottom:24px"></div>';
     });
     container.innerHTML = html || '<div style="padding:24px;color:#64748b;font-size:11px">Profilul nu poate fi generat (date insuficiente).</div>';
   }
