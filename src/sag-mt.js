@@ -95,7 +95,7 @@ function getSpanPoleData(fromElId, toElId) {
   if (pL.T_max !== null && pR.T_max !== null) T_max = Math.min(pL.T_max, pR.T_max);
   else if (pL.T_max !== null)                 T_max = pL.T_max;
   else if (pR.T_max !== null)                 T_max = pR.T_max;
-  return { H: (HL + HR) / 2, HL, HR, T_max };
+  return { H: (HL + HR) / 2, HL, HR, T_max, consoleL: pL.consoleDesc, consoleR: pR.consoleDesc };
 }
 
 // ── Panel ──────────────────────────────────────────────────────────────────
@@ -295,7 +295,10 @@ export function exportSagCalcDetails() {
     lines.push('───────────────────────────────────────────────────────────────────────────');
     lines.push(`  TRONSON ${idx}: ${fromLbl} → ${toLbl}   (Faze: ${fazeLbl})`);
     lines.push(`  Conductor: ${acsr_key}   L = ${L.toFixed(1)} m   Av = max(L,40) = ${Av.toFixed(1)} m`);
-    lines.push(`  Stâlp stg. H=${spanPoleExp.HL.toFixed(1)}m | Stâlp dr. H=${spanPoleExp.HR.toFixed(1)}m | H_calcul=${spanPoleExp.H.toFixed(2)}m${spanPoleExp.T_max!==null?' | T_max='+spanPoleExp.T_max+' daN':''}`);
+    const _cslL = spanPoleExp.consoleL ? ` [${spanPoleExp.consoleL}]` : '';
+    const _cslR = spanPoleExp.consoleR ? ` [${spanPoleExp.consoleR}]` : '';
+    lines.push(`  Stâlp stg. H=${spanPoleExp.HL.toFixed(1)}m${_cslL} | Stâlp dr. H=${spanPoleExp.HR.toFixed(1)}m${_cslR}`);
+    lines.push(`  H_calcul = (${spanPoleExp.HL.toFixed(1)}+${spanPoleExp.HR.toFixed(1)})/2 = ${spanPoleExp.H.toFixed(2)}m${spanPoleExp.T_max!==null?' | T_max='+spanPoleExp.T_max+' daN':''}`);
     lines.push('');
 
     let res;

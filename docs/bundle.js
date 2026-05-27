@@ -785,17 +785,22 @@
 
   // src/pole-catalog.js
   function getPoleData(el) {
-    if (!el) return { H: null, T_max: null, desc: "?", catH: null, catT: null };
+    if (!el) return { H: null, T_max: null, desc: "?", catH: null, catT: null, consoleDesc: null };
     const cat = POLE_CATALOG[el.type] ?? {};
+    const consCat = el.console_type ? CONSOLE_CATALOG[el.console_type] ?? {} : {};
+    const consT = consCat.T_max ?? null;
+    const poleT = cat.T_max ?? null;
     return {
       H: el.h_prindere_ovr != null ? el.h_prindere_ovr : cat.H ?? null,
-      T_max: el.T_max_ovr != null ? el.T_max_ovr : cat.T_max ?? null,
+      T_max: el.T_max_ovr != null ? el.T_max_ovr : consT ?? poleT,
       desc: cat.desc ?? el.type,
       catH: cat.H ?? null,
-      catT: cat.T_max ?? null
+      catT: consT ?? poleT,
+      // placeholder afișat în câmpul T_max din UI
+      consoleDesc: consCat.desc ?? null
     };
   }
-  var POLE_CATALOG;
+  var POLE_CATALOG, CONSOLE_CATALOG;
   var init_pole_catalog = __esm({
     "src/pole-catalog.js"() {
       POLE_CATALOG = {
@@ -814,6 +819,45 @@
         stalp_mt_se9t: { desc: "SE 9T", H: 10, T_max: null },
         stalp_mt_se10t: { desc: "SE 10T", H: 10.5, T_max: null },
         stalp_mt_se11t: { desc: "SE 11T", H: 11, T_max: null }
+      };
+      CONSOLE_CATALOG = {
+        // ── CSO 1100 — consolă de susținere orizontală 1100 mm ───────────────────
+        cso_1100_v1: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 / OL37 v1 \u2014 L63\xD763\xD76", T_max: 163 },
+        cso_1100_v2: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 / OL37 v2 \u2014 L60\xD760\xD76", T_max: 142 },
+        cso_1100_v3: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 / OL37 v3 \u2014 L60 SR EN", T_max: 140 },
+        cso_1100_v4: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 / OL37 v4 \u2014 L70\xD770\xD77", T_max: 220 },
+        cso_1100_v5: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 / OL52 v5 \u2014 L60\xD760\xD76", T_max: 198 },
+        cso_1100_v6: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 / OL52 v6 \u2014 asimetric", T_max: 114 },
+        // ── CSO 1385 — consolă de susținere orizontală 1385 mm ───────────────────
+        cso_1385_v1: { group: "CSO 1385 \u2014 sus\u021Binere S.C.", desc: "CSO 1385 / OL37 v1 \u2014 L70/L60", T_max: 138 },
+        cso_1385_v2: { group: "CSO 1385 \u2014 sus\u021Binere S.C.", desc: "CSO 1385 / OL37 v2 \u2014 L70/L60", T_max: 143 },
+        cso_1385_v3: { group: "CSO 1385 \u2014 sus\u021Binere S.C.", desc: "CSO 1385 / OL52 v3 \u2014 L70/L60", T_max: 198 },
+        // ── CIE — consolă izolație elastică susținere ────────────────────────────
+        cie_v1: { group: "CIE \u2014 izol. elastic\u0103 sus\u021B.", desc: "CIE / OL37 v1 \u2014 L70/L70 (min.)", T_max: 86 },
+        cie_v23: { group: "CIE \u2014 izol. elastic\u0103 sus\u021B.", desc: "CIE / OL37 v2-3 \u2014 cu L80\xD780\xD78", T_max: 129 },
+        cie_v45: { group: "CIE \u2014 izol. elastic\u0103 sus\u021B.", desc: "CIE / OL37 v4-5 \u2014 STAS 7836", T_max: 118 },
+        cie_v67: { group: "CIE \u2014 izol. elastic\u0103 sus\u021B.", desc: "CIE / OL52 v6-7", T_max: 123 },
+        // ── CDS — consolă dezaxată susținere ─────────────────────────────────────
+        cds_ol37: { group: "CDS \u2014 dezaxat\u0103 sus\u021Binere", desc: "CDS / OL37", T_max: 70 },
+        cds_ol52: { group: "CDS \u2014 dezaxat\u0103 sus\u021Binere", desc: "CDS / OL52", T_max: 100 },
+        // ── CDV 550 — consolă de derivație ───────────────────────────────────────
+        cdv_550: { group: "CDV 550 \u2014 deriva\u021Bie", desc: "CDV 550", T_max: 150 },
+        // ── CIT 140 — consolă de întindere și terminală ───────────────────────────
+        cit_140: { group: "CIT 140 \u2014 \xEEntindere/term.", desc: "CIT 140", T_max: 1500 },
+        // ── CDI — consolă dezaxată de întindere ──────────────────────────────────
+        cdi_ol37: { group: "CDI \u2014 dezaxat\u0103 \xEEntindere", desc: "CDI / OL37", T_max: 800 },
+        // ── CSS / CSI — consolă orizontală dublu circuit susținere ───────────────
+        css: { group: "CSS/CSI \u2014 d.c. sus\u021Binere", desc: "CSS \u2014 d.c. sus\u021B. superioar\u0103", T_max: 350 },
+        csi: { group: "CSS/CSI \u2014 d.c. sus\u021Binere", desc: "CSI \u2014 d.c. sus\u021B. inferioar\u0103", T_max: 145 },
+        // ── CDCS "Păianjen" — consolă d.c. susținere izolație elastică ───────────
+        cdcs_v1: { group: 'CDCS "P\u0103ianjen" \u2014 d.c. sus\u021B. el.', desc: "CDCS v1 \u2014 U10", T_max: 116 },
+        cdcs_v2: { group: 'CDCS "P\u0103ianjen" \u2014 d.c. sus\u021B. el.', desc: "CDCS v2 \u2014 U8", T_max: 87 },
+        cdcs_v3: { group: 'CDCS "P\u0103ianjen" \u2014 d.c. sus\u021B. el.', desc: "CDCS v3 \u2014 U100\xD750\xD76", T_max: 107 },
+        cdcs_v4: { group: 'CDCS "P\u0103ianjen" \u2014 d.c. sus\u021B. el.', desc: "CDCS v4 \u2014 U80\xD760\xD75", T_max: 119 },
+        // ── CIS/CII — consolă orizontală d.c. de întindere ───────────────────────
+        cis_cii: { group: "CIS/CII \u2014 d.c. \xEEntindere", desc: "CIS/CII", T_max: 1e3 },
+        // ── CDCI — consolă d.c. de întindere izolație elastică ───────────────────
+        cdci: { group: "CDCI \u2014 d.c. \xEEntindere el.", desc: "CDCI", T_max: 1250 }
       };
     }
   });
@@ -3236,6 +3280,14 @@ ${(r * 0.1).toFixed(4)}
         const isMTStalp = el.type.startsWith("stalp_mt_");
         if (isMTStalp) {
           const catD = getPoleData(el);
+          const _consoleOpts = (() => {
+            const g = {};
+            for (const [k, v] of Object.entries(CONSOLE_CATALOG)) {
+              if (!g[v.group]) g[v.group] = [];
+              g[v.group].push(`<option value="${k}" ${el.console_type === k ? "selected" : ""}>${v.desc} \u2014 T=${v.T_max} daN</option>`);
+            }
+            return '<option value="">\u2014 f\u0103r\u0103 consol\u0103 (T_max \u221E) \u2014</option>' + Object.entries(g).map(([gr, opts]) => `<optgroup label="${gr}">${opts.join("")}</optgroup>`).join("");
+          })();
           poleTypeHtml = `
           <div class="pr" style="background:rgba(192,112,0,.08);border-left:3px solid #c07000;padding-left:8px">
             <div class="pl" style="color:#c07000">St\xE2lp MT 20kV</div>
@@ -3261,22 +3313,29 @@ ${(r * 0.1).toFixed(4)}
             <div style="font-size:7.5px;color:var(--text3);margin-top:3px">${catD.desc}</div>
           </div>
           <div class="pr" style="background:rgba(192,112,0,.05);border-left:3px solid #c07000;padding-left:8px">
-            <div style="display:flex;gap:8px;align-items:flex-end">
+            <div style="display:flex;flex-direction:column;gap:6px">
               <div style="display:flex;flex-direction:column;gap:2px">
-                <span style="font-size:7.5px;font-weight:700;color:#c07000;text-transform:uppercase">H prindere [m]</span>
-                <input class="pi" id="p-h-prindere" type="number" min="2" max="25" step="0.5"
-                       style="width:62px"
-                       placeholder="${catD.catH != null ? catD.catH : "?"}"
-                       value="${el.h_prindere_ovr != null ? el.h_prindere_ovr : ""}"
-                       title="\xCEn\u0103l\u021Bimea punctului de prindere fa\u021B\u0103 de sol [m]. Catalog: ${catD.catH ?? "?"}m. Gol = din catalog.">
+                <span style="font-size:7.5px;font-weight:700;color:#c07000;text-transform:uppercase">Consol\u0103 tip (ST34)</span>
+                <select class="pi" id="p-console-type" style="font-size:9px"
+                  title="Tip consol\u0103 metalic\u0103 ST34 Electrica \u2014 auto-completeaz\u0103 T_max din Anexa 1">${_consoleOpts}</select>
               </div>
-              <div style="display:flex;flex-direction:column;gap:2px">
-                <span style="font-size:7.5px;font-weight:700;color:#c07000;text-transform:uppercase">T_max horiz. [daN]</span>
-                <input class="pi" id="p-T-max-horiz" type="number" min="0" max="99999" step="50"
-                       style="width:72px"
-                       placeholder="${catD.catT != null ? catD.catT : "\u221E"}"
-                       value="${el.T_max_ovr != null ? el.T_max_ovr : ""}"
-                       title="Trac\u021Biunea orizontal\u0103 max. admis\u0103 [daN] pentru st\xE2lpi de ancorare. Gol = f\u0103r\u0103 limitare (st\xE2lpi N sus\u021Binere).">
+              <div style="display:flex;gap:8px;align-items:flex-end">
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <span style="font-size:7.5px;font-weight:700;color:#c07000;text-transform:uppercase">H prindere [m]</span>
+                  <input class="pi" id="p-h-prindere" type="number" min="2" max="25" step="0.5"
+                         style="width:62px"
+                         placeholder="${catD.catH != null ? catD.catH : "?"}"
+                         value="${el.h_prindere_ovr != null ? el.h_prindere_ovr : ""}"
+                         title="\xCEn\u0103l\u021Bimea punctului de prindere fa\u021B\u0103 de sol [m]. Catalog: ${catD.catH ?? "?"}m. Gol = din catalog.">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <span style="font-size:7.5px;font-weight:700;color:#c07000;text-transform:uppercase">T_max horiz. [daN]</span>
+                  <input class="pi" id="p-T-max-horiz" type="number" min="0" max="99999" step="50"
+                         style="width:72px"
+                         placeholder="${catD.catT != null ? catD.catT : "\u221E"}"
+                         value="${el.T_max_ovr != null ? el.T_max_ovr : ""}"
+                         title="Override manual T_max [daN]. Consol\u0103: ${catD.catT ?? "\u221E"} daN. Gol = din consol\u0103/catalog.">
+                </div>
               </div>
             </div>
           </div>
@@ -3522,6 +3581,13 @@ ${(r * 0.1).toFixed(4)}
           if (!ve) return;
           const v = parseFloat(ev.target.value);
           ve.T_max_ovr = isFinite(v) && v > 0 ? v : void 0;
+          window.runSagMT?.();
+        });
+        document.getElementById("p-console-type")?.addEventListener("change", (ev) => {
+          const ve = S.EL.find((x) => x.id === S.sel);
+          if (!ve) return;
+          ve.console_type = ev.target.value || void 0;
+          updateProps();
           window.runSagMT?.();
         });
       }
@@ -9110,7 +9176,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
     if (pL.T_max !== null && pR.T_max !== null) T_max = Math.min(pL.T_max, pR.T_max);
     else if (pL.T_max !== null) T_max = pL.T_max;
     else if (pR.T_max !== null) T_max = pR.T_max;
-    return { H: (HL + HR) / 2, HL, HR, T_max };
+    return { H: (HL + HR) / 2, HL, HR, T_max, consoleL: pL.consoleDesc, consoleR: pR.consoleDesc };
   }
   function openSagMT() {
     const p = document.getElementById("sag-mt-panel");
@@ -9289,7 +9355,10 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       lines.push("\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500");
       lines.push(`  TRONSON ${idx}: ${fromLbl} \u2192 ${toLbl}   (Faze: ${fazeLbl})`);
       lines.push(`  Conductor: ${acsr_key}   L = ${L.toFixed(1)} m   Av = max(L,40) = ${Av.toFixed(1)} m`);
-      lines.push(`  St\xE2lp stg. H=${spanPoleExp.HL.toFixed(1)}m | St\xE2lp dr. H=${spanPoleExp.HR.toFixed(1)}m | H_calcul=${spanPoleExp.H.toFixed(2)}m${spanPoleExp.T_max !== null ? " | T_max=" + spanPoleExp.T_max + " daN" : ""}`);
+      const _cslL = spanPoleExp.consoleL ? ` [${spanPoleExp.consoleL}]` : "";
+      const _cslR = spanPoleExp.consoleR ? ` [${spanPoleExp.consoleR}]` : "";
+      lines.push(`  St\xE2lp stg. H=${spanPoleExp.HL.toFixed(1)}m${_cslL} | St\xE2lp dr. H=${spanPoleExp.HR.toFixed(1)}m${_cslR}`);
+      lines.push(`  H_calcul = (${spanPoleExp.HL.toFixed(1)}+${spanPoleExp.HR.toFixed(1)})/2 = ${spanPoleExp.H.toFixed(2)}m${spanPoleExp.T_max !== null ? " | T_max=" + spanPoleExp.T_max + " daN" : ""}`);
       lines.push("");
       let res;
       try {

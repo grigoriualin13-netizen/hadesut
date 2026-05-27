@@ -1,6 +1,6 @@
 import { S } from './state.js';
 import { R0_TABLES } from './config.js';
-import { getPoleData } from './pole-catalog.js';
+import { getPoleData, CONSOLE_CATALOG } from './pole-catalog.js';
 import { getR0, getKs, getX0, calcDU_tronson } from './calculations.js';
 import { sym, symW, symH, isConnectionActive, nextLbl } from './elements.js';
 import { render, renderFlowLayer, renderVDOverlay } from './renderer.js';
@@ -325,6 +325,15 @@ export function updateProps() {
       const isMTStalp = el.type.startsWith('stalp_mt_');
       if (isMTStalp) {
         const catD = getPoleData(el);
+        const _consoleOpts = (() => {
+          const g = {};
+          for (const [k, v] of Object.entries(CONSOLE_CATALOG)) {
+            if (!g[v.group]) g[v.group] = [];
+            g[v.group].push(`<option value="${k}" ${el.console_type === k ? 'selected' : ''}>${v.desc} — T=${v.T_max} daN</option>`);
+          }
+          return '<option value="">— fără consolă (T_max ∞) —</option>' +
+            Object.entries(g).map(([gr, opts]) => `<optgroup label="${gr}">${opts.join('')}</optgroup>`).join('');
+        })();
         poleTypeHtml = `
           <div class="pr" style="background:rgba(192,112,0,.08);border-left:3px solid #c07000;padding-left:8px">
             <div class="pl" style="color:#c07000">Stâlp MT 20kV</div>
@@ -350,22 +359,29 @@ export function updateProps() {
             <div style="font-size:7.5px;color:var(--text3);margin-top:3px">${catD.desc}</div>
           </div>
           <div class="pr" style="background:rgba(192,112,0,.05);border-left:3px solid #c07000;padding-left:8px">
-            <div style="display:flex;gap:8px;align-items:flex-end">
+            <div style="display:flex;flex-direction:column;gap:6px">
               <div style="display:flex;flex-direction:column;gap:2px">
-                <span style="font-size:7.5px;font-weight:700;color:#c07000;text-transform:uppercase">H prindere [m]</span>
-                <input class="pi" id="p-h-prindere" type="number" min="2" max="25" step="0.5"
-                       style="width:62px"
-                       placeholder="${catD.catH != null ? catD.catH : '?'}"
-                       value="${el.h_prindere_ovr != null ? el.h_prindere_ovr : ''}"
-                       title="Înălțimea punctului de prindere față de sol [m]. Catalog: ${catD.catH ?? '?'}m. Gol = din catalog.">
+                <span style="font-size:7.5px;font-weight:700;color:#c07000;text-transform:uppercase">Consolă tip (ST34)</span>
+                <select class="pi" id="p-console-type" style="font-size:9px"
+                  title="Tip consolă metalică ST34 Electrica — auto-completează T_max din Anexa 1">${_consoleOpts}</select>
               </div>
-              <div style="display:flex;flex-direction:column;gap:2px">
-                <span style="font-size:7.5px;font-weight:700;color:#c07000;text-transform:uppercase">T_max horiz. [daN]</span>
-                <input class="pi" id="p-T-max-horiz" type="number" min="0" max="99999" step="50"
-                       style="width:72px"
-                       placeholder="${catD.catT != null ? catD.catT : '∞'}"
-                       value="${el.T_max_ovr != null ? el.T_max_ovr : ''}"
-                       title="Tracțiunea orizontală max. admisă [daN] pentru stâlpi de ancorare. Gol = fără limitare (stâlpi N susținere).">
+              <div style="display:flex;gap:8px;align-items:flex-end">
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <span style="font-size:7.5px;font-weight:700;color:#c07000;text-transform:uppercase">H prindere [m]</span>
+                  <input class="pi" id="p-h-prindere" type="number" min="2" max="25" step="0.5"
+                         style="width:62px"
+                         placeholder="${catD.catH != null ? catD.catH : '?'}"
+                         value="${el.h_prindere_ovr != null ? el.h_prindere_ovr : ''}"
+                         title="Înălțimea punctului de prindere față de sol [m]. Catalog: ${catD.catH ?? '?'}m. Gol = din catalog.">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <span style="font-size:7.5px;font-weight:700;color:#c07000;text-transform:uppercase">T_max horiz. [daN]</span>
+                  <input class="pi" id="p-T-max-horiz" type="number" min="0" max="99999" step="50"
+                         style="width:72px"
+                         placeholder="${catD.catT != null ? catD.catT : '∞'}"
+                         value="${el.T_max_ovr != null ? el.T_max_ovr : ''}"
+                         title="Override manual T_max [daN]. Consolă: ${catD.catT ?? '∞'} daN. Gol = din consolă/catalog.">
+                </div>
               </div>
             </div>
           </div>
@@ -570,6 +586,13 @@ export function updateProps() {
         if (!ve) return;
         const v = parseFloat(ev.target.value);
         ve.T_max_ovr = isFinite(v) && v > 0 ? v : undefined;
+        window.runSagMT?.();
+      });
+      document.getElementById('p-console-type')?.addEventListener('change', ev => {
+        const ve = S.EL.find(x => x.id === S.sel);
+        if (!ve) return;
+        ve.console_type = ev.target.value || undefined;
+        updateProps();
         window.runSagMT?.();
       });
     }
