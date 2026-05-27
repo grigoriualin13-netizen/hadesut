@@ -9218,6 +9218,8 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       T_max,
       dh,
       hasDh,
+      cotaL,
+      cotaR,
       consoleL: pL.consoleDesc,
       consoleR: pR.consoleDesc
     };
@@ -9260,12 +9262,19 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       const cd = CONDUCTORS[acsr_key];
       const spanPole = getSpanPoleData(cns2[0].fromElId, cns2[0].toElId);
       const span_kpdim = _kpdimOverrides.get(key) ?? _kpdim;
-      let T0, KP, sag40, T_crit, delta, fg, T_wind_calc;
+      let T0, KP, sag40, T_crit, delta, fg, T_wind_calc, gabarit;
       try {
+        const terrainProfile = spanPole.cotaL != null && spanPole.cotaR != null ? [{ x: 0, y: spanPole.cotaL }, { x: L, y: spanPole.cotaR }] : [];
         const res = calcSpan(
           acsr_key,
           { zone: _zone, H: spanPole.H, Av: Math.max(L, 40), terrain: "II" },
-          { L, dh: spanPole.dh },
+          {
+            L,
+            dh: spanPole.dh,
+            h_left: spanPole.HL,
+            h_right: spanPole.HR,
+            terrain_profile: terrainProfile
+          },
           span_kpdim,
           spanPole.T_max
         );
@@ -9273,6 +9282,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
         KP = res.KP_dim * 100;
         sag40 = res.sag40;
         T_crit = res.T_crit;
+        gabarit = res.gabarit?.gabarit ?? null;
         const row_wind = res.tension_table?.find((r) => r.label === "+15+vmax");
         T_wind_calc = row_wind?.T_norm ?? T0;
         const T_wind_used = _twindOverrides.get(key) ?? T_wind_calc;
@@ -9281,7 +9291,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
         delta = g4n * L * L / (8 * T_wind_used) + L_IZ_MT * (g4n / g6n);
         fg = res.loads.normate.g1 * L * L / (8 * T0);
       } catch (e) {
-        rows += `<tr><td colspan="11" style="color:#ef4444;padding:4px;font-size:8px">${acsr_key} \u2014 eroare calcul: ${e.message}</td></tr>`;
+        rows += `<tr><td colspan="12" style="color:#ef4444;padding:4px;font-size:8px">${acsr_key} \u2014 eroare calcul: ${e.message}</td></tr>`;
         return;
       }
       const fromLbl = elLabel(cns2[0].fromElId);
@@ -9334,6 +9344,10 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       ${tdr(`${sag40.toFixed(2)} m`, ";color:var(--accent)")}
       ${tdr(`${delta.toFixed(2)} m${warnD ? " \u26A0" : ""}`, warnD ? ";color:#ef4444;font-weight:bold" : ";color:#22c55e;font-weight:bold")}
       ${tdr(`${T_crit.toFixed(1)}\xB0C`, ";color:var(--text2)")}
+      ${gabarit != null ? tdr(
+        `${gabarit.toFixed(2)} m${gabarit < 7 ? " \u26A0" : ""}`,
+        gabarit < 7 ? ";color:#ef4444;font-weight:bold" : ";color:#22c55e;font-weight:bold"
+      ) : tdc("\u2014", ";color:var(--text3);font-size:8px")}
     </tr>`;
     });
     const metZ = METEO_ZONES[_zone] || {};
@@ -9344,7 +9358,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
         ${th("T\u2080 [daN]")}${th("KP_dim [%]")}
         ${th("H [m]")}
         ${th("T_wind [daN]")}
-        ${th("f_max 40\xB0C [m]")}${th("\u03B4 v\xE2nt max [m]")}${th("T_crit [\xB0C]")}
+        ${th("f_max 40\xB0C [m]")}${th("\u03B4 v\xE2nt max [m]")}${th("T_crit [\xB0C]")}${th("Gabarit [m]")}
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
@@ -9352,7 +9366,8 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       ${!_kpdim || _kpdim === 0.23 ? "NTE 003/2015 (KP=23%)" : "SR EN 50341-2-24 (KP=47%)"} | Zon\u0103 ${_zone}: Vb=${metZ.Vb ?? "?"}m/s \xB7 ch=${metZ.b_ch ?? "?"}mm \xB7 \u03C1=${metZ.rho_ch ?? "?"}kg/m\xB3 | H=${_H}m &nbsp;|&nbsp;
       T\u2080=min(KP_dim\xB7RTS, EDS, T_max_stalp) &nbsp;|&nbsp; H=per st\xE2lp din catalog (hover T\u2080 pt. detalii) &nbsp;|&nbsp; f_max=40\xB0C &nbsp;|&nbsp; \u03B4=catenary(+15+vmax)+lan\u021B(${L_IZ_MT}m) &nbsp;|&nbsp;
       <span style="color:#ff9f43">T_wind: placeholder=calculat, portocaliu=breviar CALMECO</span> &nbsp;|&nbsp;
-      <span style="color:#a855f7">H implicit (pentru st\xE2lpi f\u0103r\u0103 catalog): ${_H}m</span>
+      <span style="color:#a855f7">H implicit (pentru st\xE2lpi f\u0103r\u0103 catalog): ${_H}m</span> &nbsp;|&nbsp;
+      <span style="color:#22c55e">Gabarit \u22657m \u2713 (NTE 003 art.137) \u2014 apare numai c\xE2nd cotele de teren sunt introduse</span>
     </div>`;
     body.querySelectorAll("input.twind-inp").forEach((inp) => {
       inp.addEventListener("change", () => {
