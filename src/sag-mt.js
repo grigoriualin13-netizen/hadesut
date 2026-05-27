@@ -633,6 +633,10 @@ export function renderSagLayer() {
                  y: starts.reduce((s,p)=>s+p.y,0)/starts.length };
       let p1 = { x: ends.reduce((s,p)=>s+p.x,0)/ends.length,
                  y: ends.reduce((s,p)=>s+p.y,0)/ends.length };
+      const _fe = S.EL.find(e => e.id === cns2[0].fromElId);
+      const _te = S.EL.find(e => e.id === cns2[0].toElId);
+      if (_fe?.type?.startsWith('stalp_mt_')) p0 = { x: _fe.x, y: _fe.y };
+      if (_te?.type?.startsWith('stalp_mt_')) p1 = { x: _te.x, y: _te.y };
       if (reversed) [p0, p1] = [p1, p0];
       const dx = p1.x-p0.x, dy = p1.y-p0.y, len = Math.hypot(dx,dy);
       if (len < 5) return;
@@ -714,17 +718,19 @@ export function renderSagLayer() {
     const L = parseFloat(cns2[0].length) || 0;
     if (L < 1) return;
 
-    // ── Average start / end position across all connections in this span ──
+    // ── Start/end la centrul stâlpului (stalp_mt_*) sau media terminalelor ──
     const starts = cns2.map(cn => cn.path[0]);
     const ends   = cns2.map(cn => cn.path[cn.path.length - 1]);
-    const p0 = {
-      x: starts.reduce((s, p) => s + p.x, 0) / starts.length,
-      y: starts.reduce((s, p) => s + p.y, 0) / starts.length,
-    };
-    const p1 = {
-      x: ends.reduce((s, p) => s + p.x, 0) / ends.length,
-      y: ends.reduce((s, p) => s + p.y, 0) / ends.length,
-    };
+    const _feEye = S.EL.find(e => e.id === cns2[0].fromElId);
+    const _teEye = S.EL.find(e => e.id === cns2[0].toElId);
+    const p0 = _feEye?.type?.startsWith('stalp_mt_')
+      ? { x: _feEye.x, y: _feEye.y }
+      : { x: starts.reduce((s, p) => s + p.x, 0) / starts.length,
+          y: starts.reduce((s, p) => s + p.y, 0) / starts.length };
+    const p1 = _teEye?.type?.startsWith('stalp_mt_')
+      ? { x: _teEye.x, y: _teEye.y }
+      : { x: ends.reduce((s, p) => s + p.x, 0) / ends.length,
+          y: ends.reduce((s, p) => s + p.y, 0) / ends.length };
 
     const dx = p1.x - p0.x, dy = p1.y - p0.y;
     const spanPx = Math.hypot(dx, dy);
