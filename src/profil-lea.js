@@ -129,28 +129,38 @@ export function extractProfilData() {
       const acsr_key = SECTION_TO_ACSR[sec] || 'ACSR 70/11';
       const H_span   = (poles[i].H + poles[i + 1].H) / 2;
 
+      // Diferența de nivel reală între punctele de prindere (dh > 0 = dreapta mai sus)
+      const attach_l = poles[i].cota_teren + poles[i].H;
+      const attach_r = poles[i + 1].cota_teren + poles[i + 1].H;
+      const dh       = poles[i].hasCota && poles[i + 1].hasCota ? attach_r - attach_l : 0;
+
       const pdL  = getPoleData(S.EL.find(e => e.id === seg.fromId));
       const pdR  = getPoleData(S.EL.find(e => e.id === seg.toId));
       const tL   = pdL.T_max, tR = pdR.T_max;
       const T_max = (tL != null && tR != null) ? Math.min(tL, tR) : (tL ?? tR ?? null);
 
-      let sag10 = null, sag40 = null, T0_dim = null, KP_calc = null, T_crit = null;
+      let sag10 = null, sag40 = null, T40 = null, q40 = null, T10 = null, q10 = null;
+      let T0_dim = null, KP_calc = null, T_crit = null;
       try {
         const res = calcSpan(
           acsr_key,
           { zone: _zone, H: H_span, Av: Math.max(L, 40), terrain: 'II' },
-          { L, dh: 0 },
+          { L, dh },
           _kpdim,
           T_max
         );
         sag40   = res.sag40;
-        sag10   = res.tension_table.find(r => r.label === '+10°C')?.sag_max ?? null;
         T0_dim  = res.T0_dim;
         KP_calc = res.KP_dim;
         T_crit  = res.T_crit;
+        const r40 = res.tension_table.find(r => r.label === '+40°C');
+        const r10 = res.tension_table.find(r => r.label === '+10°C');
+        if (r40) { sag40 = r40.sag_max; T40 = r40.T_norm; q40 = r40.q_norm; }
+        if (r10) { sag10 = r10.sag_max; T10 = r10.T_norm; q10 = r10.q_norm; }
       } catch (_) { /* deschidere fără date suficiente */ }
 
-      return { fromId: seg.fromId, toId: seg.toId, L_m: L, acsr_key, sag10, sag40, T0_dim, KP_calc, T_crit };
+      return { fromId: seg.fromId, toId: seg.toId, L_m: L, dh, acsr_key,
+               sag10, sag40, T40, q40, T10, q10, T0_dim, KP_calc, T_crit };
     });
 
     return {
@@ -164,7 +174,7 @@ export function extractProfilData() {
 
 // ── Constructor SVG profil ──────────────────────────────────────────────────
 
-const MG = { top: 50, right: 60, bot: 72, left: 68 };
+const MG = { top: 50, right: 60, bot: 80, left: 68 };
 const IW = 860;
 const IH = 210;
 const N_CAT = 40; // puncte per parabolă
@@ -249,107 +259,137 @@ export function buildProfilSVG(chain) {
        + `font-size="7.5" fill="#92400e" opacity=".7">0m</text>`;
   }
 
-  // ── Curbe catenary per deschidere
+  // ── Curbe catenary per deschidere (formula exactă q·x·(L-x)/(2T))
   spans.forEach((sp, i) => {
     if (!sp.L_m) return;
     const a_l = poles[i].cota_teren + poles[i].H;
     const a_r = poles[i + 1].cota_teren + poles[i + 1].H;
 
-    const catPts = sag => Array.from({ length: N_CAT + 1 }, (_, k) => {
+    // Funcție catenary: exact cu q și T, fallback parabola simetrică
+    const catPts = (q_n, T_n, sag_fb) => Array.from({ length: N_CAT + 1 }, (_, k) => {
       const t = k / N_CAT;
-      const elev = a_l + (a_r - a_l) * t - sag * 4 * t * (1 - t);
-      return `${sx(xm[i] + t * sp.L_m).toFixed(1)},${sy(elev).toFixed(1)}`;
+      const x_m  = t * sp.L_m;
+      const chord = a_l + (a_r - a_l) * t;
+      const sag_x = (q_n != null && T_n != null)
+        ? q_n * x_m * (sp.L_m - x_m) / (2 * T_n)
+        : (sag_fb ?? 0) * 4 * t * (1 - t);
+      return `${sx(xm[i] + x_m).toFixed(1)},${sy(chord - sag_x).toFixed(1)}`;
     }).join(' ');
 
     // +40°C — portocaliu (starea de gabarit)
     if (sp.sag40 != null) {
-      s += `<polyline points="${catPts(sp.sag40)}" fill="none" stroke="#f97316" stroke-width="2"/>`;
-      const xmid = sx(xm[i] + sp.L_m / 2);
-      const chord_mid = (a_l + a_r) / 2;
-      const cond40_mid = chord_mid - sp.sag40;
-      const y40  = sy(cond40_mid);
-      s += `<text x="${xmid.toFixed(1)}" y="${(y40 + 12).toFixed(1)}" text-anchor="middle" `
+      s += `<polyline points="${catPts(sp.q40, sp.T40, sp.sag40)}" fill="none" stroke="#f97316" stroke-width="2"/>`;
+
+      // Poziția săgeții maxime (x_max): corectă pentru dh≠0
+      const x_max40 = (sp.q40 && sp.T40)
+        ? sp.L_m / 2 - sp.dh * sp.T40 / (sp.q40 * sp.L_m)
+        : sp.L_m / 2;
+      const t_max40 = Math.max(0.01, Math.min(0.99, x_max40 / sp.L_m));
+      const chord_max = a_l + (a_r - a_l) * t_max40;
+      const cond40_max = chord_max - sp.sag40;
+
+      const x_sag_px = sx(xm[i] + x_max40);
+      const y40      = sy(cond40_max);
+      s += `<text x="${x_sag_px.toFixed(1)}" y="${(y40 + 12).toFixed(1)}" text-anchor="middle" `
          + `font-size="8.5" fill="#f97316">f₄₀=${sp.sag40.toFixed(2)} m</text>`;
 
-      // Gabarit față de teren la midspan (numai dacă cotele sunt introduse)
+      // Gabarit față de teren la sag_max (numai dacă cotele sunt introduse)
       if (hasCota) {
-        const terrain_mid = (poles[i].cota_teren + poles[i + 1].cota_teren) / 2;
-        const clearance   = cond40_mid - terrain_mid;
-        const ok          = clearance >= GABARIT_MIN;
-        const col         = ok ? '#22c55e' : '#ef4444';
-        const y_terrain_mid = sy(terrain_mid);
-        const xg = xmid;
+        const terrain_at_xmax = poles[i].cota_teren
+          + (poles[i + 1].cota_teren - poles[i].cota_teren) * t_max40;
+        const clearance = cond40_max - terrain_at_xmax;
+        const ok        = clearance >= GABARIT_MIN;
+        const col       = ok ? '#22c55e' : '#ef4444';
+        const y_terr    = sy(terrain_at_xmax);
+        const xg        = x_sag_px;
 
-        // Săgeată verticală: linie + vârfuri
-        s += `<line x1="${xg.toFixed(1)}" y1="${y_terrain_mid.toFixed(1)}" x2="${xg.toFixed(1)}" y2="${y40.toFixed(1)}" `
+        s += `<line x1="${xg.toFixed(1)}" y1="${y_terr.toFixed(1)}" x2="${xg.toFixed(1)}" y2="${y40.toFixed(1)}" `
            + `stroke="${col}" stroke-width="1.3" stroke-dasharray="3,2"/>`;
-        // Vârf sus (la conductor)
         s += `<polygon points="${xg.toFixed(1)},${y40.toFixed(1)} `
            + `${(xg - 3.5).toFixed(1)},${(y40 + 7).toFixed(1)} `
            + `${(xg + 3.5).toFixed(1)},${(y40 + 7).toFixed(1)}" fill="${col}"/>`;
-        // Vârf jos (la teren)
-        s += `<polygon points="${xg.toFixed(1)},${y_terrain_mid.toFixed(1)} `
-           + `${(xg - 3.5).toFixed(1)},${(y_terrain_mid - 7).toFixed(1)} `
-           + `${(xg + 3.5).toFixed(1)},${(y_terrain_mid - 7).toFixed(1)}" fill="${col}"/>`;
-        // Label clearance
-        const y_label = (y40 + y_terrain_mid) / 2;
-        s += `<rect x="${(xg - 20).toFixed(1)}" y="${(y_label - 8).toFixed(1)}" width="40" height="13" `
+        s += `<polygon points="${xg.toFixed(1)},${y_terr.toFixed(1)} `
+           + `${(xg - 3.5).toFixed(1)},${(y_terr - 7).toFixed(1)} `
+           + `${(xg + 3.5).toFixed(1)},${(y_terr - 7).toFixed(1)}" fill="${col}"/>`;
+        const y_lbl = (y40 + y_terr) / 2;
+        s += `<rect x="${(xg - 22).toFixed(1)}" y="${(y_lbl - 8).toFixed(1)}" width="44" height="13" `
            + `rx="3" fill="${ok ? 'rgba(34,197,94,.15)' : 'rgba(239,68,68,.15)'}" stroke="${col}" stroke-width=".6"/>`;
-        s += `<text x="${xg.toFixed(1)}" y="${(y_label + 2).toFixed(1)}" text-anchor="middle" `
+        s += `<text x="${xg.toFixed(1)}" y="${(y_lbl + 2).toFixed(1)}" text-anchor="middle" `
            + `font-size="8.5" fill="${col}" font-weight="700">g=${clearance.toFixed(2)}m${ok ? '' : ' ⚠'}</text>`;
       }
     }
 
     // +10°C — verde, linie întreruptă
     if (sp.sag10 != null) {
-      s += `<polyline points="${catPts(sp.sag10)}" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="7,3"/>`;
-      const xmid = sx(xm[i] + sp.L_m / 2);
-      const y10  = sy((a_l + a_r) / 2 - sp.sag10);
-      s += `<text x="${xmid.toFixed(1)}" y="${(y10 - 5).toFixed(1)}" text-anchor="middle" `
+      s += `<polyline points="${catPts(sp.q10, sp.T10, sp.sag10)}" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="7,3"/>`;
+      const x_max10 = (sp.q10 && sp.T10)
+        ? sp.L_m / 2 - sp.dh * sp.T10 / (sp.q10 * sp.L_m)
+        : sp.L_m / 2;
+      const t_max10 = Math.max(0.01, Math.min(0.99, x_max10 / sp.L_m));
+      const y10 = sy(a_l + (a_r - a_l) * t_max10 - sp.sag10);
+      s += `<text x="${sx(xm[i] + x_max10).toFixed(1)}" y="${(y10 - 5).toFixed(1)}" text-anchor="middle" `
          + `font-size="8.5" fill="#4ade80">f₁₀=${sp.sag10.toFixed(2)} m</text>`;
     }
 
-    // Etichetă deschidere sub grafic
-    const xmid = sx(xm[i] + sp.L_m / 2);
-    s += `<text x="${xmid.toFixed(1)}" y="${(MG.top + IH + 18).toFixed(1)}" `
+    // Etichetă deschidere + conductor sub grafic
+    const xmid_px = sx(xm[i] + sp.L_m / 2);
+    s += `<text x="${xmid_px.toFixed(1)}" y="${(MG.top + IH + 18).toFixed(1)}" `
        + `text-anchor="middle" font-size="9" fill="#94a3b8">${sp.L_m.toFixed(0)} m</text>`;
-    s += `<text x="${xmid.toFixed(1)}" y="${(MG.top + IH + 30).toFixed(1)}" `
-       + `text-anchor="middle" font-size="7.5" fill="#475569">${sp.acsr_key}</text>`;
-    // Linie verticală separator deschideri
+    s += `<text x="${xmid_px.toFixed(1)}" y="${(MG.top + IH + 30).toFixed(1)}" `
+       + `text-anchor="middle" font-size="7.5" fill="#475569">${sp.acsr_key}`
+       + `${sp.dh !== 0 ? ` Δh=${sp.dh > 0 ? '+' : ''}${sp.dh.toFixed(1)}m` : ''}</text>`;
+    // Separator deschidere
     s += `<line x1="${sx(xm[i]).toFixed(1)}" y1="${MG.top + IH}" `
        + `x2="${sx(xm[i]).toFixed(1)}" y2="${MG.top + IH + 12}" stroke="#334155" stroke-width="1"/>`;
   });
-  // Separator capăt
+  // Separator capăt + distanță cumulată
   s += `<line x1="${sx(L_total).toFixed(1)}" y1="${MG.top + IH}" `
      + `x2="${sx(L_total).toFixed(1)}" y2="${MG.top + IH + 12}" stroke="#334155" stroke-width="1"/>`;
 
-  // ── Simboluri stâlpi (desen peste catenary)
+  // ── Scară X: distanțe cumulate la fiecare stâlp
   poles.forEach((p, i) => {
     const xp  = sx(xm[i]);
-    const ct  = p.cota_teren;
-    const yt  = sy(ct);
-    const ya  = sy(ct + p.H);
+    const cum = xm[i].toFixed(0);
+    s += `<text x="${xp.toFixed(1)}" y="${(MG.top + IH + 44).toFixed(1)}" `
+       + `text-anchor="middle" font-size="7.5" fill="#64748b">${cum} m</text>`;
+    s += `<line x1="${xp.toFixed(1)}" y1="${(MG.top + IH + 34).toFixed(1)}" `
+       + `x2="${xp.toFixed(1)}" y2="${(MG.top + IH + 37).toFixed(1)}" stroke="#475569" stroke-width="1"/>`;
+  });
+
+  // ── Simboluri stâlpi (desen peste catenary)
+  poles.forEach((p, i) => {
+    const xp     = sx(xm[i]);
+    const ct     = p.cota_teren;
+    const yt     = sy(ct);
+    const ya     = sy(ct + p.H);
+    const attach = ct + p.H;    // cota prindere [m asl]
     const isLast = i === poles.length - 1;
+    const side   = isLast ? -1 : 1;
+    const anchor = isLast ? 'end' : 'start';
+    const offX   = side * 5;
+
     // Fusul stâlpului
     s += `<line x1="${xp.toFixed(1)}" y1="${yt.toFixed(1)}" x2="${xp.toFixed(1)}" y2="${ya.toFixed(1)}" `
        + `stroke="#c07000" stroke-width="3"/>`;
     // Punct de prindere
     s += `<circle cx="${xp.toFixed(1)}" cy="${ya.toFixed(1)}" r="4" fill="#fbbf24" stroke="none"/>`;
-    // Etichetă stâlp
+    // Etichetă stâlp (deasupra punctului de prindere)
     s += `<text x="${xp.toFixed(1)}" y="${(ya - 8).toFixed(1)}" text-anchor="middle" `
        + `font-size="9.5" fill="#fbbf24" font-weight="700">${p.label}</text>`;
-    // Cota teren (dacă e setată)
+    // Cota prindere [m asl] — lângă punctul de prindere (portocaliu)
     if (p.hasCota) {
-      const side = isLast ? -6 : 6;
-      const anchor = isLast ? 'end' : 'start';
-      s += `<text x="${(xp + side).toFixed(1)}" y="${(yt + 11).toFixed(1)}" `
+      s += `<text x="${(xp + offX).toFixed(1)}" y="${(ya - 1).toFixed(1)}" `
+         + `text-anchor="${anchor}" font-size="7.5" fill="#fb923c" font-weight="600">`
+         + `${attach.toFixed(1)}</text>`;
+    }
+    // Cota teren la baza stâlpului (maro)
+    if (p.hasCota) {
+      s += `<text x="${(xp + offX).toFixed(1)}" y="${(yt + 11).toFixed(1)}" `
          + `text-anchor="${anchor}" font-size="7.5" fill="#92400e">${ct.toFixed(1)} m</text>`;
     }
-    // H prindere lângă fus
-    s += `<text x="${(xp + (isLast ? -5 : 5)).toFixed(1)}" `
-       + `y="${((yt + ya) / 2 + 3).toFixed(1)}" `
-       + `text-anchor="${isLast ? 'end' : 'start'}" font-size="7" fill="#c07000" opacity=".8">`
-       + `H=${p.H}m</text>`;
+    // H prindere lângă fus (mijloc fus)
+    s += `<text x="${(xp + offX).toFixed(1)}" y="${((yt + ya) / 2 + 3).toFixed(1)}" `
+       + `text-anchor="${anchor}" font-size="7" fill="#c07000" opacity=".8">H=${p.H}m</text>`;
   });
 
   // ── Ramă + titlu
@@ -383,12 +423,21 @@ export function buildProfilSVG(chain) {
     s += `<text x="${lx + 394}" y="${ly + 3}" font-size="8.5" fill="#ef4444">g&lt;7m ⚠</text>`;
   }
 
-  // Scale
+  // Scale + notă dh
   const scH = Math.max(1, Math.round(L_total / IW * 1000));
   const scV = Math.max(1, Math.round(elev_range / IH * 100));
+  const hasDh = spans.some(sp => sp.dh && Math.abs(sp.dh) > 0.1);
   s += `<text x="${(W - MG.right + 4).toFixed(1)}" y="${(MG.top + IH + 60).toFixed(1)}" `
      + `text-anchor="start" font-size="7.5" fill="#475569">`
-     + `Sc. horiz. 1:${scH} | Sc. vert. 1:${scV}</text>`;
+     + `Sc. horiz. 1:${scH} | Sc. vert. 1:${scV}`
+     + `${hasDh ? ' | catenary exactă (dh≠0)' : ''}</text>`;
+  // Notă cotă prindere
+  if (hasCota) {
+    s += `<text x="${(MG.left).toFixed(1)}" y="${(MG.top + IH + 60).toFixed(1)}" `
+       + `font-size="7.5" fill="#fb923c" opacity=".8">`
+       + `<tspan fill="#fb923c">■</tspan> cota prindere [m asl]  `
+       + `<tspan fill="#92400e">■</tspan> cota teren [m asl]</text>`;
+  }
 
   s += '</svg>';
   return s;

@@ -10013,27 +10013,57 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
         const sec = parseFloat(cns2[0].sectiune) || 70;
         const acsr_key = SECTION_TO_ACSR2[sec] || "ACSR 70/11";
         const H_span = (poles[i].H + poles[i + 1].H) / 2;
+        const attach_l = poles[i].cota_teren + poles[i].H;
+        const attach_r = poles[i + 1].cota_teren + poles[i + 1].H;
+        const dh = poles[i].hasCota && poles[i + 1].hasCota ? attach_r - attach_l : 0;
         const pdL = getPoleData(S.EL.find((e) => e.id === seg.fromId));
         const pdR = getPoleData(S.EL.find((e) => e.id === seg.toId));
         const tL = pdL.T_max, tR = pdR.T_max;
         const T_max = tL != null && tR != null ? Math.min(tL, tR) : tL ?? tR ?? null;
-        let sag10 = null, sag40 = null, T0_dim = null, KP_calc = null, T_crit = null;
+        let sag10 = null, sag40 = null, T40 = null, q40 = null, T10 = null, q10 = null;
+        let T0_dim = null, KP_calc = null, T_crit = null;
         try {
           const res = calcSpan(
             acsr_key,
             { zone: _zone2, H: H_span, Av: Math.max(L, 40), terrain: "II" },
-            { L, dh: 0 },
+            { L, dh },
             _kpdim2,
             T_max
           );
           sag40 = res.sag40;
-          sag10 = res.tension_table.find((r) => r.label === "+10\xB0C")?.sag_max ?? null;
           T0_dim = res.T0_dim;
           KP_calc = res.KP_dim;
           T_crit = res.T_crit;
+          const r40 = res.tension_table.find((r) => r.label === "+40\xB0C");
+          const r10 = res.tension_table.find((r) => r.label === "+10\xB0C");
+          if (r40) {
+            sag40 = r40.sag_max;
+            T40 = r40.T_norm;
+            q40 = r40.q_norm;
+          }
+          if (r10) {
+            sag10 = r10.sag_max;
+            T10 = r10.T_norm;
+            q10 = r10.q_norm;
+          }
         } catch (_) {
         }
-        return { fromId: seg.fromId, toId: seg.toId, L_m: L, acsr_key, sag10, sag40, T0_dim, KP_calc, T_crit };
+        return {
+          fromId: seg.fromId,
+          toId: seg.toId,
+          L_m: L,
+          dh,
+          acsr_key,
+          sag10,
+          sag40,
+          T40,
+          q40,
+          T10,
+          q10,
+          T0_dim,
+          KP_calc,
+          T_crit
+        };
       });
       return {
         label: `${poles[0].label} \u2192 ${poles[poles.length - 1].label}`,
@@ -10043,7 +10073,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       };
     }).filter(Boolean);
   }
-  var MG = { top: 50, right: 60, bot: 72, left: 68 };
+  var MG = { top: 50, right: 60, bot: 80, left: 68 };
   var IW = 860;
   var IH = 210;
   var N_CAT = 40;
@@ -10106,60 +10136,76 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       if (!sp.L_m) return;
       const a_l = poles[i].cota_teren + poles[i].H;
       const a_r = poles[i + 1].cota_teren + poles[i + 1].H;
-      const catPts = (sag) => Array.from({ length: N_CAT + 1 }, (_, k) => {
+      const catPts = (q_n, T_n, sag_fb) => Array.from({ length: N_CAT + 1 }, (_, k) => {
         const t = k / N_CAT;
-        const elev = a_l + (a_r - a_l) * t - sag * 4 * t * (1 - t);
-        return `${sx(xm[i] + t * sp.L_m).toFixed(1)},${sy(elev).toFixed(1)}`;
+        const x_m = t * sp.L_m;
+        const chord = a_l + (a_r - a_l) * t;
+        const sag_x = q_n != null && T_n != null ? q_n * x_m * (sp.L_m - x_m) / (2 * T_n) : (sag_fb ?? 0) * 4 * t * (1 - t);
+        return `${sx(xm[i] + x_m).toFixed(1)},${sy(chord - sag_x).toFixed(1)}`;
       }).join(" ");
       if (sp.sag40 != null) {
-        s += `<polyline points="${catPts(sp.sag40)}" fill="none" stroke="#f97316" stroke-width="2"/>`;
-        const xmid2 = sx(xm[i] + sp.L_m / 2);
-        const chord_mid = (a_l + a_r) / 2;
-        const cond40_mid = chord_mid - sp.sag40;
-        const y40 = sy(cond40_mid);
-        s += `<text x="${xmid2.toFixed(1)}" y="${(y40 + 12).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#f97316">f\u2084\u2080=${sp.sag40.toFixed(2)} m</text>`;
+        s += `<polyline points="${catPts(sp.q40, sp.T40, sp.sag40)}" fill="none" stroke="#f97316" stroke-width="2"/>`;
+        const x_max40 = sp.q40 && sp.T40 ? sp.L_m / 2 - sp.dh * sp.T40 / (sp.q40 * sp.L_m) : sp.L_m / 2;
+        const t_max40 = Math.max(0.01, Math.min(0.99, x_max40 / sp.L_m));
+        const chord_max = a_l + (a_r - a_l) * t_max40;
+        const cond40_max = chord_max - sp.sag40;
+        const x_sag_px = sx(xm[i] + x_max40);
+        const y40 = sy(cond40_max);
+        s += `<text x="${x_sag_px.toFixed(1)}" y="${(y40 + 12).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#f97316">f\u2084\u2080=${sp.sag40.toFixed(2)} m</text>`;
         if (hasCota) {
-          const terrain_mid = (poles[i].cota_teren + poles[i + 1].cota_teren) / 2;
-          const clearance = cond40_mid - terrain_mid;
+          const terrain_at_xmax = poles[i].cota_teren + (poles[i + 1].cota_teren - poles[i].cota_teren) * t_max40;
+          const clearance = cond40_max - terrain_at_xmax;
           const ok = clearance >= GABARIT_MIN;
           const col = ok ? "#22c55e" : "#ef4444";
-          const y_terrain_mid = sy(terrain_mid);
-          const xg = xmid2;
-          s += `<line x1="${xg.toFixed(1)}" y1="${y_terrain_mid.toFixed(1)}" x2="${xg.toFixed(1)}" y2="${y40.toFixed(1)}" stroke="${col}" stroke-width="1.3" stroke-dasharray="3,2"/>`;
+          const y_terr = sy(terrain_at_xmax);
+          const xg = x_sag_px;
+          s += `<line x1="${xg.toFixed(1)}" y1="${y_terr.toFixed(1)}" x2="${xg.toFixed(1)}" y2="${y40.toFixed(1)}" stroke="${col}" stroke-width="1.3" stroke-dasharray="3,2"/>`;
           s += `<polygon points="${xg.toFixed(1)},${y40.toFixed(1)} ${(xg - 3.5).toFixed(1)},${(y40 + 7).toFixed(1)} ${(xg + 3.5).toFixed(1)},${(y40 + 7).toFixed(1)}" fill="${col}"/>`;
-          s += `<polygon points="${xg.toFixed(1)},${y_terrain_mid.toFixed(1)} ${(xg - 3.5).toFixed(1)},${(y_terrain_mid - 7).toFixed(1)} ${(xg + 3.5).toFixed(1)},${(y_terrain_mid - 7).toFixed(1)}" fill="${col}"/>`;
-          const y_label = (y40 + y_terrain_mid) / 2;
-          s += `<rect x="${(xg - 20).toFixed(1)}" y="${(y_label - 8).toFixed(1)}" width="40" height="13" rx="3" fill="${ok ? "rgba(34,197,94,.15)" : "rgba(239,68,68,.15)"}" stroke="${col}" stroke-width=".6"/>`;
-          s += `<text x="${xg.toFixed(1)}" y="${(y_label + 2).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="${col}" font-weight="700">g=${clearance.toFixed(2)}m${ok ? "" : " \u26A0"}</text>`;
+          s += `<polygon points="${xg.toFixed(1)},${y_terr.toFixed(1)} ${(xg - 3.5).toFixed(1)},${(y_terr - 7).toFixed(1)} ${(xg + 3.5).toFixed(1)},${(y_terr - 7).toFixed(1)}" fill="${col}"/>`;
+          const y_lbl = (y40 + y_terr) / 2;
+          s += `<rect x="${(xg - 22).toFixed(1)}" y="${(y_lbl - 8).toFixed(1)}" width="44" height="13" rx="3" fill="${ok ? "rgba(34,197,94,.15)" : "rgba(239,68,68,.15)"}" stroke="${col}" stroke-width=".6"/>`;
+          s += `<text x="${xg.toFixed(1)}" y="${(y_lbl + 2).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="${col}" font-weight="700">g=${clearance.toFixed(2)}m${ok ? "" : " \u26A0"}</text>`;
         }
       }
       if (sp.sag10 != null) {
-        s += `<polyline points="${catPts(sp.sag10)}" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="7,3"/>`;
-        const xmid2 = sx(xm[i] + sp.L_m / 2);
-        const y10 = sy((a_l + a_r) / 2 - sp.sag10);
-        s += `<text x="${xmid2.toFixed(1)}" y="${(y10 - 5).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#4ade80">f\u2081\u2080=${sp.sag10.toFixed(2)} m</text>`;
+        s += `<polyline points="${catPts(sp.q10, sp.T10, sp.sag10)}" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="7,3"/>`;
+        const x_max10 = sp.q10 && sp.T10 ? sp.L_m / 2 - sp.dh * sp.T10 / (sp.q10 * sp.L_m) : sp.L_m / 2;
+        const t_max10 = Math.max(0.01, Math.min(0.99, x_max10 / sp.L_m));
+        const y10 = sy(a_l + (a_r - a_l) * t_max10 - sp.sag10);
+        s += `<text x="${sx(xm[i] + x_max10).toFixed(1)}" y="${(y10 - 5).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#4ade80">f\u2081\u2080=${sp.sag10.toFixed(2)} m</text>`;
       }
-      const xmid = sx(xm[i] + sp.L_m / 2);
-      s += `<text x="${xmid.toFixed(1)}" y="${(MG.top + IH + 18).toFixed(1)}" text-anchor="middle" font-size="9" fill="#94a3b8">${sp.L_m.toFixed(0)} m</text>`;
-      s += `<text x="${xmid.toFixed(1)}" y="${(MG.top + IH + 30).toFixed(1)}" text-anchor="middle" font-size="7.5" fill="#475569">${sp.acsr_key}</text>`;
+      const xmid_px = sx(xm[i] + sp.L_m / 2);
+      s += `<text x="${xmid_px.toFixed(1)}" y="${(MG.top + IH + 18).toFixed(1)}" text-anchor="middle" font-size="9" fill="#94a3b8">${sp.L_m.toFixed(0)} m</text>`;
+      s += `<text x="${xmid_px.toFixed(1)}" y="${(MG.top + IH + 30).toFixed(1)}" text-anchor="middle" font-size="7.5" fill="#475569">${sp.acsr_key}${sp.dh !== 0 ? ` \u0394h=${sp.dh > 0 ? "+" : ""}${sp.dh.toFixed(1)}m` : ""}</text>`;
       s += `<line x1="${sx(xm[i]).toFixed(1)}" y1="${MG.top + IH}" x2="${sx(xm[i]).toFixed(1)}" y2="${MG.top + IH + 12}" stroke="#334155" stroke-width="1"/>`;
     });
     s += `<line x1="${sx(L_total).toFixed(1)}" y1="${MG.top + IH}" x2="${sx(L_total).toFixed(1)}" y2="${MG.top + IH + 12}" stroke="#334155" stroke-width="1"/>`;
     poles.forEach((p, i) => {
       const xp = sx(xm[i]);
+      const cum = xm[i].toFixed(0);
+      s += `<text x="${xp.toFixed(1)}" y="${(MG.top + IH + 44).toFixed(1)}" text-anchor="middle" font-size="7.5" fill="#64748b">${cum} m</text>`;
+      s += `<line x1="${xp.toFixed(1)}" y1="${(MG.top + IH + 34).toFixed(1)}" x2="${xp.toFixed(1)}" y2="${(MG.top + IH + 37).toFixed(1)}" stroke="#475569" stroke-width="1"/>`;
+    });
+    poles.forEach((p, i) => {
+      const xp = sx(xm[i]);
       const ct = p.cota_teren;
       const yt = sy(ct);
       const ya = sy(ct + p.H);
+      const attach = ct + p.H;
       const isLast = i === poles.length - 1;
+      const side = isLast ? -1 : 1;
+      const anchor = isLast ? "end" : "start";
+      const offX = side * 5;
       s += `<line x1="${xp.toFixed(1)}" y1="${yt.toFixed(1)}" x2="${xp.toFixed(1)}" y2="${ya.toFixed(1)}" stroke="#c07000" stroke-width="3"/>`;
       s += `<circle cx="${xp.toFixed(1)}" cy="${ya.toFixed(1)}" r="4" fill="#fbbf24" stroke="none"/>`;
       s += `<text x="${xp.toFixed(1)}" y="${(ya - 8).toFixed(1)}" text-anchor="middle" font-size="9.5" fill="#fbbf24" font-weight="700">${p.label}</text>`;
       if (p.hasCota) {
-        const side = isLast ? -6 : 6;
-        const anchor = isLast ? "end" : "start";
-        s += `<text x="${(xp + side).toFixed(1)}" y="${(yt + 11).toFixed(1)}" text-anchor="${anchor}" font-size="7.5" fill="#92400e">${ct.toFixed(1)} m</text>`;
+        s += `<text x="${(xp + offX).toFixed(1)}" y="${(ya - 1).toFixed(1)}" text-anchor="${anchor}" font-size="7.5" fill="#fb923c" font-weight="600">${attach.toFixed(1)}</text>`;
       }
-      s += `<text x="${(xp + (isLast ? -5 : 5)).toFixed(1)}" y="${((yt + ya) / 2 + 3).toFixed(1)}" text-anchor="${isLast ? "end" : "start"}" font-size="7" fill="#c07000" opacity=".8">H=${p.H}m</text>`;
+      if (p.hasCota) {
+        s += `<text x="${(xp + offX).toFixed(1)}" y="${(yt + 11).toFixed(1)}" text-anchor="${anchor}" font-size="7.5" fill="#92400e">${ct.toFixed(1)} m</text>`;
+      }
+      s += `<text x="${(xp + offX).toFixed(1)}" y="${((yt + ya) / 2 + 3).toFixed(1)}" text-anchor="${anchor}" font-size="7" fill="#c07000" opacity=".8">H=${p.H}m</text>`;
     });
     s += `<rect x="${MG.left}" y="${MG.top}" width="${IW}" height="${IH}" fill="none" stroke="rgba(148,163,184,.2)" stroke-width=".8"/>`;
     s += `<text x="${(W / 2).toFixed(1)}" y="${(MG.top - 14).toFixed(1)}" text-anchor="middle" font-size="12.5" fill="#e2e8f0" font-weight="700">Profil \xEEn lung LEA 20kV \u2014 ${chain.label}</text>`;
@@ -10183,7 +10229,11 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
     }
     const scH = Math.max(1, Math.round(L_total / IW * 1e3));
     const scV = Math.max(1, Math.round(elev_range / IH * 100));
-    s += `<text x="${(W - MG.right + 4).toFixed(1)}" y="${(MG.top + IH + 60).toFixed(1)}" text-anchor="start" font-size="7.5" fill="#475569">Sc. horiz. 1:${scH} | Sc. vert. 1:${scV}</text>`;
+    const hasDh = spans.some((sp) => sp.dh && Math.abs(sp.dh) > 0.1);
+    s += `<text x="${(W - MG.right + 4).toFixed(1)}" y="${(MG.top + IH + 60).toFixed(1)}" text-anchor="start" font-size="7.5" fill="#475569">Sc. horiz. 1:${scH} | Sc. vert. 1:${scV}${hasDh ? " | catenary exact\u0103 (dh\u22600)" : ""}</text>`;
+    if (hasCota) {
+      s += `<text x="${MG.left.toFixed(1)}" y="${(MG.top + IH + 60).toFixed(1)}" font-size="7.5" fill="#fb923c" opacity=".8"><tspan fill="#fb923c">\u25A0</tspan> cota prindere [m asl]  <tspan fill="#92400e">\u25A0</tspan> cota teren [m asl]</text>`;
+    }
     s += "</svg>";
     return s;
   }
