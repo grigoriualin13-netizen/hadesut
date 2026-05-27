@@ -9962,6 +9962,21 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
   var _H_default = 7;
   var _kpdim2 = null;
   var _avSpan2 = false;
+  function izolatieLabel(key) {
+    if (!key) return null;
+    const k = key.toLowerCase();
+    if (k.startsWith("cdci")) return "IZOL. D.C. \xCENTINDERE EL.";
+    if (k.startsWith("cdi")) return "IZOL. DEZAXAT\u0102 \xCENTING.";
+    if (k.startsWith("cis") || k.startsWith("cii")) return "IZOL. D.C. \xCENTINDERE";
+    if (k.startsWith("cit")) return "IZOLA\u021AIE \xCENTINDERE";
+    if (k.startsWith("cdcs")) return "IZOL. D.C. SUS\u021A. EL.";
+    if (k.startsWith("cie")) return "IZOLA\u021AIE ELASTIC\u0102 SUS\u021A.";
+    if (k.startsWith("css") || k.startsWith("csi")) return "CONSOL\u0102 D.C. SUS\u021AINERE";
+    if (k.startsWith("cds")) return "DEZAXAT\u0102 SUS\u021AINERE";
+    if (k.startsWith("cso")) return "CONSOL\u0102 SUS\u021AINERE";
+    if (k.startsWith("cdv")) return "CONSOL\u0102 DERIVA\u021AIE";
+    return null;
+  }
   function elLabel2(id) {
     const e = S.EL.find((x) => x.id === id);
     return e?.label || e?.type?.replace("stalp_mt_", "")?.toUpperCase() || id;
@@ -10039,12 +10054,17 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       const poles = poleIds.map((id) => {
         const el = S.EL.find((e) => e.id === id);
         const pd = getPoleData(el);
+        const ck = el?.console_type ?? null;
+        const cc = ck ? CONSOLE_CATALOG[ck] ?? {} : {};
         return {
           id,
           label: elLabel2(id),
           H: pd.H ?? _H_default,
           cota_teren: el?.cota_teren ?? 0,
-          hasCota: el?.cota_teren != null
+          hasCota: el?.cota_teren != null,
+          pole_desc: pd.desc ? pd.desc.split(" \u2014 ")[0] : null,
+          console_short: cc.desc ? cc.desc.replace(/\s+v\d.*$/i, "").replace(/\s*\/\s*OL\d+.*/i, "").trim() : null,
+          izolatie_lbl: izolatieLabel(ck)
         };
       });
       const spans = chain.map((seg, i) => {
@@ -10115,7 +10135,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       };
     }).filter(Boolean);
   }
-  var MG = { top: 50, right: 60, bot: 80, left: 68 };
+  var MG = { top: 95, right: 60, bot: 80, left: 68 };
   var IW = 860;
   var IH = 210;
   var N_CAT = 40;
@@ -10178,6 +10198,10 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       if (!sp.L_m) return;
       const a_l = poles[i].cota_teren + poles[i].H;
       const a_r = poles[i + 1].cota_teren + poles[i + 1].H;
+      const x_max40 = sp.q40 && sp.T40 ? sp.L_m / 2 - sp.dh * sp.T40 / (sp.q40 * sp.L_m) : sp.L_m / 2;
+      const x_max10 = sp.q10 && sp.T10 ? sp.L_m / 2 - sp.dh * sp.T10 / (sp.q10 * sp.L_m) : sp.L_m / 2;
+      const t_max40 = Math.max(0.01, Math.min(0.99, x_max40 / sp.L_m));
+      const t_max10 = Math.max(0.01, Math.min(0.99, x_max10 / sp.L_m));
       const catPts = (q_n, T_n, sag_fb) => Array.from({ length: N_CAT + 1 }, (_, k) => {
         const t = k / N_CAT;
         const x_m = t * sp.L_m;
@@ -10187,34 +10211,46 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       }).join(" ");
       if (sp.sag40 != null) {
         s += `<polyline points="${catPts(sp.q40, sp.T40, sp.sag40)}" fill="none" stroke="#f97316" stroke-width="2"/>`;
-        const x_max40 = sp.q40 && sp.T40 ? sp.L_m / 2 - sp.dh * sp.T40 / (sp.q40 * sp.L_m) : sp.L_m / 2;
-        const t_max40 = Math.max(0.01, Math.min(0.99, x_max40 / sp.L_m));
-        const chord_max = a_l + (a_r - a_l) * t_max40;
-        const cond40_max = chord_max - sp.sag40;
+        const chord_max40 = a_l + (a_r - a_l) * t_max40;
+        const cond40_max = chord_max40 - sp.sag40;
         const x_sag_px = sx(xm[i] + x_max40);
         const y40 = sy(cond40_max);
         s += `<text x="${x_sag_px.toFixed(1)}" y="${(y40 + 12).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#f97316">f\u2084\u2080=${sp.sag40.toFixed(2)} m</text>`;
         if (hasCota) {
-          const terrain_at_xmax = poles[i].cota_teren + (poles[i + 1].cota_teren - poles[i].cota_teren) * t_max40;
-          const clearance = cond40_max - terrain_at_xmax;
-          const ok = clearance >= GABARIT_MIN;
-          const col = ok ? "#22c55e" : "#ef4444";
-          const y_terr = sy(terrain_at_xmax);
-          const xg = x_sag_px;
-          s += `<line x1="${xg.toFixed(1)}" y1="${y_terr.toFixed(1)}" x2="${xg.toFixed(1)}" y2="${y40.toFixed(1)}" stroke="${col}" stroke-width="1.3" stroke-dasharray="3,2"/>`;
-          s += `<polygon points="${xg.toFixed(1)},${y40.toFixed(1)} ${(xg - 3.5).toFixed(1)},${(y40 + 7).toFixed(1)} ${(xg + 3.5).toFixed(1)},${(y40 + 7).toFixed(1)}" fill="${col}"/>`;
-          s += `<polygon points="${xg.toFixed(1)},${y_terr.toFixed(1)} ${(xg - 3.5).toFixed(1)},${(y_terr - 7).toFixed(1)} ${(xg + 3.5).toFixed(1)},${(y_terr - 7).toFixed(1)}" fill="${col}"/>`;
-          const y_lbl = (y40 + y_terr) / 2;
-          s += `<rect x="${(xg - 22).toFixed(1)}" y="${(y_lbl - 8).toFixed(1)}" width="44" height="13" rx="3" fill="${ok ? "rgba(34,197,94,.15)" : "rgba(239,68,68,.15)"}" stroke="${col}" stroke-width=".6"/>`;
-          s += `<text x="${xg.toFixed(1)}" y="${(y_lbl + 2).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="${col}" font-weight="700">g=${clearance.toFixed(2)}m${ok ? "" : " \u26A0"}</text>`;
+          const terrain40 = poles[i].cota_teren + (poles[i + 1].cota_teren - poles[i].cota_teren) * t_max40;
+          const clearance40 = cond40_max - terrain40;
+          const ok40 = clearance40 >= GABARIT_MIN;
+          const col40 = ok40 ? "#22c55e" : "#ef4444";
+          const y_terr40 = sy(terrain40);
+          const xg40 = x_sag_px;
+          s += `<line x1="${xg40.toFixed(1)}" y1="${y_terr40.toFixed(1)}" x2="${xg40.toFixed(1)}" y2="${y40.toFixed(1)}" stroke="${col40}" stroke-width="1.3" stroke-dasharray="3,2"/>`;
+          s += `<polygon points="${xg40.toFixed(1)},${y40.toFixed(1)} ${(xg40 - 3.5).toFixed(1)},${(y40 + 7).toFixed(1)} ${(xg40 + 3.5).toFixed(1)},${(y40 + 7).toFixed(1)}" fill="${col40}"/>`;
+          s += `<polygon points="${xg40.toFixed(1)},${y_terr40.toFixed(1)} ${(xg40 - 3.5).toFixed(1)},${(y_terr40 - 7).toFixed(1)} ${(xg40 + 3.5).toFixed(1)},${(y_terr40 - 7).toFixed(1)}" fill="${col40}"/>`;
+          const y_lbl40 = (y40 + y_terr40) / 2;
+          s += `<rect x="${(xg40 - 22).toFixed(1)}" y="${(y_lbl40 - 8).toFixed(1)}" width="44" height="13" rx="3" fill="${ok40 ? "rgba(34,197,94,.15)" : "rgba(239,68,68,.15)"}" stroke="${col40}" stroke-width=".6"/>`;
+          s += `<text x="${xg40.toFixed(1)}" y="${(y_lbl40 + 2).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="${col40}" font-weight="700">g\u2084\u2080=${clearance40.toFixed(2)}m${ok40 ? "" : " \u26A0"}</text>`;
         }
       }
       if (sp.sag10 != null) {
         s += `<polyline points="${catPts(sp.q10, sp.T10, sp.sag10)}" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="7,3"/>`;
-        const x_max10 = sp.q10 && sp.T10 ? sp.L_m / 2 - sp.dh * sp.T10 / (sp.q10 * sp.L_m) : sp.L_m / 2;
-        const t_max10 = Math.max(0.01, Math.min(0.99, x_max10 / sp.L_m));
-        const y10 = sy(a_l + (a_r - a_l) * t_max10 - sp.sag10);
+        const cond10_max = a_l + (a_r - a_l) * t_max10 - sp.sag10;
+        const y10 = sy(cond10_max);
         s += `<text x="${sx(xm[i] + x_max10).toFixed(1)}" y="${(y10 - 5).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#4ade80">f\u2081\u2080=${sp.sag10.toFixed(2)} m</text>`;
+        if (hasCota) {
+          const terrain10 = poles[i].cota_teren + (poles[i + 1].cota_teren - poles[i].cota_teren) * t_max10;
+          const clearance10 = cond10_max - terrain10;
+          const ok10 = clearance10 >= GABARIT_MIN;
+          const col10 = ok10 ? "#4ade80" : "#ef4444";
+          const y_terr10 = sy(terrain10);
+          const xoff10 = Math.abs(x_max10 - x_max40) < sp.L_m * 0.08 ? -18 : 0;
+          const xg10 = sx(xm[i] + x_max10) + xoff10;
+          s += `<line x1="${xg10.toFixed(1)}" y1="${y_terr10.toFixed(1)}" x2="${xg10.toFixed(1)}" y2="${y10.toFixed(1)}" stroke="${col10}" stroke-width="1" stroke-dasharray="2,2"/>`;
+          s += `<polygon points="${xg10.toFixed(1)},${y10.toFixed(1)} ${(xg10 - 2.5).toFixed(1)},${(y10 + 5).toFixed(1)} ${(xg10 + 2.5).toFixed(1)},${(y10 + 5).toFixed(1)}" fill="${col10}"/>`;
+          s += `<polygon points="${xg10.toFixed(1)},${y_terr10.toFixed(1)} ${(xg10 - 2.5).toFixed(1)},${(y_terr10 - 5).toFixed(1)} ${(xg10 + 2.5).toFixed(1)},${(y_terr10 - 5).toFixed(1)}" fill="${col10}"/>`;
+          const y_lbl10 = (y10 + y_terr10) / 2;
+          s += `<rect x="${(xg10 - 21).toFixed(1)}" y="${(y_lbl10 - 6).toFixed(1)}" width="42" height="11" rx="2" fill="${ok10 ? "rgba(74,222,128,.1)" : "rgba(239,68,68,.1)"}" stroke="${col10}" stroke-width=".5"/>`;
+          s += `<text x="${xg10.toFixed(1)}" y="${(y_lbl10 + 2).toFixed(1)}" text-anchor="middle" font-size="7.5" fill="${col10}">g\u2081\u2080=${clearance10.toFixed(2)}m${ok10 ? "" : " \u26A0"}</text>`;
+        }
       }
       const xmid_px = sx(xm[i] + sp.L_m / 2);
       s += `<text x="${xmid_px.toFixed(1)}" y="${(MG.top + IH + 18).toFixed(1)}" text-anchor="middle" font-size="9" fill="#94a3b8">${sp.L_m.toFixed(0)} m</text>`;
@@ -10248,11 +10284,22 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
         s += `<text x="${(xp + offX).toFixed(1)}" y="${(yt + 11).toFixed(1)}" text-anchor="${anchor}" font-size="7.5" fill="#92400e">${ct.toFixed(1)} m</text>`;
       }
       s += `<text x="${(xp + offX).toFixed(1)}" y="${((yt + ya) / 2 + 3).toFixed(1)}" text-anchor="${anchor}" font-size="7" fill="#c07000" opacity=".8">H=${p.H}m</text>`;
+      const annLines = [];
+      if (p.pole_desc) annLines.push({ txt: p.pole_desc, col: "#94a3b8" });
+      if (p.console_short) annLines.push({ txt: p.console_short, col: "#7dd3fc" });
+      if (p.izolatie_lbl) annLines.push({ txt: p.izolatie_lbl, col: "#c084fc" });
+      if (annLines.length) {
+        const ann_y_bot = ya - 20 - (annLines.length - 1) * 10;
+        s += `<line x1="${xp.toFixed(1)}" y1="${(ya - 10).toFixed(1)}" x2="${xp.toFixed(1)}" y2="${ann_y_bot.toFixed(1)}" stroke="#334155" stroke-width=".6" stroke-dasharray="2,3"/>`;
+        annLines.forEach((ln, li) => {
+          s += `<text x="${(xp + offX * 1.6).toFixed(1)}" y="${(ya - 20 - li * 10).toFixed(1)}" text-anchor="${anchor}" font-size="6.5" fill="${ln.col}" opacity=".9">${ln.txt}</text>`;
+        });
+      }
     });
     s += `<rect x="${MG.left}" y="${MG.top}" width="${IW}" height="${IH}" fill="none" stroke="rgba(148,163,184,.2)" stroke-width=".8"/>`;
-    s += `<text x="${(W / 2).toFixed(1)}" y="${(MG.top - 14).toFixed(1)}" text-anchor="middle" font-size="12.5" fill="#e2e8f0" font-weight="700">Profil \xEEn lung LEA 20kV \u2014 ${chain.label}</text>`;
+    s += `<text x="${(W / 2).toFixed(1)}" y="15" text-anchor="middle" font-size="12.5" fill="#e2e8f0" font-weight="700">Profil \xEEn lung LEA 20kV \u2014 ${chain.label}</text>`;
     if (!hasCota) {
-      s += `<text x="${(W / 2).toFixed(1)}" y="${(MG.top - 2).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#f59e0b">\u26A0 Cotele de teren nu sunt introduse \u2014 profilul terenului nu este afi\u0219at</text>`;
+      s += `<text x="${(W / 2).toFixed(1)}" y="28" text-anchor="middle" font-size="8.5" fill="#f59e0b">\u26A0 Cotele de teren nu sunt introduse \u2014 profilul terenului nu este afi\u0219at</text>`;
     }
     const lx = MG.left + 8, ly = MG.top + 16;
     s += `<line x1="${lx}" y1="${ly}" x2="${lx + 20}" y2="${ly}" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="6,3"/>`;
@@ -10268,6 +10315,9 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       s += `<text x="${lx + 344}" y="${ly + 3}" font-size="8.5" fill="#22c55e">g\u22657m \u2713</text>`;
       s += `<line x1="${lx + 390}" y1="${ly - 4}" x2="${lx + 390}" y2="${ly + 4}" stroke="#ef4444" stroke-width="1.5"/>`;
       s += `<text x="${lx + 394}" y="${ly + 3}" font-size="8.5" fill="#ef4444">g&lt;7m \u26A0</text>`;
+      s += `<text x="${lx + 450}" y="${ly + 3}" font-size="8" fill="#94a3b8">\u25A0 tip st\xE2lp</text>`;
+      s += `<text x="${lx + 510}" y="${ly + 3}" font-size="8" fill="#7dd3fc">\u25A0 consol\u0103</text>`;
+      s += `<text x="${lx + 560}" y="${ly + 3}" font-size="8" fill="#c084fc">\u25A0 izola\u021Bie</text>`;
     }
     const scH = Math.max(1, Math.round(L_total / IW * 1e3));
     const scV = Math.max(1, Math.round(elev_range / IH * 100));
@@ -10284,34 +10334,33 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
     if (!spans.length) return "";
     const th = (txt, extra = "") => `<th style="padding:4px 8px;border:1px solid #1e293b;background:#0f172a;color:#94a3b8;font-weight:600;font-size:8.5px;text-align:center;white-space:nowrap${extra}">${txt}</th>`;
     const td = (txt, col = "#cbd5e1", bold = false, extra = "") => `<td style="padding:3px 7px;border:1px solid #1e293b;text-align:center;font-size:8.5px;color:${col};${bold ? "font-weight:700;" : ""}${extra}">${txt}</td>`;
-    let head = "<tr>" + th("Tronson") + th("L [m]") + (hasCota ? th("\u0394h [m]") : "") + th("Conductor") + th("T\u2080 dim [daN]") + th("KP [%]") + th("f\u2084\u2080 [m]") + th("f\u2081\u2080 [m]") + (hasCota ? th("Gabarit [m]") : "") + "</tr>";
+    let head = "<tr>" + th("Tronson") + th("L [m]") + (hasCota ? th("\u0394h [m]") : "") + th("Conductor") + th("T\u2080 dim [daN]") + th("KP [%]") + th("f\u2084\u2080 [m]") + th("f\u2081\u2080 [m]") + (hasCota ? th("G\u2084\u2080 [m]") : "") + (hasCota ? th("G\u2081\u2080 [m]") : "") + "</tr>";
     let rows = spans.map((sp, i) => {
       const fromLbl = elLabel2(sp.fromId);
       const toLbl = elLabel2(sp.toId);
       const tronson = `${fromLbl} \u2192 ${toLbl}`;
-      let gabaritCell = "";
-      if (hasCota && sp.sag40 != null) {
+      let g40Cell = "", g10Cell = "";
+      if (hasCota) {
         const a_l = poles[i].cota_teren + poles[i].H;
         const a_r = poles[i + 1].cota_teren + poles[i + 1].H;
-        const x_max40 = sp.q40 && sp.T40 ? sp.L_m / 2 - sp.dh * sp.T40 / (sp.q40 * sp.L_m) : sp.L_m / 2;
-        const t_max40 = Math.max(0.01, Math.min(0.99, x_max40 / sp.L_m));
-        const chord_max = a_l + (a_r - a_l) * t_max40;
-        const cond40_max = chord_max - sp.sag40;
-        const terrain_max = poles[i].cota_teren + (poles[i + 1].cota_teren - poles[i].cota_teren) * t_max40;
-        const clearance = cond40_max - terrain_max;
-        const ok = clearance >= GABARIT_MIN;
-        gabaritCell = td(
-          clearance.toFixed(2) + (ok ? "" : " \u26A0"),
-          ok ? "#22c55e" : "#ef4444",
-          true
-        );
-      } else if (hasCota) {
-        gabaritCell = td("\u2014", "#475569");
+        const calcClearance = (sag, q, T) => {
+          if (sag == null) return null;
+          const xm = q && T ? sp.L_m / 2 - sp.dh * T / (q * sp.L_m) : sp.L_m / 2;
+          const t = Math.max(0.01, Math.min(0.99, xm / sp.L_m));
+          const cond = a_l + (a_r - a_l) * t - sag;
+          const terr = poles[i].cota_teren + (poles[i + 1].cota_teren - poles[i].cota_teren) * t;
+          return cond - terr;
+        };
+        const c40 = calcClearance(sp.sag40, sp.q40, sp.T40);
+        const c10 = calcClearance(sp.sag10, sp.q10, sp.T10);
+        const fmtG = (c) => c != null ? td(c.toFixed(2) + (c < GABARIT_MIN ? " \u26A0" : ""), c >= GABARIT_MIN ? "#22c55e" : "#ef4444", true) : td("\u2014", "#475569");
+        g40Cell = fmtG(c40);
+        g10Cell = fmtG(c10);
       }
       return "<tr>" + td(tronson, "#e2e8f0", false, "text-align:left") + td(sp.L_m != null ? sp.L_m.toFixed(0) : "\u2014") + (hasCota ? td(
         sp.dh != null ? (sp.dh > 0 ? "+" : "") + sp.dh.toFixed(1) : "\u2014",
         Math.abs(sp.dh) > 0.1 ? "#fb923c" : "#94a3b8"
-      ) : "") + td(sp.acsr_key || "\u2014", "#7dd3fc") + td(sp.T0_dim != null ? sp.T0_dim.toFixed(0) : "\u2014", "#fbbf24") + td(sp.KP_calc != null ? (sp.KP_calc * 100).toFixed(0) + "%" : "\u2014", "#a78bfa") + td(sp.sag40 != null ? sp.sag40.toFixed(2) : "\u2014", "#f97316", sp.sag40 != null) + td(sp.sag10 != null ? sp.sag10.toFixed(2) : "\u2014", "#4ade80") + gabaritCell + "</tr>";
+      ) : "") + td(sp.acsr_key || "\u2014", "#7dd3fc") + td(sp.T0_dim != null ? sp.T0_dim.toFixed(0) : "\u2014", "#fbbf24") + td(sp.KP_calc != null ? (sp.KP_calc * 100).toFixed(0) + "%" : "\u2014", "#a78bfa") + td(sp.sag40 != null ? sp.sag40.toFixed(2) : "\u2014", "#f97316", sp.sag40 != null) + td(sp.sag10 != null ? sp.sag10.toFixed(2) : "\u2014", "#4ade80") + g40Cell + g10Cell + "</tr>";
     }).join("");
     return `<div style="overflow-x:auto;margin-top:0;margin-bottom:2px">
     <table style="border-collapse:collapse;background:#131c2e;width:100%;min-width:520px">
