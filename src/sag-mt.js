@@ -17,7 +17,7 @@ const SECTION_TO_ACSR = {
 };
 
 let _visible = false;
-let _zone = 'D.b.4', _H = 7, _kpdim = null;
+let _zone = 'D.b.4', _H = 7, _kpdim = null, _avSpan = false;
 
 // Lungimea lanțului de izolatoare susținere MT 20kV [m] (LDI-20-II-CTS 40: 0.79m tipic)
 // Contribuție la deviație: l_iz × sin(φ) = l_iz × g4_n/g6_n
@@ -125,9 +125,10 @@ export function closeSagMT() {
 }
 
 export function runSagMT() {
-  _zone  = document.getElementById('sag-zone')?.value  || 'D.b.4';
-  _H     = parseFloat(document.getElementById('sag-h')?.value) || 7;
-  _kpdim = parseFloat(document.getElementById('sag-kpdim')?.value) || null;
+  _zone   = document.getElementById('sag-zone')?.value  || 'D.b.4';
+  _H      = parseFloat(document.getElementById('sag-h')?.value) || 7;
+  _kpdim  = parseFloat(document.getElementById('sag-kpdim')?.value) || null;
+  _avSpan = document.getElementById('sag-av-span')?.checked ?? false;
   const body = document.getElementById('sag-body');
   if (!body) return;
 
@@ -164,8 +165,10 @@ export function runSagMT() {
       const terrainProfile = (spanPole.cotaL != null && spanPole.cotaR != null)
         ? [{ x: 0, y: spanPole.cotaL }, { x: L, y: spanPole.cotaR }]
         : [];
+      const H_wind = Math.max(spanPole.HL, spanPole.HR);
+      const Av     = _avSpan ? L : Math.max(L, 40);
       const res = calcSpan(acsr_key,
-        { zone: _zone, H: spanPole.H, Av: Math.max(L, 40), terrain: 'II' },
+        { zone: _zone, H: H_wind, Av, terrain: 'II' },
         { L, dh: spanPole.dh, h_left: spanPole.HL, h_right: spanPole.HR,
           terrain_profile: terrainProfile },
         span_kpdim,
@@ -264,7 +267,7 @@ export function runSagMT() {
     </table>
     <div style="font-size:7.5px;color:var(--text3);padding:5px 4px;border-top:1px solid var(--border)">
       ${(!_kpdim || _kpdim === 0.230) ? 'NTE 003/2015 (KP=23%)' : 'SR EN 50341-2-24 (KP=47%)'} | Zonă ${_zone}: Vb=${metZ.Vb??'?'}m/s · ch=${metZ.b_ch??'?'}mm · ρ=${metZ.rho_ch??'?'}kg/m³ | H=${_H}m &nbsp;|&nbsp;
-      T₀=min(KP_dim·RTS, EDS, T_max_stalp) &nbsp;|&nbsp; H=per stâlp din catalog (hover T₀ pt. detalii) &nbsp;|&nbsp; f_max=40°C &nbsp;|&nbsp; δ=catenary(+15+vmax)+lanț(${L_IZ_MT}m) &nbsp;|&nbsp;
+      T₀=min(KP_dim·RTS, EDS, T_max_stalp) &nbsp;|&nbsp; H_vânt=max(H_stg,H_dr) &nbsp;|&nbsp; Av=${_avSpan ? 'L (CALMECO)' : 'max(L,40) (NTE)'} &nbsp;|&nbsp; f_max=40°C &nbsp;|&nbsp; δ=catenary(+15+vmax)+lanț(${L_IZ_MT}m) &nbsp;|&nbsp;
       <span style="color:#ff9f43">T_wind: placeholder=calculat, portocaliu=breviar CALMECO</span> &nbsp;|&nbsp;
       <span style="color:#a855f7">H implicit (pentru stâlpi fără catalog): ${_H}m</span> &nbsp;|&nbsp;
       <span style="color:#22c55e">Gabarit ≥7m ✓ (NTE 003 art.137) — apare numai când cotele de teren sunt introduse</span>
@@ -344,17 +347,18 @@ export function exportSagCalcDetails() {
     const fromLbl = elLabel(cns2[0].fromElId);
     const toLbl   = elLabel(cns2[0].toElId);
     const fazeLbl = cns2.map(cn => cn.faza || '?').sort().join('/');
-    const Av      = Math.max(L, 40);
+    const Av      = _avSpan ? L : Math.max(L, 40);
 
     const spanPoleExp = getSpanPoleData(cns2[0].fromElId, cns2[0].toElId);
+    const H_wind_exp  = Math.max(spanPoleExp.HL, spanPoleExp.HR);
 
     lines.push('───────────────────────────────────────────────────────────────────────────');
     lines.push(`  TRONSON ${idx}: ${fromLbl} → ${toLbl}   (Faze: ${fazeLbl})`);
-    lines.push(`  Conductor: ${acsr_key}   L = ${L.toFixed(1)} m   Av = max(L,40) = ${Av.toFixed(1)} m`);
+    lines.push(`  Conductor: ${acsr_key}   L = ${L.toFixed(1)} m   Av = ${_avSpan ? 'L' : 'max(L,40)'} = ${Av.toFixed(1)} m`);
     const _cslL = spanPoleExp.consoleL ? ` [${spanPoleExp.consoleL}]` : '';
     const _cslR = spanPoleExp.consoleR ? ` [${spanPoleExp.consoleR}]` : '';
     lines.push(`  Stâlp stg. H=${spanPoleExp.HL.toFixed(1)}m${_cslL} | Stâlp dr. H=${spanPoleExp.HR.toFixed(1)}m${_cslR}`);
-    lines.push(`  H_calcul = (${spanPoleExp.HL.toFixed(1)}+${spanPoleExp.HR.toFixed(1)})/2 = ${spanPoleExp.H.toFixed(2)}m${spanPoleExp.T_max!==null?' | T_max='+spanPoleExp.T_max+' daN':''}`);
+    lines.push(`  H_vânt = max(${spanPoleExp.HL.toFixed(1)},${spanPoleExp.HR.toFixed(1)}) = ${H_wind_exp.toFixed(1)}m${spanPoleExp.T_max!==null?' | T_max='+spanPoleExp.T_max+' daN':''}`);
     if (spanPoleExp.hasDh) {
       lines.push(`  dh = ${spanPoleExp.dh > 0 ? '+' : ''}${spanPoleExp.dh.toFixed(2)} m  (din cota_teren stâlpi — diferență nivel prindere)`);
     }
@@ -367,8 +371,8 @@ export function exportSagCalcDetails() {
     let res;
     try {
       res = calcSpan(acsr_key,
-        { zone: _zone, H: spanPoleExp.H, Av, terrain: 'II' },
-        { L, dh: spanPoleExp.dh },
+        { zone: _zone, H: H_wind_exp, Av, terrain: 'II' },
+        { L, dh: spanPoleExp.dh, h_left: spanPoleExp.HL, h_right: spanPoleExp.HR },
         span_kpdim_exp,
         spanPoleExp.T_max);
     } catch(e) {

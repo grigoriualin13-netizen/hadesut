@@ -16,6 +16,7 @@ const SECTION_TO_ACSR = {
 let _zone      = 'D.b.4';
 let _H_default = 7;
 let _kpdim     = null;
+let _avSpan    = false;
 
 // ── Helpers comuni ──────────────────────────────────────────────────────────
 
@@ -142,9 +143,11 @@ export function extractProfilData() {
       let sag10 = null, sag40 = null, T40 = null, q40 = null, T10 = null, q10 = null;
       let T0_dim = null, KP_calc = null, T_crit = null;
       try {
+        const H_wind = Math.max(poles[i].H, poles[i + 1].H);
+        const Av     = _avSpan ? L : Math.max(L, 40);
         const res = calcSpan(
           acsr_key,
-          { zone: _zone, H: H_span, Av: Math.max(L, 40), terrain: 'II' },
+          { zone: _zone, H: H_wind, Av, terrain: 'II' },
           { L, dh },
           _kpdim,
           T_max
@@ -542,6 +545,7 @@ export function runProfilLEA() {
   if (zEl) _zone      = zEl.value || 'D.b.4';
   if (hEl) _H_default = parseFloat(hEl.value) || 7;
   if (kEl) _kpdim     = parseFloat(kEl.value) || null;
+  _avSpan = document.getElementById('sag-av-span')?.checked ?? false;
 
   const chains = extractProfilData();
   if (!chains.length) {

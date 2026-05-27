@@ -9149,6 +9149,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
   var _zone = "D.b.4";
   var _H = 7;
   var _kpdim = null;
+  var _avSpan = false;
   var L_IZ_MT = 0.79;
   var _twindOverrides = /* @__PURE__ */ new Map();
   var _kpdimOverrides = /* @__PURE__ */ new Map();
@@ -9239,6 +9240,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
     _zone = document.getElementById("sag-zone")?.value || "D.b.4";
     _H = parseFloat(document.getElementById("sag-h")?.value) || 7;
     _kpdim = parseFloat(document.getElementById("sag-kpdim")?.value) || null;
+    _avSpan = document.getElementById("sag-av-span")?.checked ?? false;
     const body = document.getElementById("sag-body");
     if (!body) return;
     const cns = getMTConns();
@@ -9265,9 +9267,11 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       let T0, KP, sag40, T_crit, delta, fg, T_wind_calc, gabarit;
       try {
         const terrainProfile = spanPole.cotaL != null && spanPole.cotaR != null ? [{ x: 0, y: spanPole.cotaL }, { x: L, y: spanPole.cotaR }] : [];
+        const H_wind = Math.max(spanPole.HL, spanPole.HR);
+        const Av = _avSpan ? L : Math.max(L, 40);
         const res = calcSpan(
           acsr_key,
-          { zone: _zone, H: spanPole.H, Av: Math.max(L, 40), terrain: "II" },
+          { zone: _zone, H: H_wind, Av, terrain: "II" },
           {
             L,
             dh: spanPole.dh,
@@ -9364,7 +9368,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
     </table>
     <div style="font-size:7.5px;color:var(--text3);padding:5px 4px;border-top:1px solid var(--border)">
       ${!_kpdim || _kpdim === 0.23 ? "NTE 003/2015 (KP=23%)" : "SR EN 50341-2-24 (KP=47%)"} | Zon\u0103 ${_zone}: Vb=${metZ.Vb ?? "?"}m/s \xB7 ch=${metZ.b_ch ?? "?"}mm \xB7 \u03C1=${metZ.rho_ch ?? "?"}kg/m\xB3 | H=${_H}m &nbsp;|&nbsp;
-      T\u2080=min(KP_dim\xB7RTS, EDS, T_max_stalp) &nbsp;|&nbsp; H=per st\xE2lp din catalog (hover T\u2080 pt. detalii) &nbsp;|&nbsp; f_max=40\xB0C &nbsp;|&nbsp; \u03B4=catenary(+15+vmax)+lan\u021B(${L_IZ_MT}m) &nbsp;|&nbsp;
+      T\u2080=min(KP_dim\xB7RTS, EDS, T_max_stalp) &nbsp;|&nbsp; H_v\xE2nt=max(H_stg,H_dr) &nbsp;|&nbsp; Av=${_avSpan ? "L (CALMECO)" : "max(L,40) (NTE)"} &nbsp;|&nbsp; f_max=40\xB0C &nbsp;|&nbsp; \u03B4=catenary(+15+vmax)+lan\u021B(${L_IZ_MT}m) &nbsp;|&nbsp;
       <span style="color:#ff9f43">T_wind: placeholder=calculat, portocaliu=breviar CALMECO</span> &nbsp;|&nbsp;
       <span style="color:#a855f7">H implicit (pentru st\xE2lpi f\u0103r\u0103 catalog): ${_H}m</span> &nbsp;|&nbsp;
       <span style="color:#22c55e">Gabarit \u22657m \u2713 (NTE 003 art.137) \u2014 apare numai c\xE2nd cotele de teren sunt introduse</span>
@@ -9438,15 +9442,16 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       const fromLbl = elLabel(cns2[0].fromElId);
       const toLbl = elLabel(cns2[0].toElId);
       const fazeLbl = cns2.map((cn) => cn.faza || "?").sort().join("/");
-      const Av = Math.max(L, 40);
+      const Av = _avSpan ? L : Math.max(L, 40);
       const spanPoleExp = getSpanPoleData(cns2[0].fromElId, cns2[0].toElId);
+      const H_wind_exp = Math.max(spanPoleExp.HL, spanPoleExp.HR);
       lines.push("\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500");
       lines.push(`  TRONSON ${idx}: ${fromLbl} \u2192 ${toLbl}   (Faze: ${fazeLbl})`);
-      lines.push(`  Conductor: ${acsr_key}   L = ${L.toFixed(1)} m   Av = max(L,40) = ${Av.toFixed(1)} m`);
+      lines.push(`  Conductor: ${acsr_key}   L = ${L.toFixed(1)} m   Av = ${_avSpan ? "L" : "max(L,40)"} = ${Av.toFixed(1)} m`);
       const _cslL = spanPoleExp.consoleL ? ` [${spanPoleExp.consoleL}]` : "";
       const _cslR = spanPoleExp.consoleR ? ` [${spanPoleExp.consoleR}]` : "";
       lines.push(`  St\xE2lp stg. H=${spanPoleExp.HL.toFixed(1)}m${_cslL} | St\xE2lp dr. H=${spanPoleExp.HR.toFixed(1)}m${_cslR}`);
-      lines.push(`  H_calcul = (${spanPoleExp.HL.toFixed(1)}+${spanPoleExp.HR.toFixed(1)})/2 = ${spanPoleExp.H.toFixed(2)}m${spanPoleExp.T_max !== null ? " | T_max=" + spanPoleExp.T_max + " daN" : ""}`);
+      lines.push(`  H_v\xE2nt = max(${spanPoleExp.HL.toFixed(1)},${spanPoleExp.HR.toFixed(1)}) = ${H_wind_exp.toFixed(1)}m${spanPoleExp.T_max !== null ? " | T_max=" + spanPoleExp.T_max + " daN" : ""}`);
       if (spanPoleExp.hasDh) {
         lines.push(`  dh = ${spanPoleExp.dh > 0 ? "+" : ""}${spanPoleExp.dh.toFixed(2)} m  (din cota_teren st\xE2lpi \u2014 diferen\u021B\u0103 nivel prindere)`);
       }
@@ -9459,8 +9464,8 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       try {
         res = calcSpan(
           acsr_key,
-          { zone: _zone, H: spanPoleExp.H, Av, terrain: "II" },
-          { L, dh: spanPoleExp.dh },
+          { zone: _zone, H: H_wind_exp, Av, terrain: "II" },
+          { L, dh: spanPoleExp.dh, h_left: spanPoleExp.HL, h_right: spanPoleExp.HR },
           span_kpdim_exp,
           spanPoleExp.T_max
         );
@@ -9956,6 +9961,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
   var _zone2 = "D.b.4";
   var _H_default = 7;
   var _kpdim2 = null;
+  var _avSpan2 = false;
   function elLabel2(id) {
     const e = S.EL.find((x) => x.id === id);
     return e?.label || e?.type?.replace("stalp_mt_", "")?.toUpperCase() || id;
@@ -10057,9 +10063,11 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
         let sag10 = null, sag40 = null, T40 = null, q40 = null, T10 = null, q10 = null;
         let T0_dim = null, KP_calc = null, T_crit = null;
         try {
+          const H_wind = Math.max(poles[i].H, poles[i + 1].H);
+          const Av = _avSpan2 ? L : Math.max(L, 40);
           const res = calcSpan(
             acsr_key,
-            { zone: _zone2, H: H_span, Av: Math.max(L, 40), terrain: "II" },
+            { zone: _zone2, H: H_wind, Av, terrain: "II" },
             { L, dh },
             _kpdim2,
             T_max
@@ -10332,6 +10340,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
     if (zEl) _zone2 = zEl.value || "D.b.4";
     if (hEl) _H_default = parseFloat(hEl.value) || 7;
     if (kEl) _kpdim2 = parseFloat(kEl.value) || null;
+    _avSpan2 = document.getElementById("sag-av-span")?.checked ?? false;
     const chains = extractProfilData();
     if (!chains.length) {
       container.innerHTML = '<div style="padding:24px;color:#64748b;text-align:center;font-size:11px">Nicio linie MT g\u0103sit\u0103 \xEEn schem\u0103.</div>';
