@@ -51,6 +51,7 @@ import {
 import './prosumator.js'; // side-effect: sets window.runProsumator etc.
 import { openImportXLS } from './import-xls.js';
 import { openSagMT, closeSagMT, runSagMT, copySagMT, exportSagCalcDetails, toggleSagOverlay, renderSagLayer } from './sag-mt.js';
+import { openProfilLEA, closeProfilLEA, runProfilLEA, exportProfilSVG } from './profil-lea.js';
 
 // ── Init ──────────────────────────────────────────────────────────────────
 
@@ -259,6 +260,12 @@ window.exportSagCalcDetails = exportSagCalcDetails;
 window.toggleSagOverlay    = toggleSagOverlay;
 window.renderSagLayer   = renderSagLayer;
 window.toggleMeasure    = toggleMeasure;
+
+// Profil în lung LEA
+window.openProfilLEA   = openProfilLEA;
+window.closeProfilLEA  = closeProfilLEA;
+window.runProfilLEA    = runProfilLEA;
+window.exportProfilSVG = exportProfilSVG;
 
 // Fișa de Soluție (also set by fs-module.js itself, kept here for explicitness)
 window.openFSModal      = openFSModal;

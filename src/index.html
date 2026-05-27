@@ -745,6 +745,17 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
       <span class="tb-lbl">Săgeată MT</span>
     </div>
 
+    <div class="tb" onclick="openProfilLEA()" title="Profil în lung LEA 20kV — catenary +10°C / +40°C + gabarit">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <line x1="2" y1="18" x2="22" y2="18"/>
+        <line x1="4" y1="18" x2="4" y2="8"/>
+        <line x1="12" y1="18" x2="12" y2="6"/>
+        <line x1="20" y1="18" x2="20" y2="10"/>
+        <path d="M4 8 Q8 15 12 6 Q16 14 20 10" stroke="#4ade80" stroke-width="1.5"/>
+      </svg>
+      <span class="tb-lbl">Profil LEA</span>
+    </div>
+
   </div>
 </div>
 
@@ -944,6 +955,24 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
     </div>
     <div id="sag-body" style="overflow-y:auto;flex:1;padding:6px 8px">
       <div style="color:var(--text3);font-size:9px;padding:10px;text-align:center">Apasă CALCULEAZĂ sau adaugă conexiuni OL-AL între stâlpi MT.</div>
+    </div>
+  </div>
+
+  <!-- Panou Profil în Lung LEA -->
+  <div id="PROFIL_LEA" style="display:none;position:absolute;top:52px;right:10px;background:var(--panel);border:1px solid var(--border2);border-radius:10px;z-index:36;min-width:760px;max-width:1020px;max-height:80vh;overflow:hidden;flex-direction:column;box-shadow:0 6px 24px var(--shadow)">
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+      <span style="font-size:11px;font-weight:800;color:#4ade80;text-transform:uppercase;letter-spacing:.08em;flex:1">📏 Profil în Lung LEA 20kV — Catenary + Gabarit</span>
+      <button onclick="exportProfilSVG()" style="height:28px;padding:0 11px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.35);border-radius:6px;color:#4ade80;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;cursor:pointer" title="Descarcă profilul ca fișier SVG">⬇ Export SVG</button>
+      <button onclick="runProfilLEA()" style="height:28px;padding:0 11px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.35);border-radius:6px;color:#3b82f6;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;cursor:pointer">↺ Recalculează</button>
+      <button onclick="closeProfilLEA()" style="background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:0 4px">✕</button>
+    </div>
+    <div style="font-size:8px;color:var(--text3);padding:5px 12px;border-bottom:1px solid var(--border);line-height:1.5">
+      Zonă meteo + H + KP din panoul <b style="color:var(--text2)">Săgeată MT</b> (trebuie deschis cel puțin o dată pentru setare) &nbsp;|&nbsp;
+      Cota terenului: din proprietățile stâlpului (câmp <b style="color:#4ade80">Cota teren [m asl]</b>) &nbsp;|&nbsp;
+      <span style="color:#f97316">■</span> Catenary +40°C (gabarit) &nbsp;&nbsp; <span style="color:#4ade80">╌</span> Catenary +10°C
+    </div>
+    <div id="profil-lea-content" style="overflow:auto;flex:1;padding:10px 12px;min-height:200px">
+      <div style="color:var(--text3);font-size:9px;padding:20px;text-align:center">Apasă ↺ Recalculează sau deschide panoul după ce ai adăugat stâlpi MT conectați cu conductoare OL-AL.</div>
     </div>
   </div>
 

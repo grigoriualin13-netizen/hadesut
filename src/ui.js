@@ -383,6 +383,16 @@ export function updateProps() {
                          title="Override manual T_max [daN]. Consolă: ${catD.catT ?? '∞'} daN. Gol = din consolă/catalog.">
                 </div>
               </div>
+              <div style="display:flex;gap:8px;align-items:flex-end;margin-top:2px">
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <span style="font-size:7.5px;font-weight:700;color:#4ade80;text-transform:uppercase">Cota teren [m asl]</span>
+                  <input class="pi" id="p-cota-teren" type="number" min="-500" max="3000" step="0.5"
+                         style="width:80px"
+                         placeholder="—"
+                         value="${el.cota_teren != null ? el.cota_teren : ''}"
+                         title="Cota terenului la baza stâlpului [m față de nivelul mării]. Folosit la profilul în lung LEA.">
+                </div>
+              </div>
             </div>
           </div>
           <div class="pr">
@@ -594,6 +604,13 @@ export function updateProps() {
         ve.console_type = ev.target.value || undefined;
         updateProps();
         window.runSagMT?.();
+      });
+      document.getElementById('p-cota-teren')?.addEventListener('change', ev => {
+        const ve = S.EL.find(x => x.id === S.sel);
+        if (!ve) return;
+        const v = parseFloat(ev.target.value);
+        ve.cota_teren = isFinite(v) ? v : undefined;
+        window.runProfilLEA?.();
       });
     }
 
