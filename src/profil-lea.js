@@ -168,6 +168,7 @@ const MG = { top: 50, right: 60, bot: 72, left: 68 };
 const IW = 860;
 const IH = 210;
 const N_CAT = 40; // puncte per parabolă
+const GABARIT_MIN = 7.0; // NTE 003/2015 art. 137 — teren categorie I/II/III [m]
 
 /**
  * Returnează un string SVG pentru un lanț.
@@ -234,6 +235,11 @@ export function buildProfilSVG(chain) {
     s += `<polygon points="${tPts} ${sx(L_total).toFixed(1)},${yBase} ${sx(0).toFixed(1)},${yBase}" `
        + `fill="rgba(92,60,20,.5)" stroke="none"/>`;
     s += `<polyline points="${tPts}" fill="none" stroke="#92400e" stroke-width="2"/>`;
+    // Linia gabarit minim 7m (teren + 7m la fiecare stâlp)
+    const gPts = poles.map((p, i) => `${sx(xm[i]).toFixed(1)},${sy(p.cota_teren + GABARIT_MIN).toFixed(1)}`).join(' ');
+    s += `<polyline points="${gPts}" fill="none" stroke="#facc15" stroke-width="1" stroke-dasharray="5,4" opacity=".55"/>`;
+    s += `<text x="${(MG.left + 4).toFixed(1)}" y="${(sy(poles[0].cota_teren + GABARIT_MIN) - 3).toFixed(1)}" `
+       + `font-size="7.5" fill="#facc15" opacity=".7">gabarit ${GABARIT_MIN}m</text>`;
   } else {
     // Linie de referință teren la cota 0
     const y0 = sy(0).toFixed(1);
@@ -259,9 +265,39 @@ export function buildProfilSVG(chain) {
     if (sp.sag40 != null) {
       s += `<polyline points="${catPts(sp.sag40)}" fill="none" stroke="#f97316" stroke-width="2"/>`;
       const xmid = sx(xm[i] + sp.L_m / 2);
-      const y40  = sy((a_l + a_r) / 2 - sp.sag40);
+      const chord_mid = (a_l + a_r) / 2;
+      const cond40_mid = chord_mid - sp.sag40;
+      const y40  = sy(cond40_mid);
       s += `<text x="${xmid.toFixed(1)}" y="${(y40 + 12).toFixed(1)}" text-anchor="middle" `
          + `font-size="8.5" fill="#f97316">f₄₀=${sp.sag40.toFixed(2)} m</text>`;
+
+      // Gabarit față de teren la midspan (numai dacă cotele sunt introduse)
+      if (hasCota) {
+        const terrain_mid = (poles[i].cota_teren + poles[i + 1].cota_teren) / 2;
+        const clearance   = cond40_mid - terrain_mid;
+        const ok          = clearance >= GABARIT_MIN;
+        const col         = ok ? '#22c55e' : '#ef4444';
+        const y_terrain_mid = sy(terrain_mid);
+        const xg = xmid;
+
+        // Săgeată verticală: linie + vârfuri
+        s += `<line x1="${xg.toFixed(1)}" y1="${y_terrain_mid.toFixed(1)}" x2="${xg.toFixed(1)}" y2="${y40.toFixed(1)}" `
+           + `stroke="${col}" stroke-width="1.3" stroke-dasharray="3,2"/>`;
+        // Vârf sus (la conductor)
+        s += `<polygon points="${xg.toFixed(1)},${y40.toFixed(1)} `
+           + `${(xg - 3.5).toFixed(1)},${(y40 + 7).toFixed(1)} `
+           + `${(xg + 3.5).toFixed(1)},${(y40 + 7).toFixed(1)}" fill="${col}"/>`;
+        // Vârf jos (la teren)
+        s += `<polygon points="${xg.toFixed(1)},${y_terrain_mid.toFixed(1)} `
+           + `${(xg - 3.5).toFixed(1)},${(y_terrain_mid - 7).toFixed(1)} `
+           + `${(xg + 3.5).toFixed(1)},${(y_terrain_mid - 7).toFixed(1)}" fill="${col}"/>`;
+        // Label clearance
+        const y_label = (y40 + y_terrain_mid) / 2;
+        s += `<rect x="${(xg - 20).toFixed(1)}" y="${(y_label - 8).toFixed(1)}" width="40" height="13" `
+           + `rx="3" fill="${ok ? 'rgba(34,197,94,.15)' : 'rgba(239,68,68,.15)'}" stroke="${col}" stroke-width=".6"/>`;
+        s += `<text x="${xg.toFixed(1)}" y="${(y_label + 2).toFixed(1)}" text-anchor="middle" `
+           + `font-size="8.5" fill="${col}" font-weight="700">g=${clearance.toFixed(2)}m${ok ? '' : ' ⚠'}</text>`;
+      }
     }
 
     // +10°C — verde, linie întreruptă
@@ -338,6 +374,14 @@ export function buildProfilSVG(chain) {
   s += `<text x="${lx + 89}" y="${ly + 3}" font-size="8.5" fill="#f97316">+40°C (gabarit)</text>`;
   s += `<line x1="${lx + 175}" y1="${ly}" x2="${lx + 195}" y2="${ly}" stroke="#92400e" stroke-width="2"/>`;
   s += `<text x="${lx + 199}" y="${ly + 3}" font-size="8.5" fill="#92400e">teren</text>`;
+  if (hasCota) {
+    s += `<line x1="${lx + 240}" y1="${ly}" x2="${lx + 260}" y2="${ly}" stroke="#facc15" stroke-width="1" stroke-dasharray="5,4" opacity=".7"/>`;
+    s += `<text x="${lx + 264}" y="${ly + 3}" font-size="8.5" fill="#facc15" opacity=".8">gabarit ${GABARIT_MIN}m</text>`;
+    s += `<line x1="${lx + 340}" y1="${ly - 4}" x2="${lx + 340}" y2="${ly + 4}" stroke="#22c55e" stroke-width="1.5"/>`;
+    s += `<text x="${lx + 344}" y="${ly + 3}" font-size="8.5" fill="#22c55e">g≥7m ✓</text>`;
+    s += `<line x1="${lx + 390}" y1="${ly - 4}" x2="${lx + 390}" y2="${ly + 4}" stroke="#ef4444" stroke-width="1.5"/>`;
+    s += `<text x="${lx + 394}" y="${ly + 3}" font-size="8.5" fill="#ef4444">g&lt;7m ⚠</text>`;
+  }
 
   // Scale
   const scH = Math.max(1, Math.round(L_total / IW * 1000));

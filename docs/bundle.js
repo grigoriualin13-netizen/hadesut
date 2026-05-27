@@ -9151,6 +9151,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
   var _kpdim = null;
   var L_IZ_MT = 0.79;
   var _twindOverrides = /* @__PURE__ */ new Map();
+  var _kpdimOverrides = /* @__PURE__ */ new Map();
   function spanKey(cns2) {
     const a = cns2[0].fromElId || "", b = cns2[0].toElId || "";
     return a && b ? a < b ? `${a}|${b}` : `${b}|${a}` : cns2[0].id || "";
@@ -9243,13 +9244,14 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       const acsr_key = SECTION_TO_ACSR[sec] || "ACSR 70/11";
       const cd = CONDUCTORS[acsr_key];
       const spanPole = getSpanPoleData(cns2[0].fromElId, cns2[0].toElId);
+      const span_kpdim = _kpdimOverrides.get(key) ?? _kpdim;
       let T0, KP, sag40, T_crit, delta, fg, T_wind_calc;
       try {
         const res = calcSpan(
           acsr_key,
           { zone: _zone, H: spanPole.H, Av: Math.max(L, 40), terrain: "II" },
           { L, dh: 0 },
-          _kpdim,
+          span_kpdim,
           spanPole.T_max
         );
         T0 = res.T0_dim;
@@ -9289,13 +9291,28 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       const tMaxActive = spanPole.T_max !== null && T0 >= spanPole.T_max * 0.99;
       const hInfo = `H=${spanPole.H.toFixed(1)}m (${spanPole.HL.toFixed(1)}+${spanPole.HR.toFixed(1)})`;
       const tMaxInfo = spanPole.T_max !== null ? ` | T_max=${spanPole.T_max}daN${tMaxActive ? " \u2190 ACTIV" : ""}` : "";
+      const isKpOvr = _kpdimOverrides.has(key);
+      const kpOvrDec = _kpdimOverrides.get(key);
+      const globalKpPct = ((_kpdim ?? 0.23) * 100).toFixed(0);
+      const kpdimCell = `<td style="padding:2px 4px;border:1px solid var(--border2);text-align:center">
+      <input type="number" class="kpdim-inp" data-key="${key}"
+             placeholder="${globalKpPct}"
+             value="${isKpOvr ? (kpOvrDec * 100).toFixed(0) : ""}"
+             min="5" max="100" step="1"
+             title="KP_dim global: ${globalKpPct}%. Introdu % pt. override per-deschidere (ex: 47 pt. SR EN 50341-2-24 sau 23 pt. NTE 003). KP rezultat = ${KP.toFixed(1)}%."
+             style="width:38px;border:1px solid ${isKpOvr ? "#ff9f43" : "var(--border)"};
+                    background:${isKpOvr ? "rgba(255,159,67,0.15)" : "var(--bg2)"};
+                    color:${isKpOvr ? "#ff9f43" : "var(--text2)"};
+                    font-size:8px;padding:2px 3px;border-radius:3px;
+                    font-family:'JetBrains Mono',monospace">
+    </td>`;
       rows += `<tr>
       ${tdc(`${fromLbl} \u2192 ${toLbl}`, ";font-size:7.5px;color:var(--text2)")}
       ${tdc(fazeLbl)}
       ${tdr(`${L.toFixed(0)} m`)}
       ${tdr(acsr_key, ";font-size:8px;color:var(--text2)")}
       <td style="padding:3px 6px;border:1px solid var(--border2);font-size:8.5px;text-align:right;font-family:'JetBrains Mono',monospace${KPcol}" title="${hInfo}${tMaxInfo}">${T0.toFixed(0)} daN${KP > 45 ? " \u26A0" : ""}${tMaxActive ? " \u2B07" : ""}</td>
-      ${tdr(`${KP.toFixed(1)}%`, KPcol)}
+      ${kpdimCell}
       ${tdr(`${spanPole.H.toFixed(1)} m`, ";color:var(--text3);font-size:8px")}
       ${twindCell}
       ${tdr(`${sag40.toFixed(2)} m`, ";color:var(--accent)")}
@@ -9308,7 +9325,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
     <table style="border-collapse:collapse;width:100%">
       <thead><tr>
         ${th("Tronson")}${th("Faze")}${th("L")}${th("Conductor")}
-        ${th("T\u2080 [daN]")}${th("KP")}
+        ${th("T\u2080 [daN]")}${th("KP_dim [%]")}
         ${th("H [m]")}
         ${th("T_wind [daN]")}
         ${th("f_max 40\xB0C [m]")}${th("\u03B4 v\xE2nt max [m]")}${th("T_crit [\xB0C]")}
@@ -9329,6 +9346,18 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
           _twindOverrides.set(k, val);
         } else {
           _twindOverrides.delete(k);
+        }
+        runSagMT();
+      });
+    });
+    body.querySelectorAll("input.kpdim-inp").forEach((inp) => {
+      inp.addEventListener("change", () => {
+        const k = inp.dataset.key;
+        const pct = parseFloat(inp.value);
+        if (pct >= 5 && pct <= 100 && isFinite(pct)) {
+          _kpdimOverrides.set(k, pct / 100);
+        } else {
+          _kpdimOverrides.delete(k);
         }
         runSagMT();
       });
@@ -9387,6 +9416,10 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       const _cslR = spanPoleExp.consoleR ? ` [${spanPoleExp.consoleR}]` : "";
       lines.push(`  St\xE2lp stg. H=${spanPoleExp.HL.toFixed(1)}m${_cslL} | St\xE2lp dr. H=${spanPoleExp.HR.toFixed(1)}m${_cslR}`);
       lines.push(`  H_calcul = (${spanPoleExp.HL.toFixed(1)}+${spanPoleExp.HR.toFixed(1)})/2 = ${spanPoleExp.H.toFixed(2)}m${spanPoleExp.T_max !== null ? " | T_max=" + spanPoleExp.T_max + " daN" : ""}`);
+      const span_kpdim_exp = _kpdimOverrides.get(key) ?? _kpdim;
+      if (_kpdimOverrides.has(key)) {
+        lines.push(`  KP_dim: ${(_kpdimOverrides.get(key) * 100).toFixed(0)}% (OVERRIDE per deschidere; global=${_kpdim ? (_kpdim * 100).toFixed(0) + "%" : "auto"})`);
+      }
       lines.push("");
       let res;
       try {
@@ -9394,7 +9427,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
           acsr_key,
           { zone: _zone, H: spanPoleExp.H, Av, terrain: "II" },
           { L, dh: 0 },
-          _kpdim,
+          span_kpdim_exp,
           spanPoleExp.T_max
         );
       } catch (e) {
@@ -10014,6 +10047,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
   var IW = 860;
   var IH = 210;
   var N_CAT = 40;
+  var GABARIT_MIN = 7;
   function buildProfilSVG(chain) {
     const { poles, spans, hasCota } = chain;
     if (!poles.length || !spans.length) return "";
@@ -10060,6 +10094,9 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       const yBase = (MG.top + IH + 4).toFixed(1);
       s += `<polygon points="${tPts} ${sx(L_total).toFixed(1)},${yBase} ${sx(0).toFixed(1)},${yBase}" fill="rgba(92,60,20,.5)" stroke="none"/>`;
       s += `<polyline points="${tPts}" fill="none" stroke="#92400e" stroke-width="2"/>`;
+      const gPts = poles.map((p, i) => `${sx(xm[i]).toFixed(1)},${sy(p.cota_teren + GABARIT_MIN).toFixed(1)}`).join(" ");
+      s += `<polyline points="${gPts}" fill="none" stroke="#facc15" stroke-width="1" stroke-dasharray="5,4" opacity=".55"/>`;
+      s += `<text x="${(MG.left + 4).toFixed(1)}" y="${(sy(poles[0].cota_teren + GABARIT_MIN) - 3).toFixed(1)}" font-size="7.5" fill="#facc15" opacity=".7">gabarit ${GABARIT_MIN}m</text>`;
     } else {
       const y0 = sy(0).toFixed(1);
       s += `<line x1="${MG.left}" y1="${y0}" x2="${MG.left + IW}" y2="${y0}" stroke="#92400e" stroke-width="1.2" stroke-dasharray="4,4" opacity=".5"/>`;
@@ -10077,8 +10114,24 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       if (sp.sag40 != null) {
         s += `<polyline points="${catPts(sp.sag40)}" fill="none" stroke="#f97316" stroke-width="2"/>`;
         const xmid2 = sx(xm[i] + sp.L_m / 2);
-        const y40 = sy((a_l + a_r) / 2 - sp.sag40);
+        const chord_mid = (a_l + a_r) / 2;
+        const cond40_mid = chord_mid - sp.sag40;
+        const y40 = sy(cond40_mid);
         s += `<text x="${xmid2.toFixed(1)}" y="${(y40 + 12).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#f97316">f\u2084\u2080=${sp.sag40.toFixed(2)} m</text>`;
+        if (hasCota) {
+          const terrain_mid = (poles[i].cota_teren + poles[i + 1].cota_teren) / 2;
+          const clearance = cond40_mid - terrain_mid;
+          const ok = clearance >= GABARIT_MIN;
+          const col = ok ? "#22c55e" : "#ef4444";
+          const y_terrain_mid = sy(terrain_mid);
+          const xg = xmid2;
+          s += `<line x1="${xg.toFixed(1)}" y1="${y_terrain_mid.toFixed(1)}" x2="${xg.toFixed(1)}" y2="${y40.toFixed(1)}" stroke="${col}" stroke-width="1.3" stroke-dasharray="3,2"/>`;
+          s += `<polygon points="${xg.toFixed(1)},${y40.toFixed(1)} ${(xg - 3.5).toFixed(1)},${(y40 + 7).toFixed(1)} ${(xg + 3.5).toFixed(1)},${(y40 + 7).toFixed(1)}" fill="${col}"/>`;
+          s += `<polygon points="${xg.toFixed(1)},${y_terrain_mid.toFixed(1)} ${(xg - 3.5).toFixed(1)},${(y_terrain_mid - 7).toFixed(1)} ${(xg + 3.5).toFixed(1)},${(y_terrain_mid - 7).toFixed(1)}" fill="${col}"/>`;
+          const y_label = (y40 + y_terrain_mid) / 2;
+          s += `<rect x="${(xg - 20).toFixed(1)}" y="${(y_label - 8).toFixed(1)}" width="40" height="13" rx="3" fill="${ok ? "rgba(34,197,94,.15)" : "rgba(239,68,68,.15)"}" stroke="${col}" stroke-width=".6"/>`;
+          s += `<text x="${xg.toFixed(1)}" y="${(y_label + 2).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="${col}" font-weight="700">g=${clearance.toFixed(2)}m${ok ? "" : " \u26A0"}</text>`;
+        }
       }
       if (sp.sag10 != null) {
         s += `<polyline points="${catPts(sp.sag10)}" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="7,3"/>`;
@@ -10120,6 +10173,14 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
     s += `<text x="${lx + 89}" y="${ly + 3}" font-size="8.5" fill="#f97316">+40\xB0C (gabarit)</text>`;
     s += `<line x1="${lx + 175}" y1="${ly}" x2="${lx + 195}" y2="${ly}" stroke="#92400e" stroke-width="2"/>`;
     s += `<text x="${lx + 199}" y="${ly + 3}" font-size="8.5" fill="#92400e">teren</text>`;
+    if (hasCota) {
+      s += `<line x1="${lx + 240}" y1="${ly}" x2="${lx + 260}" y2="${ly}" stroke="#facc15" stroke-width="1" stroke-dasharray="5,4" opacity=".7"/>`;
+      s += `<text x="${lx + 264}" y="${ly + 3}" font-size="8.5" fill="#facc15" opacity=".8">gabarit ${GABARIT_MIN}m</text>`;
+      s += `<line x1="${lx + 340}" y1="${ly - 4}" x2="${lx + 340}" y2="${ly + 4}" stroke="#22c55e" stroke-width="1.5"/>`;
+      s += `<text x="${lx + 344}" y="${ly + 3}" font-size="8.5" fill="#22c55e">g\u22657m \u2713</text>`;
+      s += `<line x1="${lx + 390}" y1="${ly - 4}" x2="${lx + 390}" y2="${ly + 4}" stroke="#ef4444" stroke-width="1.5"/>`;
+      s += `<text x="${lx + 394}" y="${ly + 3}" font-size="8.5" fill="#ef4444">g&lt;7m \u26A0</text>`;
+    }
     const scH = Math.max(1, Math.round(L_total / IW * 1e3));
     const scV = Math.max(1, Math.round(elev_range / IH * 100));
     s += `<text x="${(W - MG.right + 4).toFixed(1)}" y="${(MG.top + IH + 60).toFixed(1)}" text-anchor="start" font-size="7.5" fill="#475569">Sc. horiz. 1:${scH} | Sc. vert. 1:${scV}</text>`;

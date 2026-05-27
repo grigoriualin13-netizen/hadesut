@@ -27,6 +27,10 @@ const L_IZ_MT = 0.79;
 // Key = "fromElId|toElId" (alfabetic sortat); Value = T_wind [daN] introdus manual
 const _twindOverrides = new Map();
 
+// KP_dim override per span — permite folosirea unui KP diferit față de setarea globală
+// Key = spanKey; Value = KP_dim decimal (ex. 0.47 pentru 47%)
+const _kpdimOverrides = new Map();
+
 function spanKey(cns2) {
   const a = cns2[0].fromElId || '', b = cns2[0].toElId || '';
   return a && b ? (a < b ? `${a}|${b}` : `${b}|${a}`) : (cns2[0].id || '');
@@ -144,12 +148,13 @@ export function runSagMT() {
     const cd = CONDUCTORS[acsr_key];
     const spanPole = getSpanPoleData(cns2[0].fromElId, cns2[0].toElId);
 
+    const span_kpdim = _kpdimOverrides.get(key) ?? _kpdim;
     let T0, KP, sag40, T_crit, delta, fg, T_wind_calc;
     try {
       const res = calcSpan(acsr_key,
         { zone: _zone, H: spanPole.H, Av: Math.max(L, 40), terrain: 'II' },
         { L, dh: 0 },
-        _kpdim,
+        span_kpdim,
         spanPole.T_max);
       T0     = res.T0_dim;
       KP     = res.KP_dim * 100;
@@ -193,6 +198,21 @@ export function runSagMT() {
     const tMaxActive = spanPole.T_max !== null && T0 >= spanPole.T_max * 0.99;
     const hInfo = `H=${spanPole.H.toFixed(1)}m (${spanPole.HL.toFixed(1)}+${spanPole.HR.toFixed(1)})`;
     const tMaxInfo = spanPole.T_max !== null ? ` | T_max=${spanPole.T_max}daN${tMaxActive?' ← ACTIV':''}` : '';
+    const isKpOvr  = _kpdimOverrides.has(key);
+    const kpOvrDec = _kpdimOverrides.get(key);
+    const globalKpPct = ((_kpdim ?? 0.23) * 100).toFixed(0);
+    const kpdimCell = `<td style="padding:2px 4px;border:1px solid var(--border2);text-align:center">
+      <input type="number" class="kpdim-inp" data-key="${key}"
+             placeholder="${globalKpPct}"
+             value="${isKpOvr ? (kpOvrDec * 100).toFixed(0) : ''}"
+             min="5" max="100" step="1"
+             title="KP_dim global: ${globalKpPct}%. Introdu % pt. override per-deschidere (ex: 47 pt. SR EN 50341-2-24 sau 23 pt. NTE 003). KP rezultat = ${KP.toFixed(1)}%."
+             style="width:38px;border:1px solid ${isKpOvr ? '#ff9f43' : 'var(--border)'};
+                    background:${isKpOvr ? 'rgba(255,159,67,0.15)' : 'var(--bg2)'};
+                    color:${isKpOvr ? '#ff9f43' : 'var(--text2)'};
+                    font-size:8px;padding:2px 3px;border-radius:3px;
+                    font-family:'JetBrains Mono',monospace">
+    </td>`;
 
     rows += `<tr>
       ${tdc(`${fromLbl} → ${toLbl}`, ';font-size:7.5px;color:var(--text2)')}
@@ -200,7 +220,7 @@ export function runSagMT() {
       ${tdr(`${L.toFixed(0)} m`)}
       ${tdr(acsr_key, ';font-size:8px;color:var(--text2)')}
       <td style="padding:3px 6px;border:1px solid var(--border2);font-size:8.5px;text-align:right;font-family:'JetBrains Mono',monospace${KPcol}" title="${hInfo}${tMaxInfo}">${T0.toFixed(0)} daN${KP>45?' ⚠':''}${tMaxActive?' ⬇':''}</td>
-      ${tdr(`${KP.toFixed(1)}%`, KPcol)}
+      ${kpdimCell}
       ${tdr(`${spanPole.H.toFixed(1)} m`, ';color:var(--text3);font-size:8px')}
       ${twindCell}
       ${tdr(`${sag40.toFixed(2)} m`, ';color:var(--accent)')}
@@ -214,7 +234,7 @@ export function runSagMT() {
     <table style="border-collapse:collapse;width:100%">
       <thead><tr>
         ${th('Tronson')}${th('Faze')}${th('L')}${th('Conductor')}
-        ${th('T₀ [daN]')}${th('KP')}
+        ${th('T₀ [daN]')}${th('KP_dim [%]')}
         ${th('H [m]')}
         ${th('T_wind [daN]')}
         ${th('f_max 40°C [m]')}${th('δ vânt max [m]')}${th('T_crit [°C]')}
@@ -228,7 +248,7 @@ export function runSagMT() {
       <span style="color:#a855f7">H implicit (pentru stâlpi fără catalog): ${_H}m</span>
     </div>`;
 
-  // Attach T_wind override handlers (delegated — survives innerHTML rebuild)
+  // Attach T_wind override handlers
   body.querySelectorAll('input.twind-inp').forEach(inp => {
     inp.addEventListener('change', () => {
       const k   = inp.dataset.key;
@@ -237,6 +257,20 @@ export function runSagMT() {
         _twindOverrides.set(k, val);
       } else {
         _twindOverrides.delete(k);
+      }
+      runSagMT();
+    });
+  });
+
+  // Attach KP_dim override handlers
+  body.querySelectorAll('input.kpdim-inp').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const k   = inp.dataset.key;
+      const pct = parseFloat(inp.value);
+      if (pct >= 5 && pct <= 100 && isFinite(pct)) {
+        _kpdimOverrides.set(k, pct / 100);
+      } else {
+        _kpdimOverrides.delete(k);
       }
       runSagMT();
     });
@@ -299,6 +333,10 @@ export function exportSagCalcDetails() {
     const _cslR = spanPoleExp.consoleR ? ` [${spanPoleExp.consoleR}]` : '';
     lines.push(`  Stâlp stg. H=${spanPoleExp.HL.toFixed(1)}m${_cslL} | Stâlp dr. H=${spanPoleExp.HR.toFixed(1)}m${_cslR}`);
     lines.push(`  H_calcul = (${spanPoleExp.HL.toFixed(1)}+${spanPoleExp.HR.toFixed(1)})/2 = ${spanPoleExp.H.toFixed(2)}m${spanPoleExp.T_max!==null?' | T_max='+spanPoleExp.T_max+' daN':''}`);
+    const span_kpdim_exp = _kpdimOverrides.get(key) ?? _kpdim;
+    if (_kpdimOverrides.has(key)) {
+      lines.push(`  KP_dim: ${(_kpdimOverrides.get(key)*100).toFixed(0)}% (OVERRIDE per deschidere; global=${_kpdim?(_kpdim*100).toFixed(0)+'%':'auto'})`);
+    }
     lines.push('');
 
     let res;
@@ -306,7 +344,7 @@ export function exportSagCalcDetails() {
       res = calcSpan(acsr_key,
         { zone: _zone, H: spanPoleExp.H, Av, terrain: 'II' },
         { L, dh: 0 },
-        _kpdim,
+        span_kpdim_exp,
         spanPoleExp.T_max);
     } catch(e) {
       lines.push(`  *** EROARE CALCUL: ${e.message} ***`);
