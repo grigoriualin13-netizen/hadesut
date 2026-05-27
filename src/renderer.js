@@ -16,7 +16,8 @@ export function mk(t) { return document.createElementNS('http://www.w3.org/2000/
 // MT phase visual offset — perpendicular to span: R=+14px, S=0, T=−14px
 export const MT_PHASE_PX = 14;
 const _MT_FAZA_DIR = { R: 1, S: 0, T: -1 };
-function _mtOffsetPath(path, faza) {
+const _MT_POLE_R = 22;
+function _mtOffsetPath(path, faza, fromElId, toElId) {
   const dir = _MT_FAZA_DIR[faza];
   if (!dir || path.length < 2) return path;
   const p0 = path[0], pn = path[path.length - 1];
@@ -25,7 +26,19 @@ function _mtOffsetPath(path, faza) {
   if (len < 1) return path;
   const nx = -dy / len, ny = dx / len;
   const off = dir * MT_PHASE_PX;
-  return path.map(p => ({ x: p.x + nx * off, y: p.y + ny * off }));
+  const result = path.map(p => ({ x: p.x + nx * off, y: p.y + ny * off }));
+  // Dacă offsetul mută endpoint-ul în AFARA cercului stâlpului, îl aduce pe granița cercului.
+  // Cercul cu fill acoperă tot ce e înăuntru — endpoint-urile pe/în cerc sunt invizibile.
+  const _clip = (pt, elId) => {
+    const el = elId ? S.EL.find(e => e.id === elId) : null;
+    if (!el || !el.type?.startsWith('stalp_mt_')) return pt;
+    const ex = pt.x - el.x, ey = pt.y - el.y, d = Math.hypot(ex, ey);
+    if (d <= _MT_POLE_R || d < 0.1) return pt;
+    return { x: el.x + ex / d * _MT_POLE_R, y: el.y + ey / d * _MT_POLE_R };
+  };
+  result[0] = _clip(result[0], fromElId);
+  result[result.length - 1] = _clip(result[result.length - 1], toElId);
+  return result;
 }
 
 // ── Background ──
@@ -190,7 +203,7 @@ export function render() {
 
   S.CN.forEach(cn => {
     const isSel = cn.id === S.sel || S.multiSel.has(cn.id), col = cn.color || '#ef4444', sw = cn.strokeWidth || 2, dash = cn.lineType === 'dashed' ? 'stroke-dasharray="10,5"' : '';
-    const rp = cn.faza ? _mtOffsetPath(cn.path, cn.faza) : cn.path;
+    const rp = cn.faza ? _mtOffsetPath(cn.path, cn.faza, cn.fromElId, cn.toElId) : cn.path;
     let dStr = '', JUMP_R = 6;
     if (rp.length > 0) {
       for (let i = 0; i < rp.length - 1; i++) {
