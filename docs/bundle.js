@@ -10081,7 +10081,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
         const tL = pdL.T_max, tR = pdR.T_max;
         const T_max = tL != null && tR != null ? Math.min(tL, tR) : tL ?? tR ?? null;
         let sag10 = null, sag40 = null, T40 = null, q40 = null, T10 = null, q10 = null;
-        let T0_dim = null, KP_calc = null, T_crit = null;
+        let T0_dim = null, KP_calc = null, T_crit = null, T_wind = null, q_wind = null;
         try {
           const H_wind = Math.max(poles[i].H, poles[i + 1].H);
           const Av = _avSpan2 ? L : Math.max(L, 40);
@@ -10098,6 +10098,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
           T_crit = res.T_crit;
           const r40 = res.tension_table.find((r) => r.label === "+40\xB0C");
           const r10 = res.tension_table.find((r) => r.label === "+10\xB0C");
+          const rWd = res.tension_table.find((r) => r.label === "+15+vmax");
           if (r40) {
             sag40 = r40.sag_max;
             T40 = r40.T_norm;
@@ -10108,6 +10109,10 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
             T10 = r10.T_norm;
             q10 = r10.q_norm;
           }
+          if (rWd) {
+            T_wind = rWd.T_norm;
+          }
+          q_wind = res.loads?.normate?.g4 ?? null;
         } catch (_) {
         }
         return {
@@ -10124,7 +10129,9 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
           q10,
           T0_dim,
           KP_calc,
-          T_crit
+          T_crit,
+          T_wind,
+          q_wind
         };
       });
       return {
@@ -10193,6 +10200,34 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       const y0 = sy(0).toFixed(1);
       s += `<line x1="${MG.left}" y1="${y0}" x2="${MG.left + IW}" y2="${y0}" stroke="#92400e" stroke-width="1.2" stroke-dasharray="4,4" opacity=".5"/>`;
       s += `<text x="${(MG.left - 5).toFixed(1)}" y="${(sy(0) + 3).toFixed(1)}" text-anchor="end" font-size="7.5" fill="#92400e" opacity=".7">0m</text>`;
+    }
+    const CORR_Y = 32;
+    const CORR_MAX_H = 20;
+    let hasCorr = false;
+    spans.forEach((sp, i) => {
+      if (!sp.T_wind || !sp.q_wind || !sp.L_m) return;
+      hasCorr = true;
+      const x_left = sx(xm[i]);
+      const x_right = sx(xm[i + 1]);
+      const lower = Array.from({ length: 21 }, (_, k) => {
+        const t = k / 20;
+        const x_m = t * sp.L_m;
+        const dlt = sp.q_wind * x_m * (sp.L_m - x_m) / (2 * sp.T_wind);
+        const bh = Math.min(dlt * px_v, CORR_MAX_H);
+        return `${sx(xm[i] + x_m).toFixed(1)},${(CORR_Y + bh).toFixed(1)}`;
+      });
+      const upperL = `${x_left.toFixed(1)},${CORR_Y} ${x_right.toFixed(1)},${CORR_Y}`;
+      const lowerR = [...lower].reverse().join(" ");
+      s += `<polygon points="${upperL} ${lowerR}" fill="rgba(192,132,252,.10)" stroke="none"/>`;
+      s += `<polyline points="${lower.join(" ")}" fill="none" stroke="#c084fc" stroke-width="1" opacity=".55"/>`;
+      const xmid = sx(xm[i] + sp.L_m / 2);
+      const delta_mid = sp.q_wind * sp.L_m * sp.L_m / (8 * sp.T_wind);
+      const y_lbl = CORR_Y + Math.min(delta_mid * px_v, CORR_MAX_H) / 2 + 5;
+      s += `<text x="${xmid.toFixed(1)}" y="${y_lbl.toFixed(1)}" text-anchor="middle" font-size="8" fill="#c084fc" font-weight="600">${sp.L_m.toFixed(0)} m</text>`;
+    });
+    if (hasCorr) {
+      s += `<line x1="${MG.left}" y1="${CORR_Y}" x2="${(MG.left + IW).toFixed(1)}" y2="${CORR_Y}" stroke="#c084fc" stroke-width=".8" opacity=".4"/>`;
+      s += `<text x="${MG.left}" y="${CORR_Y - 3}" font-size="7.5" fill="#c084fc" font-weight="700" opacity=".8">AX LEA 20kV \u2014 culoar devia\u021Bie (\xB1\u03B4 v\xE2nt)</text>`;
     }
     spans.forEach((sp, i) => {
       if (!sp.L_m) return;
