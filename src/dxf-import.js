@@ -170,13 +170,15 @@ export function renderDxfLayer() {
   if (!el) return;
   if (!S.dxfData) { el.innerHTML = ''; return; }
 
-  const { allEntities, layerFilter, bscale, opacity } = S.dxfData;
+  const { allEntities, layerFilter, selectedLayers, bscale, opacity } = S.dxfData;
 
-  // Apply layer filter
-  const fLow = (layerFilter || '').toLowerCase().trim();
-  const visible = fLow
-    ? allEntities.filter(e => e.layer.toLowerCase().includes(fLow))
-    : allEntities;
+  // Selected layers (checkboxes) take priority over text filter
+  const visible = selectedLayers && selectedLayers.size > 0
+    ? allEntities.filter(e => selectedLayers.has(e.layer))
+    : (() => {
+        const fLow = (layerFilter || '').toLowerCase().trim();
+        return fLow ? allEntities.filter(e => e.layer.toLowerCase().includes(fLow)) : allEntities;
+      })();
 
   if (!visible.length) { el.innerHTML = ''; return; }
 
@@ -227,7 +229,7 @@ export function loadDxf(inp) {
       // Collect unique layer names for the tooltip/info
       const layerSet = new Set(allEntities.map(e => e.layer));
 
-      S.dxfData = { allEntities, layerFilter: '', bcx: 0, bcy: 0, bscale, opacity: 0.65 };
+      S.dxfData = { allEntities, layerFilter: '', selectedLayers: new Set(), bcx: 0, bcy: 0, bscale, opacity: 0.65 };
 
       renderDxfLayer();
 
@@ -240,20 +242,26 @@ export function loadDxf(inp) {
       const info = document.getElementById('dxf-layer-info');
       if (info) info.textContent = layerSet.size + ' straturi';
 
-      // Populate layer list (sorted by entity count desc)
+      // Populate layer list with checkboxes (sorted by entity count desc)
       const list = document.getElementById('dxf-layer-list');
       if (list) {
         const counts = {};
         for (const e of allEntities) counts[e.layer] = (counts[e.layer] || 0) + 1;
         const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-        list.innerHTML = sorted.map(([l, c]) => {
+        const header = `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 10px 6px;border-bottom:1px solid var(--border2);margin-bottom:2px">
+          <span style="font-size:9px;font-weight:700;text-transform:uppercase;color:var(--text2)">Selectează straturi</span>
+          <button onclick="clearDxfLayerSel()" style="font-size:9px;color:#44aacc;background:none;border:none;cursor:pointer;padding:0" title="Deselectează tot">✕ golește</button>
+        </div>`;
+        const rows = sorted.map(([l, c]) => {
           const esc = l.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-          return `<div style="padding:3px 10px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .12s"
-                       onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"
-                       onclick="document.getElementById('dxf-filter').value='${esc}';setDxfFilter('${esc}')">
-                    <span style="color:var(--text3);margin-right:6px;font-variant-numeric:tabular-nums">${c}</span>${l}
-                  </div>`;
+          return `<label style="display:flex;align-items:center;gap:6px;padding:3px 10px;cursor:pointer;white-space:nowrap;overflow:hidden"
+                         onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+                    <input type="checkbox" data-layer="${esc}" onchange="toggleDxfLayerCheck('${esc}')" style="cursor:pointer;flex-shrink:0">
+                    <span style="color:var(--text3);min-width:28px;text-align:right;font-variant-numeric:tabular-nums">${c}</span>
+                    <span style="overflow:hidden;text-overflow:ellipsis">${l}</span>
+                  </label>`;
         }).join('');
+        list.innerHTML = header + rows;
         list.style.display = 'none';
       }
 
@@ -271,11 +279,47 @@ export function loadDxf(inp) {
   if (inp && inp.value !== undefined) inp.value = '';
 }
 
-// ── Filter by layer name ──────────────────────────────────────────────────────
+// ── Filter by layer name (text — clears checkbox selection) ──────────────────
 export function setDxfFilter(text) {
   if (!S.dxfData) return;
   S.dxfData.layerFilter = text;
+  if (text) {
+    // Clear checkbox selection when user types
+    S.dxfData.selectedLayers.clear();
+    document.querySelectorAll('#dxf-layer-list input[type=checkbox]').forEach(cb => { cb.checked = false; });
+    _updateLayerInfo();
+  }
   renderDxfLayer();
+}
+
+// ── Toggle individual layer checkbox ─────────────────────────────────────────
+export function toggleDxfLayerCheck(name) {
+  if (!S.dxfData) return;
+  const sel = S.dxfData.selectedLayers;
+  if (sel.has(name)) sel.delete(name); else sel.add(name);
+  // Clear text filter when checkbox used
+  S.dxfData.layerFilter = '';
+  const tf = document.getElementById('dxf-filter');
+  if (tf) tf.value = '';
+  _updateLayerInfo();
+  renderDxfLayer();
+}
+
+// ── Clear checkbox selection ──────────────────────────────────────────────────
+export function clearDxfLayerSel() {
+  if (!S.dxfData) return;
+  S.dxfData.selectedLayers.clear();
+  document.querySelectorAll('#dxf-layer-list input[type=checkbox]').forEach(cb => { cb.checked = false; });
+  _updateLayerInfo();
+  renderDxfLayer();
+}
+
+function _updateLayerInfo() {
+  const info = document.getElementById('dxf-layer-info');
+  if (!info || !S.dxfData) return;
+  const n = S.dxfData.selectedLayers.size;
+  const total = new Set(S.dxfData.allEntities.map(e => e.layer)).size;
+  info.textContent = n > 0 ? `${n}/${total} selectate` : `${total} straturi`;
 }
 
 // ── Clear DXF layer ───────────────────────────────────────────────────────────

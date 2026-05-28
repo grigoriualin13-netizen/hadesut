@@ -10833,9 +10833,11 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
       el.innerHTML = "";
       return;
     }
-    const { allEntities, layerFilter, bscale, opacity } = S.dxfData;
-    const fLow = (layerFilter || "").toLowerCase().trim();
-    const visible = fLow ? allEntities.filter((e) => e.layer.toLowerCase().includes(fLow)) : allEntities;
+    const { allEntities, layerFilter, selectedLayers, bscale, opacity } = S.dxfData;
+    const visible = selectedLayers && selectedLayers.size > 0 ? allEntities.filter((e) => selectedLayers.has(e.layer)) : (() => {
+      const fLow = (layerFilter || "").toLowerCase().trim();
+      return fLow ? allEntities.filter((e) => e.layer.toLowerCase().includes(fLow)) : allEntities;
+    })();
     if (!visible.length) {
       el.innerHTML = "";
       return;
@@ -10874,7 +10876,7 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
         }
         const bscale = S.pxPerMeter / 1e3;
         const layerSet = new Set(allEntities.map((e) => e.layer));
-        S.dxfData = { allEntities, layerFilter: "", bcx: 0, bcy: 0, bscale, opacity: 0.65 };
+        S.dxfData = { allEntities, layerFilter: "", selectedLayers: /* @__PURE__ */ new Set(), bcx: 0, bcy: 0, bscale, opacity: 0.65 };
         renderDxfLayer();
         toast(`DXF: ${allEntities.length} entit\u0103\u021Bi, ${layerSet.size} straturi.`, "ok");
         const ctrl = document.getElementById("dxf-controls");
@@ -10886,14 +10888,20 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
           const counts = {};
           for (const e of allEntities) counts[e.layer] = (counts[e.layer] || 0) + 1;
           const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-          list.innerHTML = sorted.map(([l, c]) => {
+          const header = `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 10px 6px;border-bottom:1px solid var(--border2);margin-bottom:2px">
+          <span style="font-size:9px;font-weight:700;text-transform:uppercase;color:var(--text2)">Selecteaz\u0103 straturi</span>
+          <button onclick="clearDxfLayerSel()" style="font-size:9px;color:#44aacc;background:none;border:none;cursor:pointer;padding:0" title="Deselecteaz\u0103 tot">\u2715 gole\u0219te</button>
+        </div>`;
+          const rows = sorted.map(([l, c]) => {
             const esc = l.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-            return `<div style="padding:3px 10px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .12s"
-                       onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"
-                       onclick="document.getElementById('dxf-filter').value='${esc}';setDxfFilter('${esc}')">
-                    <span style="color:var(--text3);margin-right:6px;font-variant-numeric:tabular-nums">${c}</span>${l}
-                  </div>`;
+            return `<label style="display:flex;align-items:center;gap:6px;padding:3px 10px;cursor:pointer;white-space:nowrap;overflow:hidden"
+                         onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+                    <input type="checkbox" data-layer="${esc}" onchange="toggleDxfLayerCheck('${esc}')" style="cursor:pointer;flex-shrink:0">
+                    <span style="color:var(--text3);min-width:28px;text-align:right;font-variant-numeric:tabular-nums">${c}</span>
+                    <span style="overflow:hidden;text-overflow:ellipsis">${l}</span>
+                  </label>`;
           }).join("");
+          list.innerHTML = header + rows;
           list.style.display = "none";
         }
         const sl = document.getElementById("dxf-op");
@@ -10911,7 +10919,41 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
   function setDxfFilter(text) {
     if (!S.dxfData) return;
     S.dxfData.layerFilter = text;
+    if (text) {
+      S.dxfData.selectedLayers.clear();
+      document.querySelectorAll("#dxf-layer-list input[type=checkbox]").forEach((cb) => {
+        cb.checked = false;
+      });
+      _updateLayerInfo();
+    }
     renderDxfLayer();
+  }
+  function toggleDxfLayerCheck(name) {
+    if (!S.dxfData) return;
+    const sel = S.dxfData.selectedLayers;
+    if (sel.has(name)) sel.delete(name);
+    else sel.add(name);
+    S.dxfData.layerFilter = "";
+    const tf = document.getElementById("dxf-filter");
+    if (tf) tf.value = "";
+    _updateLayerInfo();
+    renderDxfLayer();
+  }
+  function clearDxfLayerSel() {
+    if (!S.dxfData) return;
+    S.dxfData.selectedLayers.clear();
+    document.querySelectorAll("#dxf-layer-list input[type=checkbox]").forEach((cb) => {
+      cb.checked = false;
+    });
+    _updateLayerInfo();
+    renderDxfLayer();
+  }
+  function _updateLayerInfo() {
+    const info = document.getElementById("dxf-layer-info");
+    if (!info || !S.dxfData) return;
+    const n = S.dxfData.selectedLayers.size;
+    const total = new Set(S.dxfData.allEntities.map((e) => e.layer)).size;
+    info.textContent = n > 0 ? `${n}/${total} selectate` : `${total} straturi`;
   }
   function clearDxf() {
     S.dxfData = null;
@@ -11121,6 +11163,8 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
   window.setDxfFilter = setDxfFilter;
   window.renderDxfLayer = renderDxfLayer;
   window.toggleDxfLayerList = toggleDxfLayerList;
+  window.toggleDxfLayerCheck = toggleDxfLayerCheck;
+  window.clearDxfLayerSel = clearDxfLayerSel;
   window.openFSModal = openFSModal;
   window.closeFSModal = closeFSModal;
   window.resetFSForm = resetFSForm;
