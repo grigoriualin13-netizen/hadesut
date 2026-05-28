@@ -2786,8 +2786,9 @@ ${(r * 0.1).toFixed(4)}
     toast("Click P1...", "ok");
   }
   function clearDims() {
-    S.dims = [];
-    renderDimLayer();
+    saveState("clear dims");
+    S.EL = S.EL.filter((e) => e.type !== "dim");
+    render();
     toast("Cote \u0219terse.", "ok");
   }
   function _renderDxfSnap() {
@@ -2948,8 +2949,9 @@ ${(r * 0.1).toFixed(4)}
       else if (_dimPts.length === 3) {
         const [p1, p2] = _dimPts;
         const offset = _dimSignedDist(sp, p1, p2);
-        S.dims.push({ id: Date.now(), p1, p2, offset });
-        renderDimLayer();
+        saveState("cot\u0103");
+        S.EL.push({ id: Date.now(), type: "dim", p1, p2, offset, x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2, rotation: 0 });
+        render();
         _dimPts = [_dimPts[1]];
         toast("Cot\u0103 plasat\u0103. Click P2 pentru cot\u0103 nou\u0103 sau Esc.", "ok");
       }
@@ -3392,15 +3394,7 @@ ${(r * 0.1).toFixed(4)}
         }
       }
       if (!inp) {
-        if (e.key === "Delete" || e.key === "Backspace") {
-          if (S.mode === "dim") {
-            if (S.dims.length) {
-              S.dims.pop();
-              renderDimLayer();
-              toast("Ultima cot\u0103 \u0219tears\u0103.", "ok");
-            }
-          } else delSel();
-        }
+        if (e.key === "Delete" || e.key === "Backspace") delSel();
         if (e.key === "Escape") {
           S.multiSel.clear();
           S.sel = null;
@@ -5984,53 +5978,46 @@ ${(r * 0.1).toFixed(4)}
       gl.appendChild(path2);
     });
   }
+  function _dimSVG(d, isSel = false) {
+    const { p1, p2, offset } = d;
+    const ddx = p2.x - p1.x, ddy = p2.y - p1.y;
+    const len = Math.hypot(ddx, ddy);
+    if (len < 2) return "";
+    const dark = !S.lightMode;
+    const col = isSel ? "#00cfff" : dark ? "#00e5a0" : "#007a55";
+    const ppm = S.pxPerMeter || 5;
+    const OVS = 10, GAP = 5, ARL = 9, ARW = 3.5, TXTOFF = 10;
+    const ux = ddx / len, uy = ddy / len;
+    const nx = -uy, ny = ux;
+    const ns = offset >= 0 ? 1 : -1;
+    const d1x = p1.x + nx * offset, d1y = p1.y + ny * offset;
+    const d2x = p2.x + nx * offset, d2y = p2.y + ny * offset;
+    const gv = GAP * ns, ov = (Math.abs(offset) + OVS) * ns;
+    let h = "";
+    if (isSel) h += `<line x1="${d1x.toFixed(1)}" y1="${d1y.toFixed(1)}" x2="${d2x.toFixed(1)}" y2="${d2y.toFixed(1)}" stroke="rgba(0,207,255,.3)" stroke-width="10" pointer-events="none"/>`;
+    h += `<line x1="${d1x.toFixed(1)}" y1="${d1y.toFixed(1)}" x2="${d2x.toFixed(1)}" y2="${d2y.toFixed(1)}" stroke="transparent" stroke-width="14" style="pointer-events:stroke;cursor:pointer"/>`;
+    h += `<line x1="${(p1.x + nx * gv).toFixed(1)}" y1="${(p1.y + ny * gv).toFixed(1)}" x2="${(p1.x + nx * ov).toFixed(1)}" y2="${(p1.y + ny * ov).toFixed(1)}" stroke="${col}" stroke-width="0.9" opacity="0.85" pointer-events="none"/>`;
+    h += `<line x1="${(p2.x + nx * gv).toFixed(1)}" y1="${(p2.y + ny * gv).toFixed(1)}" x2="${(p2.x + nx * ov).toFixed(1)}" y2="${(p2.y + ny * ov).toFixed(1)}" stroke="${col}" stroke-width="0.9" opacity="0.85" pointer-events="none"/>`;
+    h += `<line x1="${d1x.toFixed(1)}" y1="${d1y.toFixed(1)}" x2="${d2x.toFixed(1)}" y2="${d2y.toFixed(1)}" stroke="${col}" stroke-width="1.2" opacity="0.9" pointer-events="none"/>`;
+    const b1x = d1x + ux * ARL, b1y = d1y + uy * ARL;
+    h += `<polygon points="${d1x.toFixed(1)},${d1y.toFixed(1)} ${(b1x - nx * ARW).toFixed(1)},${(b1y - ny * ARW).toFixed(1)} ${(b1x + nx * ARW).toFixed(1)},${(b1y + ny * ARW).toFixed(1)}" fill="${col}" opacity="0.9" pointer-events="none"/>`;
+    const b2x = d2x - ux * ARL, b2y = d2y - uy * ARL;
+    h += `<polygon points="${d2x.toFixed(1)},${d2y.toFixed(1)} ${(b2x - nx * ARW).toFixed(1)},${(b2y - ny * ARW).toFixed(1)} ${(b2x + nx * ARW).toFixed(1)},${(b2y + ny * ARW).toFixed(1)}" fill="${col}" opacity="0.9" pointer-events="none"/>`;
+    const mx = (d1x + d2x) / 2 + nx * ns * TXTOFF, my = (d1y + d2y) / 2 + ny * ns * TXTOFF;
+    let ang = Math.atan2(ddy, ddx) * 180 / Math.PI;
+    if (ang > 90) ang -= 180;
+    else if (ang < -90) ang += 180;
+    h += `<text x="${mx.toFixed(1)}" y="${my.toFixed(1)}" font-size="11" fill="${col}"
+         font-family="JetBrains Mono,monospace" font-weight="700" text-anchor="middle" dominant-baseline="central"
+         transform="rotate(${ang.toFixed(1)},${mx.toFixed(1)},${my.toFixed(1)})"
+         paint-order="stroke" stroke="${dark ? "#000a" : "#fffa"}" stroke-width="2.5"
+         stroke-linecap="round" pointer-events="none">${(len / ppm).toFixed(2)} m</text>`;
+    return h;
+  }
   function renderDimLayer(preview = null) {
     const el = document.getElementById("DIM");
     if (!el) return;
-    const all = preview ? [...S.dims, preview] : S.dims;
-    if (!all.length) {
-      el.innerHTML = "";
-      return;
-    }
-    const dark = !S.lightMode;
-    const col = dark ? "#00e5a0" : "#007a55";
-    const ppm = S.pxPerMeter || 5;
-    const OVS = 10;
-    const GAP = 5;
-    const ARL = 9;
-    const ARW = 3.5;
-    const TXTOFF = 10;
-    let html = "";
-    for (const d of all) {
-      const { p1, p2, offset } = d;
-      const ddx = p2.x - p1.x, ddy = p2.y - p1.y;
-      const len = Math.hypot(ddx, ddy);
-      if (len < 2) continue;
-      const ux = ddx / len, uy = ddy / len;
-      const nx = -uy, ny = ux;
-      const ns = offset >= 0 ? 1 : -1;
-      const d1x = p1.x + nx * offset, d1y = p1.y + ny * offset;
-      const d2x = p2.x + nx * offset, d2y = p2.y + ny * offset;
-      const g = GAP * ns, o = (Math.abs(offset) + OVS) * ns;
-      html += `<line x1="${(p1.x + nx * g).toFixed(1)}" y1="${(p1.y + ny * g).toFixed(1)}" x2="${(p1.x + nx * o).toFixed(1)}" y2="${(p1.y + ny * o).toFixed(1)}" stroke="${col}" stroke-width="0.9" opacity="0.85"/>`;
-      html += `<line x1="${(p2.x + nx * g).toFixed(1)}" y1="${(p2.y + ny * g).toFixed(1)}" x2="${(p2.x + nx * o).toFixed(1)}" y2="${(p2.y + ny * o).toFixed(1)}" stroke="${col}" stroke-width="0.9" opacity="0.85"/>`;
-      html += `<line x1="${d1x.toFixed(1)}" y1="${d1y.toFixed(1)}" x2="${d2x.toFixed(1)}" y2="${d2y.toFixed(1)}" stroke="${col}" stroke-width="1.2" opacity="0.9"/>`;
-      const b1x = d1x + ux * ARL, b1y = d1y + uy * ARL;
-      html += `<polygon points="${d1x.toFixed(1)},${d1y.toFixed(1)} ${(b1x - nx * ARW).toFixed(1)},${(b1y - ny * ARW).toFixed(1)} ${(b1x + nx * ARW).toFixed(1)},${(b1y + ny * ARW).toFixed(1)}" fill="${col}" opacity="0.9"/>`;
-      const b2x = d2x - ux * ARL, b2y = d2y - uy * ARL;
-      html += `<polygon points="${d2x.toFixed(1)},${d2y.toFixed(1)} ${(b2x - nx * ARW).toFixed(1)},${(b2y - ny * ARW).toFixed(1)} ${(b2x + nx * ARW).toFixed(1)},${(b2y + ny * ARW).toFixed(1)}" fill="${col}" opacity="0.9"/>`;
-      const mx = (d1x + d2x) / 2 + nx * ns * TXTOFF, my = (d1y + d2y) / 2 + ny * ns * TXTOFF;
-      let ang = Math.atan2(ddy, ddx) * 180 / Math.PI;
-      if (ang > 90) ang -= 180;
-      else if (ang < -90) ang += 180;
-      const distM = (len / ppm).toFixed(2);
-      html += `<text x="${mx.toFixed(1)}" y="${my.toFixed(1)}" font-size="11" fill="${col}"
-               font-family="JetBrains Mono,monospace" font-weight="700" text-anchor="middle" dominant-baseline="central"
-               transform="rotate(${ang.toFixed(1)},${mx.toFixed(1)},${my.toFixed(1)})"
-               paint-order="stroke" stroke="${dark ? "#000a" : "#fffa"}" stroke-width="2.5"
-               stroke-linecap="round">${distM} m</text>`;
-    }
-    el.innerHTML = html;
+    el.innerHTML = preview ? _dimSVG(preview) : "";
   }
   function render() {
     _NL.innerHTML = "";
@@ -6167,6 +6154,30 @@ ${(r * 0.1).toFixed(4)}
       _CL.appendChild(g);
     });
     S.EL.forEach((el) => {
+      if (el.type === "dim") {
+        const isSel2 = el.id === S.sel || S.multiSel.has(el.id);
+        const g2 = mk("g");
+        g2.setAttribute("class", `el ${isSel2 ? "sel" : ""}`);
+        g2.dataset.eid = el.id;
+        g2.innerHTML = _dimSVG(el, isSel2);
+        g2.addEventListener("mousedown", (ev) => {
+          if (S.mode === "select") {
+            ev.stopPropagation();
+            if (ev.ctrlKey || ev.metaKey) {
+              if (S.multiSel.has(el.id)) S.multiSel.delete(el.id);
+              else S.multiSel.add(el.id);
+              S.sel = null;
+              render();
+              updateProps();
+              return;
+            }
+            S.multiSel.clear();
+            selectEl(el.id);
+          }
+        });
+        _NL.appendChild(g2);
+        return;
+      }
       if (el.type === "poly_arrow") {
         el.type = "polyline";
         el.arrowEnd = true;
@@ -6322,7 +6333,6 @@ ${(r * 0.1).toFixed(4)}
     });
     if (S.vdOverlayOn && S.vdResults) renderVDOverlay();
     if (S.flowAnimOn) renderFlowLayer();
-    renderDimLayer();
   }
   var _svgEl2, _VP2, _NL, _CL, _GL, MT_PHASE_PX, _MT_FAZA_DIR, _MT_POLE_R;
   var init_renderer = __esm({

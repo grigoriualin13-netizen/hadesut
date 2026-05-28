@@ -24,7 +24,9 @@ export function startDim() {
 }
 
 export function clearDims() {
-  S.dims = []; renderDimLayer(); toast('Cote șterse.', 'ok');
+  saveState('clear dims');
+  S.EL = S.EL.filter(e => e.type !== 'dim');
+  render(); toast('Cote șterse.', 'ok');
 }
 
 // ── DXF snap indicator ───────────────────────────────────────────────────────
@@ -157,8 +159,9 @@ export function onDn(e) {
     else if (_dimPts.length === 3) {
       const [p1, p2] = _dimPts;
       const offset = _dimSignedDist(sp, p1, p2);
-      S.dims.push({ id: Date.now(), p1, p2, offset });
-      renderDimLayer();
+      saveState('cotă');
+      S.EL.push({ id: Date.now(), type: 'dim', p1, p2, offset, x: (p1.x+p2.x)/2, y: (p1.y+p2.y)/2, rotation: 0 });
+      render();
       _dimPts = [_dimPts[1]]; // reuse last point as new P1 for chaining
       toast('Cotă plasată. Click P2 pentru cotă nouă sau Esc.', 'ok');
     }
@@ -457,10 +460,7 @@ export function initKeyboard() {
       if (e.key === 's') { e.preventDefault(); save(); return; }
     }
     if (!inp) {
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (S.mode === 'dim') { if (S.dims.length) { S.dims.pop(); renderDimLayer(); toast('Ultima cotă ștearsă.', 'ok'); } }
-        else delSel();
-      }
+      if (e.key === 'Delete' || e.key === 'Backspace') delSel();
       if (e.key === 'Escape') { S.multiSel.clear(); S.sel = null; setMode('select'); render(); updateProps(); _mpts = []; _renderMeasure(); _dimPts = []; renderDimLayer(); _dxfSnap = null; _renderDxfSnap(); const b = document.getElementById('btn-dim'); if (b) b.classList.remove('active'); }
       if (e.key === 's') setMode('select');
       if (e.key === 'c') setMode('connect');
