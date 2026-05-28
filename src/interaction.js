@@ -24,55 +24,61 @@ function _renderDxfSnap() {
     `<line x1="${x.toFixed(1)}" y1="${(y-r).toFixed(1)}" x2="${x.toFixed(1)}" y2="${(y+r).toFixed(1)}" stroke="${col}" stroke-width="1.2" opacity="0.95"/>`;
 }
 
-// ── Measure tool ─────────────────────────────────────────────────────────────
-let _mpt1 = null;
+// ── Measure tool (multi-point polyline) ──────────────────────────────────────
+let _mpts = [];
 
-function _renderMeasure(pt2 = null) {
+function _renderMeasure(cursorPt = null) {
   const layer = document.getElementById('MEAS');
   if (!layer) return;
-  if (!_mpt1) { layer.innerHTML = ''; return; }
+  if (!_mpts.length) { layer.innerHTML = ''; return; }
   const dark = !S.lightMode;
-  const mC   = dark ? '#ffd700' : '#b85000';
-  if (!pt2) {
-    layer.innerHTML = `
-      <circle cx="${_mpt1.x.toFixed(1)}" cy="${_mpt1.y.toFixed(1)}" r="4"
-              fill="${mC}" opacity="0.9"/>
-      <line x1="${(_mpt1.x-10).toFixed(1)}" y1="${_mpt1.y.toFixed(1)}"
-            x2="${(_mpt1.x+10).toFixed(1)}" y2="${_mpt1.y.toFixed(1)}"
-            stroke="${mC}" stroke-width="1.3"/>
-      <line x1="${_mpt1.x.toFixed(1)}" y1="${(_mpt1.y-10).toFixed(1)}"
-            x2="${_mpt1.x.toFixed(1)}" y2="${(_mpt1.y+10).toFixed(1)}"
-            stroke="${mC}" stroke-width="1.3"/>`;
-    return;
+  const mC  = dark ? '#ffd700' : '#b85000';
+  const ppm = S.pxPerMeter || 5;
+  const all = cursorPt ? [..._mpts, cursorPt] : _mpts;
+  let html  = '';
+
+  if (all.length >= 2)
+    html += `<polyline points="${all.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}"
+               fill="none" stroke="${mC}" stroke-width="1.6" stroke-dasharray="7,4"/>`;
+
+  for (const p of _mpts)
+    html += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="${mC}" opacity="0.9"/>`;
+  if (cursorPt)
+    html += `<circle cx="${cursorPt.x.toFixed(1)}" cy="${cursorPt.y.toFixed(1)}" r="3.5" fill="${mC}" opacity="0.5"/>`;
+
+  let total = 0;
+  for (let i = 0; i < all.length - 1; i++) {
+    const p0 = all[i], p1 = all[i + 1];
+    const ddx = p1.x - p0.x, ddy = p1.y - p0.y;
+    const dist = Math.hypot(ddx, ddy);
+    total += dist;
+    const segM = (dist / ppm).toFixed(2);
+    const mx = (p0.x + p1.x) / 2, my = (p0.y + p1.y) / 2;
+    const ux = dist > 0 ? ddx / dist : 1, uy = dist > 0 ? ddy / dist : 0;
+    const lx = (mx - uy * 16).toFixed(1), ly = (my + ux * 16).toFixed(1);
+    html += `<text x="${lx}" y="${ly}" font-size="11" fill="${mC}"
+               font-family="JetBrains Mono,monospace" font-weight="700" text-anchor="middle"
+               paint-order="stroke" stroke="#000a" stroke-width="2.5"
+               stroke-linecap="round">${segM} m</text>`;
   }
-  const dx = pt2.x-_mpt1.x, dy = pt2.y-_mpt1.y;
-  const dist = Math.hypot(dx, dy);
-  const ppm  = S.pxPerMeter || 5;
-  const distM = (dist / ppm).toFixed(2);
-  const mx = (_mpt1.x+pt2.x)/2, my = (_mpt1.y+pt2.y)/2;
-  const ux = dist>0 ? dx/dist : 1, uy = dist>0 ? dy/dist : 0;
-  const lx = (mx - uy*16).toFixed(1), ly = (my + ux*16).toFixed(1);
-  layer.innerHTML = `
-    <line x1="${_mpt1.x.toFixed(1)}" y1="${_mpt1.y.toFixed(1)}"
-          x2="${pt2.x.toFixed(1)}" y2="${pt2.y.toFixed(1)}"
-          stroke="${mC}" stroke-width="1.6" stroke-dasharray="7,4"/>
-    <circle cx="${_mpt1.x.toFixed(1)}" cy="${_mpt1.y.toFixed(1)}" r="3.5"
-            fill="${mC}" opacity="0.9"/>
-    <circle cx="${pt2.x.toFixed(1)}" cy="${pt2.y.toFixed(1)}" r="3.5"
-            fill="${mC}" opacity="0.9"/>
-    <text x="${lx}" y="${ly}"
-          font-size="11" fill="${mC}" font-family="JetBrains Mono,monospace"
-          font-weight="700" text-anchor="middle"
-          paint-order="stroke" stroke="#000a" stroke-width="2.5"
-          stroke-linecap="round">${distM} m</text>`;
+
+  if (all.length > 2) {
+    const last = all[all.length - 1];
+    html += `<text x="${last.x.toFixed(1)}" y="${(last.y - 16).toFixed(1)}" font-size="13" fill="${mC}"
+               font-family="JetBrains Mono,monospace" font-weight="700" text-anchor="middle"
+               paint-order="stroke" stroke="#000a" stroke-width="3"
+               stroke-linecap="round">Σ ${(total / ppm).toFixed(2)} m</text>`;
+  }
+
+  layer.innerHTML = html;
 }
 
 export function toggleMeasure() {
   if (S.mode === 'measure') {
-    setMode('select'); _mpt1 = null; _renderMeasure(); _dxfSnap = null; _renderDxfSnap();
+    setMode('select'); _mpts = []; _renderMeasure(); _dxfSnap = null; _renderDxfSnap();
   } else {
-    setMode('measure'); _mpt1 = null; _renderMeasure();
-    toast('Clic punct 1, clic punct 2 → distanță. Esc = anulare.', 'ok');
+    setMode('measure'); _mpts = []; _renderMeasure();
+    toast('Click → adaugă punct. Click dreapta / Esc → finalizează.', 'ok');
   }
   const btn = document.getElementById('btn-measure');
   if (btn) btn.classList.toggle('active', S.mode === 'measure');
@@ -81,6 +87,17 @@ export function toggleMeasure() {
 export function onDn(e) {
   const pt = svgPt(e);
   if (e.button === 2) {
+    if (S.mode === 'measure') {
+      if (_mpts.length >= 2) {
+        const ppm = S.pxPerMeter || 5;
+        let total = 0;
+        for (let i = 0; i < _mpts.length - 1; i++) total += Math.hypot(_mpts[i+1].x - _mpts[i].x, _mpts[i+1].y - _mpts[i].y);
+        toast(`Σ ${(total / ppm).toFixed(2)} m (${_mpts.length - 1} segmente)`, 'ok');
+      }
+      setMode('select'); _mpts = []; _renderMeasure(); _dxfSnap = null; _renderDxfSnap();
+      const btn = document.getElementById('btn-measure'); if (btn) btn.classList.remove('active');
+      return;
+    }
     if (S.mode === 'connect' && S.connStart) finalConn();
     else if (S.mode === 'draw_poly') {
       if (S.arrPts.length >= 2) {
@@ -109,13 +126,14 @@ export function onDn(e) {
   if (S.mode === 'mt_span') { placeMTSpanAt(pt.x, pt.y); return; }
   if (S.mode === 'measure') {
     const snappedPt = _dxfSnap ? { x: _dxfSnap.x, y: _dxfSnap.y } : { x: pt.x, y: pt.y };
-    if (!_mpt1) { _mpt1 = snappedPt; _renderMeasure(); }
-    else {
-      _renderMeasure(snappedPt);
-      const d = (Math.hypot(snappedPt.x - _mpt1.x, snappedPt.y - _mpt1.y) / (S.pxPerMeter || 5)).toFixed(2);
-      toast(`${d} m`, 'ok');
-      _mpt1 = null; _dxfSnap = null; _renderDxfSnap();
+    _mpts.push(snappedPt);
+    if (_mpts.length >= 2) {
+      const ppm = S.pxPerMeter || 5;
+      const last2 = _mpts.slice(-2);
+      const segM = (Math.hypot(last2[1].x - last2[0].x, last2[1].y - last2[0].y) / ppm).toFixed(2);
+      toast(`+${segM} m`, 'ok');
     }
+    _renderMeasure();
     return;
   }
   if (S.mode === 'draw_poly') {
@@ -173,13 +191,12 @@ export function onMv(e) {
   }
   if (S.mode === 'measure') {
     if (S.dxfData) {
-      const snap = getDxfSnapPoint(pt.x, pt.y, 20 / (S.view.s || 1));
-      _dxfSnap = snap;
+      _dxfSnap = getDxfSnapPoint(pt.x, pt.y, 20 / (S.view.s || 1));
     } else {
       _dxfSnap = null;
     }
     _renderDxfSnap();
-    if (_mpt1) { _renderMeasure(_dxfSnap ? { x: _dxfSnap.x, y: _dxfSnap.y } : pt); }
+    if (_mpts.length > 0) _renderMeasure(_dxfSnap ? { x: _dxfSnap.x, y: _dxfSnap.y } : pt);
     return;
   }
   if (S.mode === 'calibrate' && S.calibPts.length === 1) {
@@ -381,7 +398,7 @@ export function initKeyboard() {
     }
     if (!inp) {
       if (e.key === 'Delete' || e.key === 'Backspace') delSel();
-      if (e.key === 'Escape') { S.multiSel.clear(); S.sel = null; setMode('select'); render(); updateProps(); _mpt1 = null; _renderMeasure(); }
+      if (e.key === 'Escape') { S.multiSel.clear(); S.sel = null; setMode('select'); render(); updateProps(); _mpts = []; _renderMeasure(); _dxfSnap = null; _renderDxfSnap(); }
       if (e.key === 's') setMode('select');
       if (e.key === 'c') setMode('connect');
       if (e.key === 'r') rotateSel(90);
