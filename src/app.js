@@ -52,7 +52,7 @@ import './prosumator.js'; // side-effect: sets window.runProsumator etc.
 import { openImportXLS } from './import-xls.js';
 import { openSagMT, closeSagMT, runSagMT, copySagMT, exportSagCalcDetails, toggleSagOverlay, renderSagLayer } from './sag-mt.js';
 import { openProfilLEA, closeProfilLEA, runProfilLEA, exportProfilSVG } from './profil-lea.js';
-import { loadDxf, clearDxf, setDxfOpacity, setDxfScale, setDxfFilter, renderDxfLayer } from './dxf-import.js';
+import { loadDxf, clearDxf, setDxfOpacity, setDxfScale, setDxfFilter, renderDxfLayer, toggleDxfLayerList } from './dxf-import.js';
 
 // ── Init ──────────────────────────────────────────────────────────────────
 
@@ -269,12 +269,13 @@ window.runProfilLEA    = runProfilLEA;
 window.exportProfilSVG = exportProfilSVG;
 
 // DXF vectorial background
-window.loadDxf        = loadDxf;
-window.clearDxf       = clearDxf;
-window.setDxfOpacity  = setDxfOpacity;
-window.setDxfScale    = setDxfScale;
-window.setDxfFilter   = setDxfFilter;
-window.renderDxfLayer = renderDxfLayer;
+window.loadDxf             = loadDxf;
+window.clearDxf            = clearDxf;
+window.setDxfOpacity       = setDxfOpacity;
+window.setDxfScale         = setDxfScale;
+window.setDxfFilter        = setDxfFilter;
+window.renderDxfLayer      = renderDxfLayer;
+window.toggleDxfLayerList  = toggleDxfLayerList;
 
 // Fișa de Soluție (also set by fs-module.js itself, kept here for explicitness)
 window.openFSModal      = openFSModal;

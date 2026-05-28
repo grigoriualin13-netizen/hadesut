@@ -10881,9 +10881,22 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
         if (ctrl) ctrl.style.display = "flex";
         const info = document.getElementById("dxf-layer-info");
         if (info) {
-          const tops = [...layerSet].slice(0, 80).join(", ");
-          info.title = tops;
-          info.textContent = layerSet.size + ' straturi. Filtreaz\u0103 de ex: "PS Don" sau "DRUM".';
+          info.textContent = layerSet.size + " straturi \u2014 click pentru list\u0103";
+        }
+        const list = document.getElementById("dxf-layer-list");
+        if (list) {
+          const counts = {};
+          for (const e of allEntities) counts[e.layer] = (counts[e.layer] || 0) + 1;
+          const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+          list.innerHTML = sorted.map(([l, c]) => {
+            const esc = l.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+            return `<div style="padding:3px 10px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .12s"
+                       onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"
+                       onclick="document.getElementById('dxf-filter').value='${esc}';setDxfFilter('${esc}')">
+                    <span style="color:var(--text3);margin-right:6px;font-variant-numeric:tabular-nums">${c}</span>${l}
+                  </div>`;
+          }).join("");
+          list.style.display = "none";
         }
         const sl = document.getElementById("dxf-op");
         if (sl) sl.value = "0.65";
@@ -10919,6 +10932,14 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
     if (!S.dxfData) return;
     S.dxfData.bscale = S.pxPerMeter / 1e3 * (parseFloat(factorPct) / 100);
     renderDxfLayer();
+  }
+  function toggleDxfLayerList() {
+    const list = document.getElementById("dxf-layer-list");
+    if (!list) return;
+    const info = document.getElementById("dxf-layer-info");
+    const open = list.style.display === "none" || !list.style.display;
+    list.style.display = open ? "block" : "none";
+    if (info) info.style.fontWeight = open ? "bold" : "";
   }
 
   // src/app.js
@@ -11101,6 +11122,7 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
   window.setDxfScale = setDxfScale;
   window.setDxfFilter = setDxfFilter;
   window.renderDxfLayer = renderDxfLayer;
+  window.toggleDxfLayerList = toggleDxfLayerList;
   window.openFSModal = openFSModal;
   window.closeFSModal = closeFSModal;
   window.resetFSForm = resetFSForm;

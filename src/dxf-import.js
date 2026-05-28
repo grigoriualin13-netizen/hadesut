@@ -239,10 +239,24 @@ export function loadDxf(inp) {
 
       const info = document.getElementById('dxf-layer-info');
       if (info) {
-        // Group by prefix for summary
-        const tops = [...layerSet].slice(0, 80).join(', ');
-        info.title = tops;
-        info.textContent = layerSet.size + ' straturi. Filtrează de ex: "PS Don" sau "DRUM".';
+        info.textContent = layerSet.size + ' straturi — click pentru listă';
+      }
+
+      // Populate layer list (sorted by entity count desc)
+      const list = document.getElementById('dxf-layer-list');
+      if (list) {
+        const counts = {};
+        for (const e of allEntities) counts[e.layer] = (counts[e.layer] || 0) + 1;
+        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+        list.innerHTML = sorted.map(([l, c]) => {
+          const esc = l.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          return `<div style="padding:3px 10px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .12s"
+                       onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"
+                       onclick="document.getElementById('dxf-filter').value='${esc}';setDxfFilter('${esc}')">
+                    <span style="color:var(--text3);margin-right:6px;font-variant-numeric:tabular-nums">${c}</span>${l}
+                  </div>`;
+        }).join('');
+        list.style.display = 'none';
       }
 
       const sl = document.getElementById('dxf-op');
@@ -289,4 +303,14 @@ export function setDxfScale(factorPct) {
   if (!S.dxfData) return;
   S.dxfData.bscale = (S.pxPerMeter / 1000) * (parseFloat(factorPct) / 100);
   renderDxfLayer();
+}
+
+// ── Toggle layer list panel ───────────────────────────────────────────────────
+export function toggleDxfLayerList() {
+  const list = document.getElementById('dxf-layer-list');
+  if (!list) return;
+  const info = document.getElementById('dxf-layer-info');
+  const open = list.style.display === 'none' || !list.style.display;
+  list.style.display = open ? 'block' : 'none';
+  if (info) info.style.fontWeight = open ? 'bold' : '';
 }
