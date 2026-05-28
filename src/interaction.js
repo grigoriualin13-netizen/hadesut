@@ -462,6 +462,8 @@ export function initKeyboard() {
       if (e.key === 's') setMode('select');
       if (e.key === 'c') setMode('connect');
       if (e.key === 'r') rotateSel(90);
+      if (e.key === 'm') startDim();
+      if (e.key === 'n') toggleMeasure();
       if (e.key === 'a' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); S.multiSel.clear(); S.EL.forEach(el => S.multiSel.add(el.id)); S.sel = null; render(); updateProps(); }
     }
   });
