@@ -238,9 +238,7 @@ export function loadDxf(inp) {
       if (ctrl) ctrl.style.display = 'flex';
 
       const info = document.getElementById('dxf-layer-info');
-      if (info) {
-        info.textContent = layerSet.size + ' straturi — click pentru listă';
-      }
+      if (info) info.textContent = layerSet.size + ' straturi';
 
       // Populate layer list (sorted by entity count desc)
       const list = document.getElementById('dxf-layer-list');
@@ -307,10 +305,10 @@ export function setDxfScale(factorPct) {
 
 // ── Toggle layer list panel ───────────────────────────────────────────────────
 export function toggleDxfLayerList() {
-  const list = document.getElementById('dxf-layer-list');
+  const list  = document.getElementById('dxf-layer-list');
   if (!list) return;
-  const info = document.getElementById('dxf-layer-info');
-  const open = list.style.display === 'none' || !list.style.display;
-  list.style.display = open ? 'block' : 'none';
-  if (info) info.style.fontWeight = open ? 'bold' : '';
+  const arrow = document.getElementById('dxf-layer-arrow');
+  const open  = list.style.display === 'none' || !list.style.display;
+  list.style.display  = open ? 'block' : 'none';
+  if (arrow) arrow.textContent = open ? '▲' : '▼';
 }

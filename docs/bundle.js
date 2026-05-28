@@ -10880,9 +10880,7 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
         const ctrl = document.getElementById("dxf-controls");
         if (ctrl) ctrl.style.display = "flex";
         const info = document.getElementById("dxf-layer-info");
-        if (info) {
-          info.textContent = layerSet.size + " straturi \u2014 click pentru list\u0103";
-        }
+        if (info) info.textContent = layerSet.size + " straturi";
         const list = document.getElementById("dxf-layer-list");
         if (list) {
           const counts = {};
@@ -10936,10 +10934,10 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
   function toggleDxfLayerList() {
     const list = document.getElementById("dxf-layer-list");
     if (!list) return;
-    const info = document.getElementById("dxf-layer-info");
+    const arrow = document.getElementById("dxf-layer-arrow");
     const open = list.style.display === "none" || !list.style.display;
     list.style.display = open ? "block" : "none";
-    if (info) info.style.fontWeight = open ? "bold" : "";
+    if (arrow) arrow.textContent = open ? "\u25B2" : "\u25BC";
   }
 
   // src/app.js
