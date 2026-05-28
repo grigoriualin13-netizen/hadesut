@@ -785,18 +785,21 @@
 
   // src/pole-catalog.js
   function getPoleData(el) {
-    if (!el) return { H: null, T_max: null, desc: "?", catH: null, catT: null, consoleDesc: null };
+    if (!el) return { H: null, T_max: null, G_max: null, V_max: null, desc: "?", catH: null, catT: null, consoleDesc: null };
     const cat = POLE_CATALOG[el.type] ?? {};
     const consCat = el.console_type ? CONSOLE_CATALOG[el.console_type] ?? {} : {};
     const consT = consCat.T_max ?? null;
+    const consG = consCat.G_max ?? null;
+    const consV = consCat.V_max ?? null;
     const poleT = cat.T_max ?? null;
     return {
       H: el.h_prindere_ovr != null ? el.h_prindere_ovr : cat.H ?? null,
       T_max: el.T_max_ovr != null ? el.T_max_ovr : consT ?? poleT,
+      G_max: consG,
+      V_max: consV,
       desc: cat.desc ?? el.type,
       catH: cat.H ?? null,
       catT: consT ?? poleT,
-      // placeholder afișat în câmpul T_max din UI
       consoleDesc: consCat.desc ?? null
     };
   }
@@ -822,42 +825,48 @@
       };
       CONSOLE_CATALOG = {
         // ── CSO 1100 — consolă de susținere orizontală 1100 mm ───────────────────
-        cso_1100_v1: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 / OL37 v1 \u2014 L63\xD763\xD76", T_max: 163 },
-        cso_1100_v2: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 / OL37 v2 \u2014 L60\xD760\xD76", T_max: 142 },
-        cso_1100_v3: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 / OL37 v3 \u2014 L60 SR EN", T_max: 140 },
-        cso_1100_v4: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 / OL37 v4 \u2014 L70\xD770\xD77", T_max: 220 },
-        cso_1100_v5: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 / OL52 v5 \u2014 L60\xD760\xD76", T_max: 198 },
-        cso_1100_v6: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 / OL52 v6 \u2014 asimetric", T_max: 114 },
+        cso_1100_v1: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 / OL37 v1 \u2014 L63\xD763\xD76", G_max: 440, V_max: 240, T_max: 163 },
+        cso_1100_v2: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 / OL37 v2 \u2014 L60\xD760\xD76", G_max: 440, V_max: 240, T_max: 142 },
+        cso_1100_v3: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 / OL37 v3 \u2014 L60 SR EN", G_max: 440, V_max: 240, T_max: 140 },
+        cso_1100_v4: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 / OL37 v4 \u2014 L70\xD770\xD77", G_max: 440, V_max: 240, T_max: 220 },
+        cso_1100_v5: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 / OL52 v5 \u2014 L60\xD760\xD76", G_max: 440, V_max: 240, T_max: 198 },
+        cso_1100_v6: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 / OL52 v6 \u2014 asimetric", G_max: 440, V_max: 240, T_max: 114 },
+        cso_1100: { group: "CSO 1100 \u2014 sus\u021Binere S.C.", desc: "CSO 1100 (ST34-MT 2026) \u2014 L60\xD760\xD76 S335", G_max: 440, V_max: 240, T_max: 198 },
         // ── CSO 1385 — consolă de susținere orizontală 1385 mm ───────────────────
-        cso_1385_v1: { group: "CSO 1385 \u2014 sus\u021Binere S.C.", desc: "CSO 1385 / OL37 v1 \u2014 L70/L60", T_max: 138 },
-        cso_1385_v2: { group: "CSO 1385 \u2014 sus\u021Binere S.C.", desc: "CSO 1385 / OL37 v2 \u2014 L70/L60", T_max: 143 },
-        cso_1385_v3: { group: "CSO 1385 \u2014 sus\u021Binere S.C.", desc: "CSO 1385 / OL52 v3 \u2014 L70/L60", T_max: 198 },
+        cso_1385_v1: { group: "CSO 1385 \u2014 sus\u021Binere S.C.", desc: "CSO 1385 / OL37 v1 \u2014 L70/L60", G_max: 460, V_max: 240, T_max: 138 },
+        cso_1385_v2: { group: "CSO 1385 \u2014 sus\u021Binere S.C.", desc: "CSO 1385 / OL37 v2 \u2014 L70/L60", G_max: 460, V_max: 240, T_max: 143 },
+        cso_1385_v3: { group: "CSO 1385 \u2014 sus\u021Binere S.C.", desc: "CSO 1385 / OL52 v3 \u2014 L70/L60", G_max: 460, V_max: 240, T_max: 198 },
+        cso_1385: { group: "CSO 1385 \u2014 sus\u021Binere S.C.", desc: "CSO 1385 (ST34-MT 2026) \u2014 L70/L60 S335", G_max: 460, V_max: 240, T_max: 198 },
         // ── CIE — consolă izolație elastică susținere ────────────────────────────
-        cie_v1: { group: "CIE \u2014 izol. elastic\u0103 sus\u021B.", desc: "CIE / OL37 v1 \u2014 L70/L70 (min.)", T_max: 86 },
-        cie_v23: { group: "CIE \u2014 izol. elastic\u0103 sus\u021B.", desc: "CIE / OL37 v2-3 \u2014 cu L80\xD780\xD78", T_max: 129 },
-        cie_v45: { group: "CIE \u2014 izol. elastic\u0103 sus\u021B.", desc: "CIE / OL37 v4-5 \u2014 STAS 7836", T_max: 118 },
-        cie_v67: { group: "CIE \u2014 izol. elastic\u0103 sus\u021B.", desc: "CIE / OL52 v6-7", T_max: 123 },
-        // ── CDS — consolă dezaxată susținere ─────────────────────────────────────
-        cds_ol37: { group: "CDS \u2014 dezaxat\u0103 sus\u021Binere", desc: "CDS / OL37", T_max: 70 },
-        cds_ol52: { group: "CDS \u2014 dezaxat\u0103 sus\u021Binere", desc: "CDS / OL52", T_max: 100 },
+        cie_v1: { group: "CIE \u2014 izol. elastic\u0103 sus\u021B.", desc: "CIE / OL37 v1 \u2014 L70/L70 (min.)", G_max: 400, V_max: 155, T_max: 86 },
+        cie_v23: { group: "CIE \u2014 izol. elastic\u0103 sus\u021B.", desc: "CIE / OL37 v2-3 \u2014 cu L80\xD780\xD78", G_max: 400, V_max: 155, T_max: 129 },
+        cie_v45: { group: "CIE \u2014 izol. elastic\u0103 sus\u021B.", desc: "CIE / OL37 v4-5 \u2014 STAS 7836", G_max: 400, V_max: 155, T_max: 118 },
+        cie_v67: { group: "CIE \u2014 izol. elastic\u0103 sus\u021B.", desc: "CIE / OL52 v6-7", G_max: 400, V_max: 155, T_max: 123 },
+        cie_150: { group: "CIE \u2014 izol. elastic\u0103 sus\u021B.", desc: "CIE 150 (ST34-MT 2026) \u2014 L70\xD770\xD77 S335", G_max: 400, V_max: 155, T_max: 123 },
+        // ── CDS / CDzS — consolă dezaxată susținere ──────────────────────────────
+        cds_ol37: { group: "CDS \u2014 dezaxat\u0103 sus\u021Binere", desc: "CDS / OL37", G_max: 320, V_max: 180, T_max: 70 },
+        cds_ol52: { group: "CDS \u2014 dezaxat\u0103 sus\u021Binere", desc: "CDS / OL52", G_max: 320, V_max: 180, T_max: 100 },
+        cdzs: { group: "CDzS \u2014 dezaxat\u0103 sus\u021Binere", desc: "CDzS (ST34-MT 2026)", G_max: 320, V_max: 180, T_max: 100 },
         // ── CDV 550 — consolă de derivație ───────────────────────────────────────
-        cdv_550: { group: "CDV 550 \u2014 deriva\u021Bie", desc: "CDV 550", T_max: 150 },
+        cdv_550: { group: "CDV 550 \u2014 deriva\u021Bie", desc: "CDV 550", G_max: 150, V_max: 100, T_max: 150 },
         // ── CIT 140 — consolă de întindere și terminală ───────────────────────────
-        cit_140: { group: "CIT 140 \u2014 \xEEntindere/term.", desc: "CIT 140", T_max: 1500 },
-        // ── CDI — consolă dezaxată de întindere ──────────────────────────────────
-        cdi_ol37: { group: "CDI \u2014 dezaxat\u0103 \xEEntindere", desc: "CDI / OL37", T_max: 800 },
+        cit_140: { group: "CIT 140 \u2014 \xEEntindere/term.", desc: "CIT 140", G_max: 330, V_max: 350, T_max: 1500 },
+        // ── CDI / CDzI — consolă dezaxată de întindere ───────────────────────────
+        cdi_ol37: { group: "CDI \u2014 dezaxat\u0103 \xEEntindere", desc: "CDI / OL37", G_max: 250, V_max: 150, T_max: 800 },
+        cdzi: { group: "CDzI \u2014 dezaxat\u0103 \xEEntindere", desc: "CDzI (ST34-MT 2026)", G_max: 250, V_max: 150, T_max: 800 },
         // ── CSS / CSI — consolă orizontală dublu circuit susținere ───────────────
-        css: { group: "CSS/CSI \u2014 d.c. sus\u021Binere", desc: "CSS \u2014 d.c. sus\u021B. superioar\u0103", T_max: 350 },
-        csi: { group: "CSS/CSI \u2014 d.c. sus\u021Binere", desc: "CSI \u2014 d.c. sus\u021B. inferioar\u0103", T_max: 145 },
+        css: { group: "CSS/CSI \u2014 d.c. sus\u021Binere", desc: "CSS \u2014 d.c. sus\u021B. superioar\u0103", G_max: 400, V_max: 250, T_max: 350 },
+        csi: { group: "CSS/CSI \u2014 d.c. sus\u021Binere", desc: "CSI \u2014 d.c. sus\u021B. inferioar\u0103", G_max: 400, V_max: 250, T_max: 145 },
         // ── CDCS "Păianjen" — consolă d.c. susținere izolație elastică ───────────
-        cdcs_v1: { group: 'CDCS "P\u0103ianjen" \u2014 d.c. sus\u021B. el.', desc: "CDCS v1 \u2014 U10", T_max: 116 },
-        cdcs_v2: { group: 'CDCS "P\u0103ianjen" \u2014 d.c. sus\u021B. el.', desc: "CDCS v2 \u2014 U8", T_max: 87 },
-        cdcs_v3: { group: 'CDCS "P\u0103ianjen" \u2014 d.c. sus\u021B. el.', desc: "CDCS v3 \u2014 U100\xD750\xD76", T_max: 107 },
-        cdcs_v4: { group: 'CDCS "P\u0103ianjen" \u2014 d.c. sus\u021B. el.', desc: "CDCS v4 \u2014 U80\xD760\xD75", T_max: 119 },
+        cdcs_v1: { group: 'CDCS "P\u0103ianjen" \u2014 d.c. sus\u021B. el.', desc: "CDCS v1 \u2014 U10", G_max: 200, V_max: 200, T_max: 116 },
+        cdcs_v2: { group: 'CDCS "P\u0103ianjen" \u2014 d.c. sus\u021B. el.', desc: "CDCS v2 \u2014 U8", G_max: 200, V_max: 200, T_max: 87 },
+        cdcs_v3: { group: 'CDCS "P\u0103ianjen" \u2014 d.c. sus\u021B. el.', desc: "CDCS v3 \u2014 U100\xD750\xD76", G_max: 200, V_max: 200, T_max: 107 },
+        cdcs_v4: { group: 'CDCS "P\u0103ianjen" \u2014 d.c. sus\u021B. el.', desc: "CDCS v4 \u2014 U80\xD760\xD75", G_max: 200, V_max: 200, T_max: 119 },
+        cdcs: { group: 'CDCS "P\u0103ianjen" \u2014 d.c. sus\u021B. el.', desc: "CDCS (ST34-MT 2026) \u2014 U10", G_max: 200, V_max: 200, T_max: 116 },
         // ── CIS/CII — consolă orizontală d.c. de întindere ───────────────────────
-        cis_cii: { group: "CIS/CII \u2014 d.c. \xEEntindere", desc: "CIS/CII", T_max: 1e3 },
+        cis_cii: { group: "CIS/CII \u2014 d.c. \xEEntindere", desc: "CIS/CII", G_max: 300, V_max: 200, T_max: 1e3 },
         // ── CDCI — consolă d.c. de întindere izolație elastică ───────────────────
-        cdci: { group: "CDCI \u2014 d.c. \xEEntindere el.", desc: "CDCI", T_max: 1250 }
+        cdci: { group: "CDCI \u2014 d.c. \xEEntindere el.", desc: "CDCI", G_max: 320, V_max: 225, T_max: 1250 }
       };
     }
   });
@@ -9153,6 +9162,10 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
   var L_IZ_MT = 0.79;
   var _twindOverrides = /* @__PURE__ */ new Map();
   var _kpdimOverrides = /* @__PURE__ */ new Map();
+  var _sagMeasOverrides = /* @__PURE__ */ new Map();
+  function getSagMeasOverrides() {
+    return _sagMeasOverrides;
+  }
   function spanKey(cns2) {
     const a = cns2[0].fromElId || "", b = cns2[0].toElId || "";
     return a && b ? a < b ? `${a}|${b}` : `${b}|${a}` : cns2[0].id || "";
@@ -9197,6 +9210,11 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
     const e = S.EL.find((x) => x.id === id);
     return e ? e.label || e.type : "?";
   }
+  function isTensionConsole(ck) {
+    if (!ck) return false;
+    const k = ck.toLowerCase();
+    return k.startsWith("cit") || k.startsWith("cdi") || k.startsWith("cdci");
+  }
   function getSpanPoleData(fromElId, toElId) {
     const elL = S.EL.find((x) => x.id === fromElId);
     const elR = S.EL.find((x) => x.id === toElId);
@@ -9212,15 +9230,24 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
     const cotaR = elR?.cota_teren;
     const dh = cotaL != null && cotaR != null ? cotaR + HR - (cotaL + HL) : 0;
     const hasDh = cotaL != null && cotaR != null;
+    const ckL = elL?.console_type ?? null;
+    const ckR = elR?.console_type ?? null;
+    const hasSwing = !isTensionConsole(ckL) || !isTensionConsole(ckR);
+    const gL = pL.G_max, gR = pR.G_max, vL = pL.V_max, vR = pR.V_max;
+    const G_max = gL != null && gR != null ? Math.min(gL, gR) : gL ?? gR ?? null;
+    const V_max = vL != null && vR != null ? Math.min(vL, vR) : vL ?? vR ?? null;
     return {
       H: (HL + HR) / 2,
       HL,
       HR,
       T_max,
+      G_max,
+      V_max,
       dh,
       hasDh,
       cotaL,
       cotaR,
+      hasSwing,
       consoleL: pL.consoleDesc,
       consoleR: pR.consoleDesc
     };
@@ -9264,12 +9291,13 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       const cd = CONDUCTORS[acsr_key];
       const spanPole = getSpanPoleData(cns2[0].fromElId, cns2[0].toElId);
       const span_kpdim = _kpdimOverrides.get(key) ?? _kpdim;
-      let T0, KP, sag40, T_crit, delta, fg, T_wind_calc, gabarit;
+      let T0, KP, sag40, T_crit, delta, fg, T_wind_calc, gabarit, f40_real, gabarit_real, res;
+      let G_actual = null, V_actual = null;
       try {
         const terrainProfile = spanPole.cotaL != null && spanPole.cotaR != null ? [{ x: 0, y: spanPole.cotaL }, { x: L, y: spanPole.cotaR }] : [];
         const H_wind = Math.max(spanPole.HL, spanPole.HR);
         const Av = _avSpan ? L : Math.max(L, 40);
-        const res = calcSpan(
+        res = calcSpan(
           acsr_key,
           { zone: _zone, H: H_wind, Av, terrain: "II" },
           {
@@ -9292,11 +9320,28 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
         const T_wind_used = _twindOverrides.get(key) ?? T_wind_calc;
         const g4n = res.loads.normate.g4;
         const g6n = res.loads.normate.g6;
-        delta = g4n * L * L / (8 * T_wind_used) + L_IZ_MT * (g4n / g6n);
+        delta = g4n * L * L / (8 * T_wind_used) + (spanPole.hasSwing ? L_IZ_MT * (g4n / g6n) : 0);
         fg = res.loads.normate.g1 * L * L / (8 * T0);
+        G_actual = res.loads.normate.g3 * L;
+        V_actual = res.loads.normate.g4 * L;
       } catch (e) {
-        rows += `<tr><td colspan="12" style="color:#ef4444;padding:4px;font-size:8px">${acsr_key} \u2014 eroare calcul: ${e.message}</td></tr>`;
+        rows += `<tr><td colspan="15" style="color:#ef4444;padding:4px;font-size:8px">${acsr_key} \u2014 eroare calcul: ${e.message}</td></tr>`;
         return;
+      }
+      const sfm = _sagMeasOverrides.get(key);
+      if (sfm?.f_meas > 0) {
+        try {
+          const EA_sfm = cd.E * cd.A;
+          const g1 = res.loads.normate.g1;
+          const f_sag = spanPole.H - sfm.f_meas;
+          if (f_sag > 0.1) {
+            const T_h_f = g1 * L * L / (8 * f_sag);
+            const T_40r = solveStateEquation(g1, T_h_f, sfm.T_meas, g1, 40, L, EA_sfm, cd.alpha);
+            f40_real = g1 * L * L / (8 * T_40r);
+            gabarit_real = spanPole.H - f40_real;
+          }
+        } catch (_e) {
+        }
       }
       const fromLbl = elLabel(cns2[0].fromElId);
       const toLbl = elLabel(cns2[0].toElId);
@@ -9336,6 +9381,51 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
                     font-size:8px;padding:2px 3px;border-radius:3px;
                     font-family:'JetBrains Mono',monospace">
     </td>`;
+      const hasSfm = (sfm?.f_meas ?? 0) > 0;
+      const sfmInpStyle = (active) => `border:1px solid ${active ? "#f59e0b" : "var(--border)"};background:${active ? "rgba(245,158,11,0.15)" : "var(--bg2)"};color:${active ? "#f59e0b" : "var(--text2)"};font-size:7.5px;padding:2px;border-radius:3px;font-family:'JetBrains Mono',monospace`;
+      const terenCell = `<td style="padding:2px 3px;border:1px solid var(--border2);text-align:center;white-space:nowrap">
+      <input type="number" class="fmeas-inp" data-key="${key}"
+             placeholder="gab[m]" value="${hasSfm ? sfm.f_meas.toFixed(2) : ""}"
+             min="0.01" max="30" step="0.01"
+             title="Gabarit m\u0103surat \xEEn teren [m] \u2014 \xEEn\u0103l\u021Bimea conductorului fa\u021B\u0103 de sol. Ex: 7.0. Se converte\u0219te intern la s\u0103geat\u0103: f_sag = H_prindere \u2212 gabarit. Introdu \u0219i temperatura \u2192 f\u2084\u2080 real prin Lam\xE9."
+             style="width:44px;${sfmInpStyle(hasSfm)}">
+      <input type="number" class="tmeas-inp" data-key="${key}"
+             placeholder="T\xB0C" value="${hasSfm ? sfm.T_meas.toFixed(0) : ""}"
+             min="-40" max="50" step="1"
+             title="Temperatura la care ai m\u0103surat gabaritul [\xB0C]"
+             style="width:34px;${sfmInpStyle(hasSfm)}">
+    </td>`;
+      const f40rCell = f40_real != null ? `<td style="padding:3px 4px;border:1px solid var(--border2);font-size:8.5px;text-align:right;
+                   font-family:'JetBrains Mono',monospace;color:#f59e0b;font-weight:bold"
+             title="f\u2084\u2080 calculat din sageat\u0103 m\u0103surat\u0103 + Lam\xE9. Gabarit midspan (simplificat).">
+           ${f40_real.toFixed(2)} m<br><span style="font-size:7px;color:${gabarit_real < 7 ? "#ef4444" : "#22c55e"}"
+             title="Gabarit real la midspan">${gabarit_real.toFixed(2)} m gab.</span></td>` : `<td style="padding:3px 6px;border:1px solid var(--border2);font-size:8px;text-align:center;color:var(--text3)">\u2014</td>`;
+      const g3n = res.loads.normate.g3;
+      const g4n_cons = res.loads.normate.g4;
+      const L_max_G = spanPole.G_max && g3n > 0 ? spanPole.G_max / g3n : null;
+      const L_max_V = spanPole.V_max && g4n_cons > 0 ? spanPole.V_max / g4n_cons : null;
+      const L_max_cons = L_max_G != null && L_max_V != null ? Math.min(L_max_G, L_max_V) : L_max_G ?? L_max_V ?? null;
+      const G_pct = spanPole.G_max && G_actual ? G_actual / spanPole.G_max * 100 : null;
+      const V_pct = spanPole.V_max && V_actual ? V_actual / spanPole.V_max * 100 : null;
+      const T_pct = spanPole.T_max && T0 ? T0 / spanPole.T_max * 100 : null;
+      const maxPct = Math.max(G_pct ?? 0, V_pct ?? 0, T_pct ?? 0);
+      const pvtColor = (pct) => pct == null ? "var(--text3)" : pct > 100 ? "#ef4444" : pct > 80 ? "#ff9f43" : "#22c55e";
+      const pvtBold = (pct) => pct != null && pct > 80 ? "font-weight:bold;" : "";
+      const lmStr = (lm) => lm != null ? ` (L_max=${lm.toFixed(0)}m)` : "";
+      const pvtStr = (lbl, pct, maxV, lm) => pct != null ? `<span style="color:${pvtColor(pct)};${pvtBold(pct)}">${lbl}:${pct.toFixed(0)}%${pct > 100 ? ` \u26A0 max=${maxV}daN` : ""}</span>` + (pct > 100 && lm != null ? `<br><span style="color:#ef4444;font-size:7px;font-weight:bold"> \u2192 reduce L&lt;${lm.toFixed(0)}m</span>` : `<span style="color:var(--text3);font-size:7px"> /${maxV}daN</span>`) : `<span style="color:var(--text3)">${lbl}:\u2014</span>`;
+      const pvtTitle = `Verificare consol\u0103 ST34-MT:
+G=${G_actual?.toFixed(1) ?? "?"} daN / G_max=${spanPole.G_max ?? "?"} daN${lmStr(L_max_G)} \u2014 vertical (cond+ch)
+V=${V_actual?.toFixed(1) ?? "?"} daN / V_max=${spanPole.V_max ?? "?"} daN${lmStr(L_max_V)} \u2014 transversal (v\xE2nt)
+T=${T0?.toFixed(0) ?? "?"} daN / T_max=${spanPole.T_max ?? "?"} daN \u2014 axial (trac\u021Biune dim.)
+` + (L_max_cons != null ? `
+Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") + (G_pct == null && V_pct == null ? "\nSeteaz\u0103 tipul de consol\u0103 \xEEn propriet\u0103\u021Bile st\xE2lpului." : "");
+      const pvtBgColor = maxPct > 100 ? "rgba(239,68,68,0.08)" : maxPct > 80 ? "rgba(255,159,67,0.08)" : "transparent";
+      const hasGVT = G_pct != null || V_pct != null || T_pct != null;
+      const consoleCell = `<td style="padding:3px 5px;border:1px solid var(--border2);font-size:7.5px;
+                              text-align:left;white-space:nowrap;background:${pvtBgColor}"
+                             title="${pvtTitle}">
+      ${hasGVT ? pvtStr("G", G_pct, spanPole.G_max, L_max_G) + "<br>" + pvtStr("V", V_pct, spanPole.V_max, L_max_V) + "<br>" + pvtStr("T", T_pct, spanPole.T_max, null) + (L_max_cons != null ? `<br><span style="color:var(--text3);font-size:7px">L_max=${L_max_cons.toFixed(0)}m</span>` : "") : `<span style="color:var(--text3);font-size:7px">consol\u0103<br>nesetat\u0103</span>`}
+    </td>`;
       rows += `<tr>
       ${tdc(`${fromLbl} \u2192 ${toLbl}`, ";font-size:7.5px;color:var(--text2)")}
       ${tdc(fazeLbl)}
@@ -9352,6 +9442,9 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
         `${gabarit.toFixed(2)} m${gabarit < 7 ? " \u26A0" : ""}`,
         gabarit < 7 ? ";color:#ef4444;font-weight:bold" : ";color:#22c55e;font-weight:bold"
       ) : tdc("\u2014", ";color:var(--text3);font-size:8px")}
+      ${terenCell}
+      ${f40rCell}
+      ${consoleCell}
     </tr>`;
     });
     const metZ = METEO_ZONES[_zone] || {};
@@ -9363,15 +9456,18 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
         ${th("H [m]")}
         ${th("T_wind [daN]")}
         ${th("f_max 40\xB0C [m]")}${th("\u03B4 v\xE2nt max [m]")}${th("T_crit [\xB0C]")}${th("Gabarit [m]")}
+        ${th("gab.teren/T\xB0C")}${th("f\u2084\u2080 real [m]")}${th("Consol\u0103 G/V/T")}
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div style="font-size:7.5px;color:var(--text3);padding:5px 4px;border-top:1px solid var(--border)">
-      ${!_kpdim || _kpdim === 0.23 ? "NTE 003/2015 (KP=23%)" : "SR EN 50341-2-24 (KP=47%)"} | Zon\u0103 ${_zone}: Vb=${metZ.Vb ?? "?"}m/s \xB7 ch=${metZ.b_ch ?? "?"}mm \xB7 \u03C1=${metZ.rho_ch ?? "?"}kg/m\xB3 | H=${_H}m &nbsp;|&nbsp;
-      T\u2080=min(KP_dim\xB7RTS, EDS, T_max_stalp) &nbsp;|&nbsp; H_v\xE2nt=max(H_stg,H_dr) &nbsp;|&nbsp; Av=${_avSpan ? "L (CALMECO)" : "max(L,40) (NTE)"} &nbsp;|&nbsp; f_max=40\xB0C &nbsp;|&nbsp; \u03B4=catenary(+15+vmax)+lan\u021B(${L_IZ_MT}m) &nbsp;|&nbsp;
+      ${!_kpdim ? "Auto \u2014 EDS SR EN 50341-2-24 (CALMECO)" : _kpdim === 0.23 ? "NTE legacy \u2014 KP=23% (multi-span)" : `SR EN 50341-2-24 \u2014 KP=${(_kpdim * 100).toFixed(0)}%`} | Zon\u0103 ${_zone}: Vb=${metZ.Vb ?? "?"}m/s \xB7 ch=${metZ.b_ch ?? "?"}mm \xB7 \u03C1=${metZ.rho_ch ?? "?"}kg/m\xB3 | H=${_H}m &nbsp;|&nbsp;
+      T\u2080=min(KP_dim\xB7RTS, EDS, T_max_stalp) &nbsp;|&nbsp; H_v\xE2nt=max(H_stg,H_dr) &nbsp;|&nbsp; Av=${_avSpan ? "L (CALMECO)" : "max(L,40) (NTE)"} &nbsp;|&nbsp; f_max=40\xB0C &nbsp;|&nbsp; \u03B4=catenary(+15+vmax)+lan\u021B(${L_IZ_MT}m, doar sus\u021Binere) &nbsp;|&nbsp;
       <span style="color:#ff9f43">T_wind: placeholder=calculat, portocaliu=breviar CALMECO</span> &nbsp;|&nbsp;
       <span style="color:#a855f7">H implicit (pentru st\xE2lpi f\u0103r\u0103 catalog): ${_H}m</span> &nbsp;|&nbsp;
-      <span style="color:#22c55e">Gabarit \u22657m \u2713 (NTE 003 art.137) \u2014 apare numai c\xE2nd cotele de teren sunt introduse</span>
+      <span style="color:#22c55e">Gabarit \u22657m \u2713 (NTE 003 art.137) \u2014 apare numai c\xE2nd cotele de teren sunt introduse</span> &nbsp;|&nbsp;
+      <span style="color:#f59e0b">gab.teren: introdu gabaritul m\u0103surat [m] (\xEEn\u0103l\u021Bimea conductorului fa\u021B\u0103 de sol) + temperatura [\xB0C] \u2192 f\u2084\u2080 real prin Lam\xE9 (verificare linie existent\u0103)</span> &nbsp;|&nbsp;
+      <span style="color:#22c55e">Consol\u0103 G/V/T (ST34-MT): G=greutate\xB7L (normate g3), V=v\xE2nt\xB7L (normate g4), T=T\u2080_dim \u2014 verde \u226480%, portocaliu 80\u2013100%, ro\u0219u &gt;100%</span>
     </div>`;
     body.querySelectorAll("input.twind-inp").forEach((inp) => {
       inp.addEventListener("change", () => {
@@ -9393,6 +9489,21 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
           _kpdimOverrides.set(k, pct / 100);
         } else {
           _kpdimOverrides.delete(k);
+        }
+        runSagMT();
+      });
+    });
+    body.querySelectorAll("input.fmeas-inp, input.tmeas-inp").forEach((inp) => {
+      inp.addEventListener("change", () => {
+        const k = inp.dataset.key;
+        const fInp = body.querySelector(`input.fmeas-inp[data-key="${k}"]`);
+        const tInp = body.querySelector(`input.tmeas-inp[data-key="${k}"]`);
+        const fVal = parseFloat(fInp?.value);
+        const tVal = parseFloat(tInp?.value);
+        if (fVal > 0 && isFinite(fVal)) {
+          _sagMeasOverrides.set(k, { f_meas: fVal, T_meas: isFinite(tVal) ? tVal : 20 });
+        } else {
+          _sagMeasOverrides.delete(k);
         }
         runSagMT();
       });
@@ -10115,6 +10226,26 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
           q_wind = res.loads?.normate?.g4 ?? null;
         } catch (_) {
         }
+        let sag40_real = null, sag10_real = null, T40_real = null, T10_real = null;
+        const sfmKey = seg.fromId < seg.toId ? `${seg.fromId}|${seg.toId}` : `${seg.toId}|${seg.fromId}`;
+        const sfm = getSagMeasOverrides().get(sfmKey);
+        if (sfm?.f_meas > 0) {
+          try {
+            const cd = CONDUCTORS[acsr_key];
+            const EA = cd.E * cd.A;
+            const g1 = cd.gc;
+            const f_sag = H_span - sfm.f_meas;
+            if (f_sag > 0.1) {
+              const T_hf = g1 * L * L / (8 * f_sag);
+              T40_real = solveStateEquation(g1, T_hf, sfm.T_meas, g1, 40, L, EA, cd.alpha);
+              sag40_real = g1 * L * L / (8 * T40_real);
+              const T10r = solveStateEquation(g1, T_hf, sfm.T_meas, g1, 10, L, EA, cd.alpha);
+              sag10_real = g1 * L * L / (8 * T10r);
+              T10_real = T10r;
+            }
+          } catch (_) {
+          }
+        }
         return {
           fromId: seg.fromId,
           toId: seg.toId,
@@ -10131,7 +10262,13 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
           KP_calc,
           T_crit,
           T_wind,
-          q_wind
+          q_wind,
+          sag40_real,
+          sag10_real,
+          T40_real,
+          T10_real,
+          f_meas: sfm?.f_meas ?? null,
+          T_meas: sfm?.T_meas ?? null
         };
       });
       return {
@@ -10162,10 +10299,13 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       y_bot = Math.min(y_bot, ct - 2);
     });
     spans.forEach((sp, i) => {
-      if (sp.sag40 == null) return;
       const a_l = poles[i].cota_teren + poles[i].H;
       const a_r = poles[i + 1].cota_teren + poles[i + 1].H;
-      y_bot = Math.min(y_bot, (a_l + a_r) / 2 - sp.sag40 - 1.5);
+      const chord_mid = (a_l + a_r) / 2;
+      if (sp.sag40 != null)
+        y_bot = Math.min(y_bot, chord_mid - sp.sag40 - 1.5);
+      if (sp.sag40_real != null)
+        y_bot = Math.min(y_bot, chord_mid - sp.sag40_real - 1.5);
     });
     if (!isFinite(y_top)) y_top = 15;
     if (!isFinite(y_bot)) y_bot = 0;
@@ -10244,47 +10384,105 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
         const sag_x = q_n != null && T_n != null ? q_n * x_m * (sp.L_m - x_m) / (2 * T_n) : (sag_fb ?? 0) * 4 * t * (1 - t);
         return `${sx(xm[i] + x_m).toFixed(1)},${sy(chord - sag_x).toFixed(1)}`;
       }).join(" ");
+      let gab40 = null, gab10 = null;
+      if (hasCota) {
+        if (sp.sag40 != null) {
+          const t = t_max40;
+          const chord = a_l + (a_r - a_l) * t;
+          const cond = chord - sp.sag40;
+          const terr = poles[i].cota_teren + (poles[i + 1].cota_teren - poles[i].cota_teren) * t;
+          gab40 = { xpx: sx(xm[i] + x_max40), yc: sy(cond), yt: sy(terr), cl: cond - terr };
+        }
+        if (sp.sag10 != null) {
+          const t = t_max10;
+          const chord = a_l + (a_r - a_l) * t;
+          const cond = chord - sp.sag10;
+          const terr = poles[i].cota_teren + (poles[i + 1].cota_teren - poles[i].cota_teren) * t;
+          gab10 = { xpx: sx(xm[i] + x_max10), yc: sy(cond), yt: sy(terr), cl: cond - terr };
+        }
+      }
       if (sp.sag40 != null) {
         s += `<polyline points="${catPts(sp.q40, sp.T40, sp.sag40)}" fill="none" stroke="#f97316" stroke-width="2"/>`;
-        const chord_max40 = a_l + (a_r - a_l) * t_max40;
-        const cond40_max = chord_max40 - sp.sag40;
-        const x_sag_px = sx(xm[i] + x_max40);
-        const y40 = sy(cond40_max);
-        s += `<text x="${x_sag_px.toFixed(1)}" y="${(y40 + 12).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#f97316">f\u2084\u2080=${sp.sag40.toFixed(2)} m</text>`;
-        if (hasCota) {
-          const terrain40 = poles[i].cota_teren + (poles[i + 1].cota_teren - poles[i].cota_teren) * t_max40;
-          const clearance40 = cond40_max - terrain40;
-          const ok40 = clearance40 >= GABARIT_MIN;
-          const col40 = ok40 ? "#22c55e" : "#ef4444";
-          const y_terr40 = sy(terrain40);
-          const xg40 = x_sag_px;
-          s += `<line x1="${xg40.toFixed(1)}" y1="${y_terr40.toFixed(1)}" x2="${xg40.toFixed(1)}" y2="${y40.toFixed(1)}" stroke="${col40}" stroke-width="1.3" stroke-dasharray="3,2"/>`;
-          s += `<polygon points="${xg40.toFixed(1)},${y40.toFixed(1)} ${(xg40 - 3.5).toFixed(1)},${(y40 + 7).toFixed(1)} ${(xg40 + 3.5).toFixed(1)},${(y40 + 7).toFixed(1)}" fill="${col40}"/>`;
-          s += `<polygon points="${xg40.toFixed(1)},${y_terr40.toFixed(1)} ${(xg40 - 3.5).toFixed(1)},${(y_terr40 - 7).toFixed(1)} ${(xg40 + 3.5).toFixed(1)},${(y_terr40 - 7).toFixed(1)}" fill="${col40}"/>`;
-          const y_lbl40 = (y40 + y_terr40) / 2;
-          s += `<rect x="${(xg40 - 22).toFixed(1)}" y="${(y_lbl40 - 8).toFixed(1)}" width="44" height="13" rx="3" fill="${ok40 ? "rgba(34,197,94,.15)" : "rgba(239,68,68,.15)"}" stroke="${col40}" stroke-width=".6"/>`;
-          s += `<text x="${xg40.toFixed(1)}" y="${(y_lbl40 + 2).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="${col40}" font-weight="700">g\u2084\u2080=${clearance40.toFixed(2)}m${ok40 ? "" : " \u26A0"}</text>`;
+        if (sp.L_m >= 30) {
+          const y40lbl = sy(a_l + (a_r - a_l) * t_max40 - sp.sag40);
+          s += `<text x="${sx(xm[i] + x_max40).toFixed(1)}" y="${(y40lbl + 12).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#f97316">f\u2084\u2080=${sp.sag40.toFixed(2)} m</text>`;
         }
       }
       if (sp.sag10 != null) {
         s += `<polyline points="${catPts(sp.q10, sp.T10, sp.sag10)}" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="7,3"/>`;
-        const cond10_max = a_l + (a_r - a_l) * t_max10 - sp.sag10;
-        const y10 = sy(cond10_max);
-        s += `<text x="${sx(xm[i] + x_max10).toFixed(1)}" y="${(y10 - 5).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#4ade80">f\u2081\u2080=${sp.sag10.toFixed(2)} m</text>`;
-        if (hasCota) {
-          const terrain10 = poles[i].cota_teren + (poles[i + 1].cota_teren - poles[i].cota_teren) * t_max10;
-          const clearance10 = cond10_max - terrain10;
-          const ok10 = clearance10 >= GABARIT_MIN;
+        if (sp.L_m >= 30) {
+          const y10lbl = sy(a_l + (a_r - a_l) * t_max10 - sp.sag10);
+          s += `<text x="${sx(xm[i] + x_max10).toFixed(1)}" y="${(y10lbl - 5).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#4ade80">f\u2081\u2080=${sp.sag10.toFixed(2)} m</text>`;
+        }
+      }
+      if (gab40 || gab10) {
+        const OVERLAP_PX = 50;
+        const combined = gab40 && gab10 && Math.abs(gab40.xpx - gab10.xpx) < OVERLAP_PX;
+        const drawIndicator = (xg, yc, yt, clearance, col, arrowSz, dashW) => {
+          const y_lbl = (yc + yt) / 2;
+          s += `<line x1="${xg.toFixed(1)}" y1="${yt.toFixed(1)}" x2="${xg.toFixed(1)}" y2="${yc.toFixed(1)}" stroke="${col}" stroke-width="${dashW}" stroke-dasharray="3,2"/>`;
+          s += `<polygon points="${xg.toFixed(1)},${yc.toFixed(1)} ${(xg - arrowSz).toFixed(1)},${(yc + arrowSz * 2).toFixed(1)} ${(xg + arrowSz).toFixed(1)},${(yc + arrowSz * 2).toFixed(1)}" fill="${col}"/>`;
+          s += `<polygon points="${xg.toFixed(1)},${yt.toFixed(1)} ${(xg - arrowSz).toFixed(1)},${(yt - arrowSz * 2).toFixed(1)} ${(xg + arrowSz).toFixed(1)},${(yt - arrowSz * 2).toFixed(1)}" fill="${col}"/>`;
+          return y_lbl;
+        };
+        if (combined) {
+          const xc = (gab40.xpx + gab10.xpx) / 2;
+          const yc = Math.min(gab40.yc, gab10.yc);
+          const yt = (gab40.yt + gab10.yt) / 2;
+          const ok40 = gab40.cl >= GABARIT_MIN;
+          const ok10 = gab10.cl >= GABARIT_MIN;
+          const col40 = ok40 ? "#22c55e" : "#ef4444";
           const col10 = ok10 ? "#4ade80" : "#ef4444";
-          const y_terr10 = sy(terrain10);
-          const xoff10 = Math.abs(x_max10 - x_max40) < sp.L_m * 0.08 ? -18 : 0;
-          const xg10 = sx(xm[i] + x_max10) + xoff10;
-          s += `<line x1="${xg10.toFixed(1)}" y1="${y_terr10.toFixed(1)}" x2="${xg10.toFixed(1)}" y2="${y10.toFixed(1)}" stroke="${col10}" stroke-width="1" stroke-dasharray="2,2"/>`;
-          s += `<polygon points="${xg10.toFixed(1)},${y10.toFixed(1)} ${(xg10 - 2.5).toFixed(1)},${(y10 + 5).toFixed(1)} ${(xg10 + 2.5).toFixed(1)},${(y10 + 5).toFixed(1)}" fill="${col10}"/>`;
-          s += `<polygon points="${xg10.toFixed(1)},${y_terr10.toFixed(1)} ${(xg10 - 2.5).toFixed(1)},${(y_terr10 - 5).toFixed(1)} ${(xg10 + 2.5).toFixed(1)},${(y_terr10 - 5).toFixed(1)}" fill="${col10}"/>`;
-          const y_lbl10 = (y10 + y_terr10) / 2;
-          s += `<rect x="${(xg10 - 21).toFixed(1)}" y="${(y_lbl10 - 6).toFixed(1)}" width="42" height="11" rx="2" fill="${ok10 ? "rgba(74,222,128,.1)" : "rgba(239,68,68,.1)"}" stroke="${col10}" stroke-width=".5"/>`;
-          s += `<text x="${xg10.toFixed(1)}" y="${(y_lbl10 + 2).toFixed(1)}" text-anchor="middle" font-size="7.5" fill="${col10}">g\u2081\u2080=${clearance10.toFixed(2)}m${ok10 ? "" : " \u26A0"}</text>`;
+          const wCol = !ok40 || !ok10 ? "#ef4444" : "#22c55e";
+          const y_lbl = drawIndicator(xc, yc, yt, null, wCol, 3, 1.3);
+          const W2 = 94, H2 = 14;
+          s += `<rect x="${(xc - W2 / 2).toFixed(1)}" y="${(y_lbl - H2 / 2).toFixed(1)}" width="${W2}" height="${H2}" rx="3" fill="rgba(15,23,42,.88)" stroke="${wCol}" stroke-width=".7"/>`;
+          s += `<text x="${(xc - W2 / 2 + 5).toFixed(1)}" y="${(y_lbl + 3).toFixed(1)}" text-anchor="start" font-size="8" fill="${col10}">g\u2081\u2080=${gab10.cl.toFixed(2)}m${ok10 ? "" : " \u26A0"}</text>`;
+          s += `<text x="${(xc + W2 / 2 - 5).toFixed(1)}" y="${(y_lbl + 3).toFixed(1)}" text-anchor="end" font-size="8" fill="${col40}" font-weight="700">g\u2084\u2080=${gab40.cl.toFixed(2)}m${ok40 ? "" : " \u26A0"}</text>`;
+        } else {
+          if (gab40) {
+            const ok40 = gab40.cl >= GABARIT_MIN;
+            const col40 = ok40 ? "#22c55e" : "#ef4444";
+            const y_lbl = drawIndicator(gab40.xpx, gab40.yc, gab40.yt, gab40.cl, col40, 3.5, 1.3);
+            s += `<rect x="${(gab40.xpx - 22).toFixed(1)}" y="${(y_lbl - 7).toFixed(1)}" width="44" height="13" rx="3" fill="${ok40 ? "rgba(34,197,94,.15)" : "rgba(239,68,68,.15)"}" stroke="${col40}" stroke-width=".6"/>`;
+            s += `<text x="${gab40.xpx.toFixed(1)}" y="${(y_lbl + 3).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="${col40}" font-weight="700">g\u2084\u2080=${gab40.cl.toFixed(2)}m${ok40 ? "" : " \u26A0"}</text>`;
+          }
+          if (gab10) {
+            const ok10 = gab10.cl >= GABARIT_MIN;
+            const col10 = ok10 ? "#4ade80" : "#ef4444";
+            const y_lbl = drawIndicator(gab10.xpx, gab10.yc, gab10.yt, gab10.cl, col10, 2.5, 1);
+            s += `<rect x="${(gab10.xpx - 21).toFixed(1)}" y="${(y_lbl - 6).toFixed(1)}" width="42" height="11" rx="2" fill="${ok10 ? "rgba(74,222,128,.1)" : "rgba(239,68,68,.1)"}" stroke="${col10}" stroke-width=".5"/>`;
+            s += `<text x="${gab10.xpx.toFixed(1)}" y="${(y_lbl + 2).toFixed(1)}" text-anchor="middle" font-size="7.5" fill="${col10}">g\u2081\u2080=${gab10.cl.toFixed(2)}m${ok10 ? "" : " \u26A0"}</text>`;
+          }
+        }
+      }
+      if (sp.sag40_real != null) {
+        const q_bare = sp.q10;
+        const x_max40r = q_bare && sp.T40_real ? sp.L_m / 2 - sp.dh * sp.T40_real / (q_bare * sp.L_m) : sp.L_m / 2;
+        const t40r = Math.max(0.01, Math.min(0.99, x_max40r / sp.L_m));
+        const chord_r = a_l + (a_r - a_l) * t40r;
+        const cond40r = chord_r - sp.sag40_real;
+        const xg40r = sx(xm[i] + x_max40r);
+        const y40r = sy(cond40r);
+        s += `<polyline points="${catPts(q_bare, sp.T40_real, sp.sag40_real)}" fill="none" stroke="#f59e0b" stroke-width="2.5"/>`;
+        if (sp.L_m >= 30) {
+          s += `<text x="${xg40r.toFixed(1)}" y="${(y40r + 13).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#f59e0b" font-weight="700">f\u2084\u2080\u2605=${sp.sag40_real.toFixed(2)} m</text>`;
+        }
+        if (hasCota) {
+          const terrain40r = poles[i].cota_teren + (poles[i + 1].cota_teren - poles[i].cota_teren) * t40r;
+          const clr40r = cond40r - terrain40r;
+          const ok40r = clr40r >= GABARIT_MIN;
+          const colR = ok40r ? "#f59e0b" : "#ef4444";
+          const yt40r = sy(terrain40r);
+          s += `<line x1="${(xg40r + 14).toFixed(1)}" y1="${yt40r.toFixed(1)}" x2="${(xg40r + 14).toFixed(1)}" y2="${y40r.toFixed(1)}" stroke="${colR}" stroke-width="1.3" stroke-dasharray="4,2"/>`;
+          s += `<polygon points="${(xg40r + 14).toFixed(1)},${y40r.toFixed(1)} ${(xg40r + 10.5).toFixed(1)},${(y40r + 7).toFixed(1)} ${(xg40r + 17.5).toFixed(1)},${(y40r + 7).toFixed(1)}" fill="${colR}"/>`;
+          s += `<polygon points="${(xg40r + 14).toFixed(1)},${yt40r.toFixed(1)} ${(xg40r + 10.5).toFixed(1)},${(yt40r - 7).toFixed(1)} ${(xg40r + 17.5).toFixed(1)},${(yt40r - 7).toFixed(1)}" fill="${colR}"/>`;
+          const ylR = (y40r + yt40r) / 2;
+          s += `<rect x="${(xg40r + 14 - 22).toFixed(1)}" y="${(ylR - 8).toFixed(1)}" width="44" height="13" rx="3" fill="${ok40r ? "rgba(245,158,11,.2)" : "rgba(239,68,68,.2)"}" stroke="${colR}" stroke-width=".7"/>`;
+          s += `<text x="${(xg40r + 14).toFixed(1)}" y="${(ylR + 2).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="${colR}" font-weight="700">g\u2605=${clr40r.toFixed(2)}m${ok40r ? "" : " \u26A0"}</text>`;
+        }
+        if (sp.sag10_real != null) {
+          s += `<polyline points="${catPts(q_bare, sp.T10_real, sp.sag10_real)}" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="6,3" opacity=".7"/>`;
         }
       }
       const xmid_px = sx(xm[i] + sp.L_m / 2);
@@ -10318,7 +10516,10 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
       if (p.hasCota) {
         s += `<text x="${(xp + offX).toFixed(1)}" y="${(yt + 11).toFixed(1)}" text-anchor="${anchor}" font-size="7.5" fill="#92400e">${ct.toFixed(1)} m</text>`;
       }
-      s += `<text x="${(xp + offX).toFixed(1)}" y="${((yt + ya) / 2 + 3).toFixed(1)}" text-anchor="${anchor}" font-size="7" fill="#c07000" opacity=".8">H=${p.H}m</text>`;
+      const adjSpanForH = side > 0 ? spans[i]?.L_m ?? 999 : spans[i - 1]?.L_m ?? 999;
+      if (adjSpanForH >= 30) {
+        s += `<text x="${(xp + offX).toFixed(1)}" y="${((yt + ya) / 2 + 3).toFixed(1)}" text-anchor="${anchor}" font-size="7" fill="#c07000" opacity=".8">H=${p.H}m</text>`;
+      }
       const annLines = [];
       if (p.pole_desc) annLines.push({ txt: p.pole_desc, col: "#94a3b8" });
       if (p.console_short) annLines.push({ txt: p.console_short, col: "#7dd3fc" });
@@ -10341,18 +10542,30 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
     s += `<text x="${lx + 24}" y="${ly + 3}" font-size="8.5" fill="#4ade80">+10\xB0C</text>`;
     s += `<line x1="${lx + 65}" y1="${ly}" x2="${lx + 85}" y2="${ly}" stroke="#f97316" stroke-width="2"/>`;
     s += `<text x="${lx + 89}" y="${ly + 3}" font-size="8.5" fill="#f97316">+40\xB0C (gabarit)</text>`;
-    s += `<line x1="${lx + 175}" y1="${ly}" x2="${lx + 195}" y2="${ly}" stroke="#92400e" stroke-width="2"/>`;
-    s += `<text x="${lx + 199}" y="${ly + 3}" font-size="8.5" fill="#92400e">teren</text>`;
+    const hasReal = spans.some((sp) => sp.sag40_real != null);
+    if (hasReal) {
+      s += `<line x1="${lx + 175}" y1="${ly}" x2="${lx + 195}" y2="${ly}" stroke="#f59e0b" stroke-width="2.5"/>`;
+      s += `<text x="${lx + 199}" y="${ly + 3}" font-size="8.5" fill="#f59e0b" font-weight="700">\u2605 +40\xB0C real (teren)</text>`;
+      s += `<line x1="${lx + 310}" y1="${ly}" x2="${lx + 330}" y2="${ly}" stroke="#92400e" stroke-width="2"/>`;
+    } else {
+      s += `<line x1="${lx + 175}" y1="${ly}" x2="${lx + 195}" y2="${ly}" stroke="#92400e" stroke-width="2"/>`;
+    }
+    const lx_teren = hasReal ? lx + 334 : lx + 199;
+    s += `<text x="${lx_teren + 4}" y="${ly + 3}" font-size="8.5" fill="#92400e">teren</text>`;
     if (hasCota) {
-      s += `<line x1="${lx + 240}" y1="${ly}" x2="${lx + 260}" y2="${ly}" stroke="#facc15" stroke-width="1" stroke-dasharray="5,4" opacity=".7"/>`;
-      s += `<text x="${lx + 264}" y="${ly + 3}" font-size="8.5" fill="#facc15" opacity=".8">gabarit ${GABARIT_MIN}m</text>`;
-      s += `<line x1="${lx + 340}" y1="${ly - 4}" x2="${lx + 340}" y2="${ly + 4}" stroke="#22c55e" stroke-width="1.5"/>`;
-      s += `<text x="${lx + 344}" y="${ly + 3}" font-size="8.5" fill="#22c55e">g\u22657m \u2713</text>`;
-      s += `<line x1="${lx + 390}" y1="${ly - 4}" x2="${lx + 390}" y2="${ly + 4}" stroke="#ef4444" stroke-width="1.5"/>`;
-      s += `<text x="${lx + 394}" y="${ly + 3}" font-size="8.5" fill="#ef4444">g&lt;7m \u26A0</text>`;
-      s += `<text x="${lx + 450}" y="${ly + 3}" font-size="8" fill="#94a3b8">\u25A0 tip st\xE2lp</text>`;
-      s += `<text x="${lx + 510}" y="${ly + 3}" font-size="8" fill="#7dd3fc">\u25A0 consol\u0103</text>`;
-      s += `<text x="${lx + 560}" y="${ly + 3}" font-size="8" fill="#c084fc">\u25A0 izola\u021Bie</text>`;
+      const lx_gab = lx_teren + 45;
+      s += `<line x1="${lx_gab}" y1="${ly}" x2="${lx_gab + 20}" y2="${ly}" stroke="#facc15" stroke-width="1" stroke-dasharray="5,4" opacity=".7"/>`;
+      s += `<text x="${lx_gab + 24}" y="${ly + 3}" font-size="8.5" fill="#facc15" opacity=".8">gabarit ${GABARIT_MIN}m</text>`;
+      const lx_ok = lx_gab + 100;
+      s += `<line x1="${lx_ok}" y1="${ly - 4}" x2="${lx_ok}" y2="${ly + 4}" stroke="#22c55e" stroke-width="1.5"/>`;
+      s += `<text x="${lx_ok + 4}" y="${ly + 3}" font-size="8.5" fill="#22c55e">g\u22657m \u2713</text>`;
+      s += `<line x1="${lx_ok + 52}" y1="${ly - 4}" x2="${lx_ok + 52}" y2="${ly + 4}" stroke="#ef4444" stroke-width="1.5"/>`;
+      s += `<text x="${lx_ok + 56}" y="${ly + 3}" font-size="8.5" fill="#ef4444">g&lt;7m \u26A0</text>`;
+      if (!hasReal) {
+        s += `<text x="${lx_ok + 112}" y="${ly + 3}" font-size="8" fill="#94a3b8">\u25A0 tip st\xE2lp</text>`;
+        s += `<text x="${lx_ok + 172}" y="${ly + 3}" font-size="8" fill="#7dd3fc">\u25A0 consol\u0103</text>`;
+        s += `<text x="${lx_ok + 222}" y="${ly + 3}" font-size="8" fill="#c084fc">\u25A0 izola\u021Bie</text>`;
+      }
     }
     const scH = Math.max(1, Math.round(L_total / IW * 1e3));
     const scV = Math.max(1, Math.round(elev_range / IH * 100));

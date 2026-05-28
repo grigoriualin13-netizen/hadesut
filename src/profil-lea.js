@@ -1,6 +1,7 @@
 import { S } from './state.js';
-import { calcSpan } from './calc-catenary.js';
+import { calcSpan, CONDUCTORS, solveStateEquation } from './calc-catenary.js';
 import { getPoleData, CONSOLE_CATALOG } from './pole-catalog.js';
+import { getSagMeasOverrides } from './sag-mt.js';
 
 // Mapare secțiune [mm²] → cheie CONDUCTORS (identică cu sag-mt.js)
 const SECTION_TO_ACSR = {
@@ -189,9 +190,33 @@ export function extractProfilData() {
         q_wind = res.loads?.normate?.g4 ?? null;
       } catch (_) { /* deschidere fără date suficiente */ }
 
+      // ── Sageată măsurată în teren (din _sagMeasOverrides via sag-mt.js) ──
+      let sag40_real = null, sag10_real = null, T40_real = null, T10_real = null;
+      const sfmKey = seg.fromId < seg.toId
+        ? `${seg.fromId}|${seg.toId}` : `${seg.toId}|${seg.fromId}`;
+      const sfm = getSagMeasOverrides().get(sfmKey);
+      if (sfm?.f_meas > 0) {
+        try {
+          const cd     = CONDUCTORS[acsr_key];
+          const EA     = cd.E * cd.A;
+          const g1     = cd.gc;
+          const f_sag  = H_span - sfm.f_meas;   // gabarit măsurat → săgeată
+          if (f_sag > 0.1) {
+            const T_hf  = g1 * L * L / (8 * f_sag);
+            T40_real    = solveStateEquation(g1, T_hf, sfm.T_meas, g1, 40, L, EA, cd.alpha);
+            sag40_real  = g1 * L * L / (8 * T40_real);
+            const T10r  = solveStateEquation(g1, T_hf, sfm.T_meas, g1, 10, L, EA, cd.alpha);
+            sag10_real  = g1 * L * L / (8 * T10r);
+            T10_real    = T10r;
+          }
+        } catch(_) {}
+      }
+
       return { fromId: seg.fromId, toId: seg.toId, L_m: L, dh, acsr_key,
                sag10, sag40, T40, q40, T10, q10, T0_dim, KP_calc, T_crit,
-               T_wind, q_wind };
+               T_wind, q_wind,
+               sag40_real, sag10_real, T40_real, T10_real,
+               f_meas: sfm?.f_meas ?? null, T_meas: sfm?.T_meas ?? null };
     });
 
     return {
@@ -235,10 +260,13 @@ export function buildProfilSVG(chain) {
     y_bot = Math.min(y_bot, ct - 2);
   });
   spans.forEach((sp, i) => {
-    if (sp.sag40 == null) return;
     const a_l = poles[i].cota_teren + poles[i].H;
     const a_r = poles[i + 1].cota_teren + poles[i + 1].H;
-    y_bot = Math.min(y_bot, (a_l + a_r) / 2 - sp.sag40 - 1.5);
+    const chord_mid = (a_l + a_r) / 2;
+    if (sp.sag40 != null)
+      y_bot = Math.min(y_bot, chord_mid - sp.sag40 - 1.5);
+    if (sp.sag40_real != null)
+      y_bot = Math.min(y_bot, chord_mid - sp.sag40_real - 1.5);
   });
   if (!isFinite(y_top)) y_top = 15;
   if (!isFinite(y_bot)) y_bot = 0;
@@ -355,76 +383,155 @@ export function buildProfilSVG(chain) {
       return `${sx(xm[i] + x_m).toFixed(1)},${sy(chord - sag_x).toFixed(1)}`;
     }).join(' ');
 
-    // +40°C — portocaliu (starea de gabarit)
-    if (sp.sag40 != null) {
-      s += `<polyline points="${catPts(sp.q40, sp.T40, sp.sag40)}" fill="none" stroke="#f97316" stroke-width="2"/>`;
-
-      const chord_max40 = a_l + (a_r - a_l) * t_max40;
-      const cond40_max  = chord_max40 - sp.sag40;
-      const x_sag_px    = sx(xm[i] + x_max40);
-      const y40         = sy(cond40_max);
-      s += `<text x="${x_sag_px.toFixed(1)}" y="${(y40 + 12).toFixed(1)}" text-anchor="middle" `
-         + `font-size="8.5" fill="#f97316">f₄₀=${sp.sag40.toFixed(2)} m</text>`;
-
-      // Gabarit T=+40°C față de teren la sag_max
-      if (hasCota) {
-        const terrain40 = poles[i].cota_teren
-          + (poles[i + 1].cota_teren - poles[i].cota_teren) * t_max40;
-        const clearance40 = cond40_max - terrain40;
-        const ok40  = clearance40 >= GABARIT_MIN;
-        const col40 = ok40 ? '#22c55e' : '#ef4444';
-        const y_terr40 = sy(terrain40);
-        const xg40 = x_sag_px;
-
-        s += `<line x1="${xg40.toFixed(1)}" y1="${y_terr40.toFixed(1)}" x2="${xg40.toFixed(1)}" y2="${y40.toFixed(1)}" `
-           + `stroke="${col40}" stroke-width="1.3" stroke-dasharray="3,2"/>`;
-        s += `<polygon points="${xg40.toFixed(1)},${y40.toFixed(1)} `
-           + `${(xg40-3.5).toFixed(1)},${(y40+7).toFixed(1)} `
-           + `${(xg40+3.5).toFixed(1)},${(y40+7).toFixed(1)}" fill="${col40}"/>`;
-        s += `<polygon points="${xg40.toFixed(1)},${y_terr40.toFixed(1)} `
-           + `${(xg40-3.5).toFixed(1)},${(y_terr40-7).toFixed(1)} `
-           + `${(xg40+3.5).toFixed(1)},${(y_terr40-7).toFixed(1)}" fill="${col40}"/>`;
-        const y_lbl40 = (y40 + y_terr40) / 2;
-        s += `<rect x="${(xg40-22).toFixed(1)}" y="${(y_lbl40-8).toFixed(1)}" width="44" height="13" `
-           + `rx="3" fill="${ok40 ? 'rgba(34,197,94,.15)' : 'rgba(239,68,68,.15)'}" stroke="${col40}" stroke-width=".6"/>`;
-        s += `<text x="${xg40.toFixed(1)}" y="${(y_lbl40+2).toFixed(1)}" text-anchor="middle" `
-           + `font-size="8.5" fill="${col40}" font-weight="700">g₄₀=${clearance40.toFixed(2)}m${ok40 ? '' : ' ⚠'}</text>`;
+    // Pre-computare date gabarit pentru ambele stări (+40 și +10)
+    // Necesare înainte de desenare pentru a detecta overlap și a alege combined vs. separate
+    let gab40 = null, gab10 = null;
+    if (hasCota) {
+      if (sp.sag40 != null) {
+        const t  = t_max40;
+        const chord = a_l + (a_r - a_l) * t;
+        const cond  = chord - sp.sag40;
+        const terr  = poles[i].cota_teren + (poles[i + 1].cota_teren - poles[i].cota_teren) * t;
+        gab40 = { xpx: sx(xm[i] + x_max40), yc: sy(cond), yt: sy(terr), cl: cond - terr };
+      }
+      if (sp.sag10 != null) {
+        const t  = t_max10;
+        const chord = a_l + (a_r - a_l) * t;
+        const cond  = chord - sp.sag10;
+        const terr  = poles[i].cota_teren + (poles[i + 1].cota_teren - poles[i].cota_teren) * t;
+        gab10 = { xpx: sx(xm[i] + x_max10), yc: sy(cond), yt: sy(terr), cl: cond - terr };
       }
     }
 
-    // +10°C — verde, linie întreruptă
+    // +40°C — portocaliu (starea de gabarit) — curbă + etichetă sageată
+    if (sp.sag40 != null) {
+      s += `<polyline points="${catPts(sp.q40, sp.T40, sp.sag40)}" fill="none" stroke="#f97316" stroke-width="2"/>`;
+      if (sp.L_m >= 30) {
+        const y40lbl = sy(a_l + (a_r - a_l) * t_max40 - sp.sag40);
+        s += `<text x="${sx(xm[i] + x_max40).toFixed(1)}" y="${(y40lbl + 12).toFixed(1)}" text-anchor="middle" `
+           + `font-size="8.5" fill="#f97316">f₄₀=${sp.sag40.toFixed(2)} m</text>`;
+      }
+    }
+
+    // +10°C — verde, linie întreruptă — curbă + etichetă sageată
     if (sp.sag10 != null) {
       s += `<polyline points="${catPts(sp.q10, sp.T10, sp.sag10)}" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="7,3"/>`;
-      const cond10_max = a_l + (a_r - a_l) * t_max10 - sp.sag10;
-      const y10 = sy(cond10_max);
-      s += `<text x="${sx(xm[i] + x_max10).toFixed(1)}" y="${(y10 - 5).toFixed(1)}" text-anchor="middle" `
-         + `font-size="8.5" fill="#4ade80">f₁₀=${sp.sag10.toFixed(2)} m</text>`;
+      if (sp.L_m >= 30) {
+        const y10lbl = sy(a_l + (a_r - a_l) * t_max10 - sp.sag10);
+        s += `<text x="${sx(xm[i] + x_max10).toFixed(1)}" y="${(y10lbl - 5).toFixed(1)}" text-anchor="middle" `
+           + `font-size="8.5" fill="#4ade80">f₁₀=${sp.sag10.toFixed(2)} m</text>`;
+      }
+    }
 
-      // Gabarit T=+10°C față de teren
-      if (hasCota) {
-        const terrain10   = poles[i].cota_teren
-          + (poles[i + 1].cota_teren - poles[i].cota_teren) * t_max10;
-        const clearance10 = cond10_max - terrain10;
-        const ok10  = clearance10 >= GABARIT_MIN;
+    // ── Indicatoare gabarit față de teren ────────────────────────────────────
+    // Detectăm overlap (boxele de 44px se suprapun dacă sunt < 50px distanță)
+    if (gab40 || gab10) {
+      const OVERLAP_PX = 50;
+      const combined = gab40 && gab10 && Math.abs(gab40.xpx - gab10.xpx) < OVERLAP_PX;
+
+      const drawIndicator = (xg, yc, yt, clearance, col, arrowSz, dashW) => {
+        const y_lbl = (yc + yt) / 2;
+        s += `<line x1="${xg.toFixed(1)}" y1="${yt.toFixed(1)}" x2="${xg.toFixed(1)}" y2="${yc.toFixed(1)}" `
+           + `stroke="${col}" stroke-width="${dashW}" stroke-dasharray="3,2"/>`;
+        s += `<polygon points="${xg.toFixed(1)},${yc.toFixed(1)} `
+           + `${(xg-arrowSz).toFixed(1)},${(yc+arrowSz*2).toFixed(1)} `
+           + `${(xg+arrowSz).toFixed(1)},${(yc+arrowSz*2).toFixed(1)}" fill="${col}"/>`;
+        s += `<polygon points="${xg.toFixed(1)},${yt.toFixed(1)} `
+           + `${(xg-arrowSz).toFixed(1)},${(yt-arrowSz*2).toFixed(1)} `
+           + `${(xg+arrowSz).toFixed(1)},${(yt-arrowSz*2).toFixed(1)}" fill="${col}"/>`;
+        return y_lbl;
+      };
+
+      if (combined) {
+        // Box combinată: g₁₀ și g₄₀ pe un singur rând, centrat la mijlocul span
+        const xc    = (gab40.xpx + gab10.xpx) / 2;
+        const yc    = Math.min(gab40.yc, gab10.yc);       // conductor mai sus (SVG y mai mic)
+        const yt    = (gab40.yt + gab10.yt) / 2;
+        const ok40  = gab40.cl >= GABARIT_MIN;
+        const ok10  = gab10.cl >= GABARIT_MIN;
+        const col40 = ok40 ? '#22c55e' : '#ef4444';
         const col10 = ok10 ? '#4ade80' : '#ef4444';
-        const y_terr10 = sy(terrain10);
-        // Decalaj orizontal dacă x_max10 ≈ x_max40 (overlap)
-        const xoff10 = Math.abs(x_max10 - x_max40) < sp.L_m * 0.08 ? -18 : 0;
-        const xg10   = sx(xm[i] + x_max10) + xoff10;
+        const wCol  = (!ok40 || !ok10) ? '#ef4444' : '#22c55e';
+        const y_lbl = drawIndicator(xc, yc, yt, null, wCol, 3, 1.3);
+        const W = 94, H = 14;
+        s += `<rect x="${(xc - W/2).toFixed(1)}" y="${(y_lbl - H/2).toFixed(1)}" width="${W}" height="${H}" `
+           + `rx="3" fill="rgba(15,23,42,.88)" stroke="${wCol}" stroke-width=".7"/>`;
+        s += `<text x="${(xc - W/2 + 5).toFixed(1)}" y="${(y_lbl + 3).toFixed(1)}" text-anchor="start" `
+           + `font-size="8" fill="${col10}">g₁₀=${gab10.cl.toFixed(2)}m${ok10 ? '' : ' ⚠'}</text>`;
+        s += `<text x="${(xc + W/2 - 5).toFixed(1)}" y="${(y_lbl + 3).toFixed(1)}" text-anchor="end" `
+           + `font-size="8" fill="${col40}" font-weight="700">g₄₀=${gab40.cl.toFixed(2)}m${ok40 ? '' : ' ⚠'}</text>`;
+      } else {
+        // Boxe separate
+        if (gab40) {
+          const ok40  = gab40.cl >= GABARIT_MIN;
+          const col40 = ok40 ? '#22c55e' : '#ef4444';
+          const y_lbl = drawIndicator(gab40.xpx, gab40.yc, gab40.yt, gab40.cl, col40, 3.5, 1.3);
+          s += `<rect x="${(gab40.xpx-22).toFixed(1)}" y="${(y_lbl-7).toFixed(1)}" width="44" height="13" `
+             + `rx="3" fill="${ok40 ? 'rgba(34,197,94,.15)' : 'rgba(239,68,68,.15)'}" stroke="${col40}" stroke-width=".6"/>`;
+          s += `<text x="${gab40.xpx.toFixed(1)}" y="${(y_lbl+3).toFixed(1)}" text-anchor="middle" `
+             + `font-size="8.5" fill="${col40}" font-weight="700">g₄₀=${gab40.cl.toFixed(2)}m${ok40 ? '' : ' ⚠'}</text>`;
+        }
+        if (gab10) {
+          const ok10  = gab10.cl >= GABARIT_MIN;
+          const col10 = ok10 ? '#4ade80' : '#ef4444';
+          const y_lbl = drawIndicator(gab10.xpx, gab10.yc, gab10.yt, gab10.cl, col10, 2.5, 1);
+          s += `<rect x="${(gab10.xpx-21).toFixed(1)}" y="${(y_lbl-6).toFixed(1)}" width="42" height="11" `
+             + `rx="2" fill="${ok10 ? 'rgba(74,222,128,.1)' : 'rgba(239,68,68,.1)'}" stroke="${col10}" stroke-width=".5"/>`;
+          s += `<text x="${gab10.xpx.toFixed(1)}" y="${(y_lbl+2).toFixed(1)}" text-anchor="middle" `
+             + `font-size="7.5" fill="${col10}">g₁₀=${gab10.cl.toFixed(2)}m${ok10 ? '' : ' ⚠'}</text>`;
+        }
+      }
+    }
 
-        s += `<line x1="${xg10.toFixed(1)}" y1="${y_terr10.toFixed(1)}" x2="${xg10.toFixed(1)}" y2="${y10.toFixed(1)}" `
-           + `stroke="${col10}" stroke-width="1" stroke-dasharray="2,2"/>`;
-        s += `<polygon points="${xg10.toFixed(1)},${y10.toFixed(1)} `
-           + `${(xg10-2.5).toFixed(1)},${(y10+5).toFixed(1)} `
-           + `${(xg10+2.5).toFixed(1)},${(y10+5).toFixed(1)}" fill="${col10}"/>`;
-        s += `<polygon points="${xg10.toFixed(1)},${y_terr10.toFixed(1)} `
-           + `${(xg10-2.5).toFixed(1)},${(y_terr10-5).toFixed(1)} `
-           + `${(xg10+2.5).toFixed(1)},${(y_terr10-5).toFixed(1)}" fill="${col10}"/>`;
-        const y_lbl10 = (y10 + y_terr10) / 2;
-        s += `<rect x="${(xg10-21).toFixed(1)}" y="${(y_lbl10-6).toFixed(1)}" width="42" height="11" `
-           + `rx="2" fill="${ok10 ? 'rgba(74,222,128,.1)' : 'rgba(239,68,68,.1)'}" stroke="${col10}" stroke-width=".5"/>`;
-        s += `<text x="${xg10.toFixed(1)}" y="${(y_lbl10+2).toFixed(1)}" text-anchor="middle" `
-           + `font-size="7.5" fill="${col10}">g₁₀=${clearance10.toFixed(2)}m${ok10 ? '' : ' ⚠'}</text>`;
+    // ── Curbe REALE (din sageată măsurată) — amber #f59e0b ──────────────────
+    if (sp.sag40_real != null) {
+      // q la +40°C real = q bare conductor = sp.q10 (identic cu g1)
+      const q_bare = sp.q10;
+      const x_max40r = (q_bare && sp.T40_real)
+        ? sp.L_m / 2 - sp.dh * sp.T40_real / (q_bare * sp.L_m)
+        : sp.L_m / 2;
+      const t40r = Math.max(0.01, Math.min(0.99, x_max40r / sp.L_m));
+      const chord_r  = a_l + (a_r - a_l) * t40r;
+      const cond40r  = chord_r - sp.sag40_real;
+      const xg40r    = sx(xm[i] + x_max40r);
+      const y40r     = sy(cond40r);
+
+      // Curbă +40°C real — linie continuă amber
+      s += `<polyline points="${catPts(q_bare, sp.T40_real, sp.sag40_real)}" `
+         + `fill="none" stroke="#f59e0b" stroke-width="2.5"/>`;
+      // Etichetă f₄₀ real (pe spanuri ≥ 30m)
+      if (sp.L_m >= 30) {
+        s += `<text x="${xg40r.toFixed(1)}" y="${(y40r + 13).toFixed(1)}" text-anchor="middle" `
+           + `font-size="8.5" fill="#f59e0b" font-weight="700">f₄₀★=${sp.sag40_real.toFixed(2)} m</text>`;
+      }
+
+      // Gabarit real la +40°C
+      if (hasCota) {
+        const terrain40r = poles[i].cota_teren
+          + (poles[i + 1].cota_teren - poles[i].cota_teren) * t40r;
+        const clr40r = cond40r - terrain40r;
+        const ok40r  = clr40r >= GABARIT_MIN;
+        const colR   = ok40r ? '#f59e0b' : '#ef4444';
+        const yt40r  = sy(terrain40r);
+        s += `<line x1="${(xg40r+14).toFixed(1)}" y1="${yt40r.toFixed(1)}" x2="${(xg40r+14).toFixed(1)}" y2="${y40r.toFixed(1)}" `
+           + `stroke="${colR}" stroke-width="1.3" stroke-dasharray="4,2"/>`;
+        s += `<polygon points="${(xg40r+14).toFixed(1)},${y40r.toFixed(1)} `
+           + `${(xg40r+10.5).toFixed(1)},${(y40r+7).toFixed(1)} `
+           + `${(xg40r+17.5).toFixed(1)},${(y40r+7).toFixed(1)}" fill="${colR}"/>`;
+        s += `<polygon points="${(xg40r+14).toFixed(1)},${yt40r.toFixed(1)} `
+           + `${(xg40r+10.5).toFixed(1)},${(yt40r-7).toFixed(1)} `
+           + `${(xg40r+17.5).toFixed(1)},${(yt40r-7).toFixed(1)}" fill="${colR}"/>`;
+        const ylR = (y40r + yt40r) / 2;
+        s += `<rect x="${(xg40r+14-22).toFixed(1)}" y="${(ylR-8).toFixed(1)}" width="44" height="13" `
+           + `rx="3" fill="${ok40r ? 'rgba(245,158,11,.2)' : 'rgba(239,68,68,.2)'}" stroke="${colR}" stroke-width=".7"/>`;
+        s += `<text x="${(xg40r+14).toFixed(1)}" y="${(ylR+2).toFixed(1)}" text-anchor="middle" `
+           + `font-size="8.5" fill="${colR}" font-weight="700">g★=${clr40r.toFixed(2)}m${ok40r ? '' : ' ⚠'}</text>`;
+      }
+
+      // Curbă +10°C real (dacă există) — linie întreruptă amber
+      if (sp.sag10_real != null) {
+        s += `<polyline points="${catPts(q_bare, sp.T10_real, sp.sag10_real)}" `
+           + `fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="6,3" opacity=".7"/>`;
       }
     }
 
@@ -484,9 +591,12 @@ export function buildProfilSVG(chain) {
       s += `<text x="${(xp + offX).toFixed(1)}" y="${(yt + 11).toFixed(1)}" `
          + `text-anchor="${anchor}" font-size="7.5" fill="#92400e">${ct.toFixed(1)} m</text>`;
     }
-    // H prindere lângă fus (mijloc fus)
-    s += `<text x="${(xp + offX).toFixed(1)}" y="${((yt + ya) / 2 + 3).toFixed(1)}" `
-       + `text-anchor="${anchor}" font-size="7" fill="#c07000" opacity=".8">H=${p.H}m</text>`;
+    // H prindere lângă fus (mijloc fus) — omis pe spanuri scurte (< 30m) ca să nu se suprapună
+    const adjSpanForH = side > 0 ? (spans[i]?.L_m ?? 999) : (spans[i - 1]?.L_m ?? 999);
+    if (adjSpanForH >= 30) {
+      s += `<text x="${(xp + offX).toFixed(1)}" y="${((yt + ya) / 2 + 3).toFixed(1)}" `
+         + `text-anchor="${anchor}" font-size="7" fill="#c07000" opacity=".8">H=${p.H}m</text>`;
+    }
 
     // ── Adnotări tip stâlp / consolă / izolație (deasupra etichetei, în marja superioară)
     const annLines = [];
@@ -525,19 +635,31 @@ export function buildProfilSVG(chain) {
   s += `<text x="${lx + 24}" y="${ly + 3}" font-size="8.5" fill="#4ade80">+10°C</text>`;
   s += `<line x1="${lx + 65}" y1="${ly}" x2="${lx + 85}" y2="${ly}" stroke="#f97316" stroke-width="2"/>`;
   s += `<text x="${lx + 89}" y="${ly + 3}" font-size="8.5" fill="#f97316">+40°C (gabarit)</text>`;
-  s += `<line x1="${lx + 175}" y1="${ly}" x2="${lx + 195}" y2="${ly}" stroke="#92400e" stroke-width="2"/>`;
-  s += `<text x="${lx + 199}" y="${ly + 3}" font-size="8.5" fill="#92400e">teren</text>`;
+  const hasReal = spans.some(sp => sp.sag40_real != null);
+  if (hasReal) {
+    s += `<line x1="${lx + 175}" y1="${ly}" x2="${lx + 195}" y2="${ly}" stroke="#f59e0b" stroke-width="2.5"/>`;
+    s += `<text x="${lx + 199}" y="${ly + 3}" font-size="8.5" fill="#f59e0b" font-weight="700">★ +40°C real (teren)</text>`;
+    s += `<line x1="${lx + 310}" y1="${ly}" x2="${lx + 330}" y2="${ly}" stroke="#92400e" stroke-width="2"/>`;
+  } else {
+    s += `<line x1="${lx + 175}" y1="${ly}" x2="${lx + 195}" y2="${ly}" stroke="#92400e" stroke-width="2"/>`;
+  }
+  // Legenda "teren" — decalată dacă există curba reală
+  const lx_teren = hasReal ? lx + 334 : lx + 199;
+  s += `<text x="${lx_teren + 4}" y="${ly + 3}" font-size="8.5" fill="#92400e">teren</text>`;
   if (hasCota) {
-    s += `<line x1="${lx + 240}" y1="${ly}" x2="${lx + 260}" y2="${ly}" stroke="#facc15" stroke-width="1" stroke-dasharray="5,4" opacity=".7"/>`;
-    s += `<text x="${lx + 264}" y="${ly + 3}" font-size="8.5" fill="#facc15" opacity=".8">gabarit ${GABARIT_MIN}m</text>`;
-    s += `<line x1="${lx + 340}" y1="${ly - 4}" x2="${lx + 340}" y2="${ly + 4}" stroke="#22c55e" stroke-width="1.5"/>`;
-    s += `<text x="${lx + 344}" y="${ly + 3}" font-size="8.5" fill="#22c55e">g≥7m ✓</text>`;
-    s += `<line x1="${lx + 390}" y1="${ly - 4}" x2="${lx + 390}" y2="${ly + 4}" stroke="#ef4444" stroke-width="1.5"/>`;
-    s += `<text x="${lx + 394}" y="${ly + 3}" font-size="8.5" fill="#ef4444">g&lt;7m ⚠</text>`;
-    // Legendă adnotări stâlpi
-    s += `<text x="${lx + 450}" y="${ly + 3}" font-size="8" fill="#94a3b8">■ tip stâlp</text>`;
-    s += `<text x="${lx + 510}" y="${ly + 3}" font-size="8" fill="#7dd3fc">■ consolă</text>`;
-    s += `<text x="${lx + 560}" y="${ly + 3}" font-size="8" fill="#c084fc">■ izolație</text>`;
+    const lx_gab = lx_teren + 45;
+    s += `<line x1="${lx_gab}" y1="${ly}" x2="${lx_gab + 20}" y2="${ly}" stroke="#facc15" stroke-width="1" stroke-dasharray="5,4" opacity=".7"/>`;
+    s += `<text x="${lx_gab + 24}" y="${ly + 3}" font-size="8.5" fill="#facc15" opacity=".8">gabarit ${GABARIT_MIN}m</text>`;
+    const lx_ok = lx_gab + 100;
+    s += `<line x1="${lx_ok}" y1="${ly - 4}" x2="${lx_ok}" y2="${ly + 4}" stroke="#22c55e" stroke-width="1.5"/>`;
+    s += `<text x="${lx_ok + 4}" y="${ly + 3}" font-size="8.5" fill="#22c55e">g≥7m ✓</text>`;
+    s += `<line x1="${lx_ok + 52}" y1="${ly - 4}" x2="${lx_ok + 52}" y2="${ly + 4}" stroke="#ef4444" stroke-width="1.5"/>`;
+    s += `<text x="${lx_ok + 56}" y="${ly + 3}" font-size="8.5" fill="#ef4444">g&lt;7m ⚠</text>`;
+    if (!hasReal) {
+      s += `<text x="${lx_ok + 112}" y="${ly + 3}" font-size="8" fill="#94a3b8">■ tip stâlp</text>`;
+      s += `<text x="${lx_ok + 172}" y="${ly + 3}" font-size="8" fill="#7dd3fc">■ consolă</text>`;
+      s += `<text x="${lx_ok + 222}" y="${ly + 3}" font-size="8" fill="#c084fc">■ izolație</text>`;
+    }
   }
 
   // Scale + notă dh

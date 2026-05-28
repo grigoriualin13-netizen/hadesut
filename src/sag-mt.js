@@ -31,6 +31,14 @@ const _twindOverrides = new Map();
 // Key = spanKey; Value = KP_dim decimal (ex. 0.47 pentru 47%)
 const _kpdimOverrides = new Map();
 
+// Sageată măsurată în teren per deschidere — verificare linie existentă
+// Key = spanKey; Value = { f_meas [m], T_meas [°C] }
+// Calcul: T_field = g1·L²/(8·f_meas) → Lamé → T_40 → f_40_real
+const _sagMeasOverrides = new Map();
+
+// Expune Map-ul pentru profil-lea.js (trasare curbă reală pe profil)
+export function getSagMeasOverrides() { return _sagMeasOverrides; }
+
 function spanKey(cns2) {
   const a = cns2[0].fromElId || '', b = cns2[0].toElId || '';
   return a && b ? (a < b ? `${a}|${b}` : `${b}|${a}`) : (cns2[0].id || '');
@@ -89,6 +97,13 @@ function elLabel(id) {
   return e ? (e.label || e.type) : '?';
 }
 
+// Consolele de întindere/ancoraj (cit, cdi, cdci) nu au oscilare izolator sub vânt.
+function isTensionConsole(ck) {
+  if (!ck) return false;
+  const k = ck.toLowerCase();
+  return k.startsWith('cit') || k.startsWith('cdi') || k.startsWith('cdci');
+}
+
 // Returnează H_prindere medie, T_max_horiz și dh real pentru o deschidere.
 // dh = (cota_teren_dr + H_dr) − (cota_teren_stg + H_stg); null dacă cotele lipsesc.
 function getSpanPoleData(fromElId, toElId) {
@@ -107,8 +122,17 @@ function getSpanPoleData(fromElId, toElId) {
   const cotaR = elR?.cota_teren;
   const dh    = (cotaL != null && cotaR != null) ? (cotaR + HR) - (cotaL + HL) : 0;
   const hasDh = cotaL != null && cotaR != null;
-  return { H: (HL + HR) / 2, HL, HR, T_max, dh, hasDh,
-           cotaL, cotaR,
+  const ckL   = elL?.console_type ?? null;
+  const ckR   = elR?.console_type ?? null;
+  const hasSwing = !isTensionConsole(ckL) || !isTensionConsole(ckR);
+  // G_max / V_max: min al celor două console (limita cea mai strictă)
+  const gL = pL.G_max, gR = pR.G_max, vL = pL.V_max, vR = pR.V_max;
+  const G_max = (gL != null && gR != null) ? Math.min(gL, gR)
+              : (gL ?? gR ?? null);
+  const V_max = (vL != null && vR != null) ? Math.min(vL, vR)
+              : (vL ?? vR ?? null);
+  return { H: (HL + HR) / 2, HL, HR, T_max, G_max, V_max, dh, hasDh,
+           cotaL, cotaR, hasSwing,
            consoleL: pL.consoleDesc, consoleR: pR.consoleDesc };
 }
 
@@ -160,14 +184,15 @@ export function runSagMT() {
     const spanPole = getSpanPoleData(cns2[0].fromElId, cns2[0].toElId);
 
     const span_kpdim = _kpdimOverrides.get(key) ?? _kpdim;
-    let T0, KP, sag40, T_crit, delta, fg, T_wind_calc, gabarit;
+    let T0, KP, sag40, T_crit, delta, fg, T_wind_calc, gabarit, f40_real, gabarit_real, res;
+    let G_actual = null, V_actual = null;
     try {
       const terrainProfile = (spanPole.cotaL != null && spanPole.cotaR != null)
         ? [{ x: 0, y: spanPole.cotaL }, { x: L, y: spanPole.cotaR }]
         : [];
       const H_wind = Math.max(spanPole.HL, spanPole.HR);
       const Av     = _avSpan ? L : Math.max(L, 40);
-      const res = calcSpan(acsr_key,
+      res = calcSpan(acsr_key,
         { zone: _zone, H: H_wind, Av, terrain: 'II' },
         { L, dh: spanPole.dh, h_left: spanPole.HL, h_right: spanPole.HR,
           terrain_profile: terrainProfile },
@@ -184,13 +209,42 @@ export function runSagMT() {
       const T_wind_used = _twindOverrides.get(key) ?? T_wind_calc;
       const g4n = res.loads.normate.g4;
       const g6n = res.loads.normate.g6;
-      delta = (g4n * L * L) / (8 * T_wind_used)         // deviație catenary
-            + L_IZ_MT * (g4n / g6n);                     // + oscilare lanț izolator
+      delta = (g4n * L * L) / (8 * T_wind_used)                        // deviație catenary
+            + (spanPole.hasSwing ? L_IZ_MT * (g4n / g6n) : 0);     // + oscilare lanț (susținere)
       // Gravity sag at dimensioning state (normate g1, bare conductor)
       fg    = (res.loads.normate.g1 * L * L) / (8 * T0);
+      // Eforturi reale pe consolă (pentru deschiderea curentă, span egal pe ambele laturi)
+      // G = g3·L (vertical: greutate conductor + chiciură)
+      // V = g4·L (transversal: vânt pe conductor gol, perpendicular pe linie)
+      G_actual = res.loads.normate.g3 * L;
+      V_actual = res.loads.normate.g4 * L;
     } catch(e) {
-      rows += `<tr><td colspan="12" style="color:#ef4444;padding:4px;font-size:8px">${acsr_key} — eroare calcul: ${e.message}</td></tr>`;
+      rows += `<tr><td colspan="15" style="color:#ef4444;padding:4px;font-size:8px">${acsr_key} — eroare calcul: ${e.message}</td></tr>`;
       return;
+    }
+
+    // ── Verificare din gabarit măsurat în teren ──────────────────────────
+    // Utilizatorul introduce gabarit_meas [m] (înălțimea conductorului față de sol)
+    // la temperatura T_meas [°C]. Conversia gabarit → săgeată:
+    //   f_sag = H_prindere_medie − gabarit_meas
+    // Apoi Lamé:
+    //   1. T_field = g1·L²/(8·f_sag)     → tracțiunea reală la T_meas
+    //   2. Lamé (g1, T_field, T_meas) → (g1, T_40, +40°C) → T_40_real
+    //   3. f_40_real = g1·L²/(8·T_40_real)
+    //   4. gabarit_real ≈ H_prindere_medie − f_40_real (midspan, simplificat)
+    const sfm = _sagMeasOverrides.get(key);
+    if (sfm?.f_meas > 0) {
+      try {
+        const EA_sfm = cd.E * cd.A;
+        const g1     = res.loads.normate.g1;
+        const f_sag  = spanPole.H - sfm.f_meas;   // gabarit → săgeată
+        if (f_sag > 0.1) {
+          const T_h_f  = g1 * L * L / (8 * f_sag);
+          const T_40r  = solveStateEquation(g1, T_h_f, sfm.T_meas, g1, 40, L, EA_sfm, cd.alpha);
+          f40_real     = g1 * L * L / (8 * T_40r);
+          gabarit_real = spanPole.H - f40_real;
+        }
+      } catch(_e) { /* date insuficiente — ignorat */ }
     }
 
     const fromLbl = elLabel(cns2[0].fromElId);
@@ -234,6 +288,77 @@ export function runSagMT() {
                     font-family:'JetBrains Mono',monospace">
     </td>`;
 
+    // Celulă verificare teren: două inputuri (f_teren [m] + T_teren [°C])
+    const hasSfm  = (sfm?.f_meas ?? 0) > 0;
+    const sfmInpStyle = (active) =>
+      `border:1px solid ${active ? '#f59e0b' : 'var(--border)'};` +
+      `background:${active ? 'rgba(245,158,11,0.15)' : 'var(--bg2)'};` +
+      `color:${active ? '#f59e0b' : 'var(--text2)'};` +
+      `font-size:7.5px;padding:2px;border-radius:3px;` +
+      `font-family:'JetBrains Mono',monospace`;
+    const terenCell = `<td style="padding:2px 3px;border:1px solid var(--border2);text-align:center;white-space:nowrap">
+      <input type="number" class="fmeas-inp" data-key="${key}"
+             placeholder="gab[m]" value="${hasSfm ? sfm.f_meas.toFixed(2) : ''}"
+             min="0.01" max="30" step="0.01"
+             title="Gabarit măsurat în teren [m] — înălțimea conductorului față de sol. Ex: 7.0. Se convertește intern la săgeată: f_sag = H_prindere − gabarit. Introdu și temperatura → f₄₀ real prin Lamé."
+             style="width:44px;${sfmInpStyle(hasSfm)}">
+      <input type="number" class="tmeas-inp" data-key="${key}"
+             placeholder="T°C" value="${hasSfm ? sfm.T_meas.toFixed(0) : ''}"
+             min="-40" max="50" step="1"
+             title="Temperatura la care ai măsurat gabaritul [°C]"
+             style="width:34px;${sfmInpStyle(hasSfm)}">
+    </td>`;
+    // Celulă rezultat din sageată măsurată
+    const f40rCell = f40_real != null
+      ? `<td style="padding:3px 4px;border:1px solid var(--border2);font-size:8.5px;text-align:right;
+                   font-family:'JetBrains Mono',monospace;color:#f59e0b;font-weight:bold"
+             title="f₄₀ calculat din sageată măsurată + Lamé. Gabarit midspan (simplificat).">
+           ${f40_real.toFixed(2)} m<br><span style="font-size:7px;color:${gabarit_real < 7 ? '#ef4444' : '#22c55e'}"
+             title="Gabarit real la midspan">${gabarit_real.toFixed(2)} m gab.</span></td>`
+      : `<td style="padding:3px 6px;border:1px solid var(--border2);font-size:8px;text-align:center;color:var(--text3)">—</td>`;
+
+    // ── Verificare consolă G/V/T (ST34-MT) ───────────────────────────────────
+    const g3n = res.loads.normate.g3;
+    const g4n_cons = res.loads.normate.g4;
+    // Deschidere maximă admisă de consolă (din G_max și V_max)
+    const L_max_G = (spanPole.G_max && g3n > 0) ? spanPole.G_max / g3n : null;
+    const L_max_V = (spanPole.V_max && g4n_cons > 0) ? spanPole.V_max / g4n_cons : null;
+    const L_max_cons = (L_max_G != null && L_max_V != null) ? Math.min(L_max_G, L_max_V)
+                     : (L_max_G ?? L_max_V ?? null);   // deschiderea critică (cea mai mică)
+    const G_pct = (spanPole.G_max && G_actual) ? G_actual / spanPole.G_max * 100 : null;
+    const V_pct = (spanPole.V_max && V_actual) ? V_actual / spanPole.V_max * 100 : null;
+    const T_pct = (spanPole.T_max && T0)        ? T0        / spanPole.T_max * 100 : null;
+    const maxPct = Math.max(G_pct ?? 0, V_pct ?? 0, T_pct ?? 0);
+    const pvtColor = pct => pct == null ? 'var(--text3)' : pct > 100 ? '#ef4444' : pct > 80 ? '#ff9f43' : '#22c55e';
+    const pvtBold  = pct => pct != null && pct > 80 ? 'font-weight:bold;' : '';
+    const lmStr    = (lm) => lm != null ? ` (L_max=${lm.toFixed(0)}m)` : '';
+    const pvtStr   = (lbl, pct, maxV, lm) => pct != null
+      ? `<span style="color:${pvtColor(pct)};${pvtBold(pct)}">${lbl}:${pct.toFixed(0)}%${pct>100?` ⚠ max=${maxV}daN`:''}</span>`
+      + (pct > 100 && lm != null
+          ? `<br><span style="color:#ef4444;font-size:7px;font-weight:bold"> → reduce L&lt;${lm.toFixed(0)}m</span>`
+          : `<span style="color:var(--text3);font-size:7px"> /${maxV}daN</span>`)
+      : `<span style="color:var(--text3)">${lbl}:—</span>`;
+    const pvtTitle = `Verificare consolă ST34-MT:\n`
+      + `G=${G_actual?.toFixed(1)??'?'} daN / G_max=${spanPole.G_max??'?'} daN${lmStr(L_max_G)} — vertical (cond+ch)\n`
+      + `V=${V_actual?.toFixed(1)??'?'} daN / V_max=${spanPole.V_max??'?'} daN${lmStr(L_max_V)} — transversal (vânt)\n`
+      + `T=${T0?.toFixed(0)??'?'} daN / T_max=${spanPole.T_max??'?'} daN — axial (tracțiune dim.)\n`
+      + (L_max_cons != null ? `\nDeschidere max. admisă de consolă: ${L_max_cons.toFixed(0)} m` : '')
+      + (G_pct==null && V_pct==null ? '\nSetează tipul de consolă în proprietățile stâlpului.' : '');
+    const pvtBgColor = maxPct > 100 ? 'rgba(239,68,68,0.08)' : maxPct > 80 ? 'rgba(255,159,67,0.08)' : 'transparent';
+    const hasGVT = G_pct != null || V_pct != null || T_pct != null;
+    const consoleCell = `<td style="padding:3px 5px;border:1px solid var(--border2);font-size:7.5px;
+                              text-align:left;white-space:nowrap;background:${pvtBgColor}"
+                             title="${pvtTitle}">
+      ${hasGVT
+        ? pvtStr('G', G_pct, spanPole.G_max, L_max_G) + '<br>'
+        + pvtStr('V', V_pct, spanPole.V_max, L_max_V) + '<br>'
+        + pvtStr('T', T_pct, spanPole.T_max, null)
+        + (L_max_cons != null
+            ? `<br><span style="color:var(--text3);font-size:7px">L_max=${L_max_cons.toFixed(0)}m</span>`
+            : '')
+        : `<span style="color:var(--text3);font-size:7px">consolă<br>nesetată</span>`}
+    </td>`;
+
     rows += `<tr>
       ${tdc(`${fromLbl} → ${toLbl}`, ';font-size:7.5px;color:var(--text2)')}
       ${tdc(fazeLbl)}
@@ -250,6 +375,9 @@ export function runSagMT() {
         ? tdr(`${gabarit.toFixed(2)} m${gabarit < 7 ? ' ⚠' : ''}`,
               gabarit < 7 ? ';color:#ef4444;font-weight:bold' : ';color:#22c55e;font-weight:bold')
         : tdc('—', ';color:var(--text3);font-size:8px')}
+      ${terenCell}
+      ${f40rCell}
+      ${consoleCell}
     </tr>`;
   });
 
@@ -262,15 +390,18 @@ export function runSagMT() {
         ${th('H [m]')}
         ${th('T_wind [daN]')}
         ${th('f_max 40°C [m]')}${th('δ vânt max [m]')}${th('T_crit [°C]')}${th('Gabarit [m]')}
+        ${th('gab.teren/T°C')}${th('f₄₀ real [m]')}${th('Consolă G/V/T')}
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div style="font-size:7.5px;color:var(--text3);padding:5px 4px;border-top:1px solid var(--border)">
-      ${(!_kpdim || _kpdim === 0.230) ? 'NTE 003/2015 (KP=23%)' : 'SR EN 50341-2-24 (KP=47%)'} | Zonă ${_zone}: Vb=${metZ.Vb??'?'}m/s · ch=${metZ.b_ch??'?'}mm · ρ=${metZ.rho_ch??'?'}kg/m³ | H=${_H}m &nbsp;|&nbsp;
-      T₀=min(KP_dim·RTS, EDS, T_max_stalp) &nbsp;|&nbsp; H_vânt=max(H_stg,H_dr) &nbsp;|&nbsp; Av=${_avSpan ? 'L (CALMECO)' : 'max(L,40) (NTE)'} &nbsp;|&nbsp; f_max=40°C &nbsp;|&nbsp; δ=catenary(+15+vmax)+lanț(${L_IZ_MT}m) &nbsp;|&nbsp;
+      ${!_kpdim ? 'Auto — EDS SR EN 50341-2-24 (CALMECO)' : _kpdim === 0.230 ? 'NTE legacy — KP=23% (multi-span)' : `SR EN 50341-2-24 — KP=${(_kpdim*100).toFixed(0)}%`} | Zonă ${_zone}: Vb=${metZ.Vb??'?'}m/s · ch=${metZ.b_ch??'?'}mm · ρ=${metZ.rho_ch??'?'}kg/m³ | H=${_H}m &nbsp;|&nbsp;
+      T₀=min(KP_dim·RTS, EDS, T_max_stalp) &nbsp;|&nbsp; H_vânt=max(H_stg,H_dr) &nbsp;|&nbsp; Av=${_avSpan ? 'L (CALMECO)' : 'max(L,40) (NTE)'} &nbsp;|&nbsp; f_max=40°C &nbsp;|&nbsp; δ=catenary(+15+vmax)+lanț(${L_IZ_MT}m, doar susținere) &nbsp;|&nbsp;
       <span style="color:#ff9f43">T_wind: placeholder=calculat, portocaliu=breviar CALMECO</span> &nbsp;|&nbsp;
       <span style="color:#a855f7">H implicit (pentru stâlpi fără catalog): ${_H}m</span> &nbsp;|&nbsp;
-      <span style="color:#22c55e">Gabarit ≥7m ✓ (NTE 003 art.137) — apare numai când cotele de teren sunt introduse</span>
+      <span style="color:#22c55e">Gabarit ≥7m ✓ (NTE 003 art.137) — apare numai când cotele de teren sunt introduse</span> &nbsp;|&nbsp;
+      <span style="color:#f59e0b">gab.teren: introdu gabaritul măsurat [m] (înălțimea conductorului față de sol) + temperatura [°C] → f₄₀ real prin Lamé (verificare linie existentă)</span> &nbsp;|&nbsp;
+      <span style="color:#22c55e">Consolă G/V/T (ST34-MT): G=greutate·L (normate g3), V=vânt·L (normate g4), T=T₀_dim — verde ≤80%, portocaliu 80–100%, roșu &gt;100%</span>
     </div>`;
 
   // Attach T_wind override handlers
@@ -296,6 +427,23 @@ export function runSagMT() {
         _kpdimOverrides.set(k, pct / 100);
       } else {
         _kpdimOverrides.delete(k);
+      }
+      runSagMT();
+    });
+  });
+
+  // Attach field sag measurement handlers (f_teren + T_teren)
+  body.querySelectorAll('input.fmeas-inp, input.tmeas-inp').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const k    = inp.dataset.key;
+      const fInp = body.querySelector(`input.fmeas-inp[data-key="${k}"]`);
+      const tInp = body.querySelector(`input.tmeas-inp[data-key="${k}"]`);
+      const fVal = parseFloat(fInp?.value);
+      const tVal = parseFloat(tInp?.value);
+      if (fVal > 0 && isFinite(fVal)) {
+        _sagMeasOverrides.set(k, { f_meas: fVal, T_meas: isFinite(tVal) ? tVal : 20 });
+      } else {
+        _sagMeasOverrides.delete(k);
       }
       runSagMT();
     });

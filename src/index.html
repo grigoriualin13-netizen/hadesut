@@ -939,14 +939,19 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
       </div>
       <div style="display:flex;flex-direction:column;gap:2px">
         <span style="font-size:7.5px;font-weight:700;color:var(--text3);text-transform:uppercase">Standard KP<sub>dim</sub></span>
-        <select id="sag-kpdim" onchange="runSagMT()" style="background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:4px 6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:10px" title="Limita de utilizare la starea dimensionantă: SR EN 50341-2-24 (nou) = 47%, NTE 003/2015 (vechi) = 23%">
+        <select id="sag-kpdim" onchange="runSagMT()" style="background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:4px 6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:10px" title="Auto = numai EDS (KP_30=24%, KP_15=15.5%) — corespunde breviarlor CALMECO. 47% = limita calcul SR EN 50341-2-24. 23% = limita KP la starea dimensionantă calcul (NTE legacy / ancorare multi-span).">
+          <option value="" selected>Auto (EDS, CALMECO)</option>
           <option value="0.470">47% — SR EN 50341-2-24</option>
-          <option value="0.230" selected>23% — NTE 003/2015</option>
+          <option value="0.230">23% — NTE legacy / multi-span</option>
         </select>
       </div>
       <button onclick="runSagMT()" style="height:30px;padding:0 12px;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.4);border-radius:6px;color:#3b82f6;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;cursor:pointer">▶ CALCULEAZĂ</button>
       <button onclick="copySagMT()" style="height:30px;padding:0 12px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.35);border-radius:6px;color:#00e5a0;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;cursor:pointer">📋 COPIAZĂ</button>
       <button onclick="exportSagCalcDetails()" style="height:30px;padding:0 12px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.40);border-radius:6px;color:#a855f7;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;cursor:pointer" title="Exportă calculul pas cu pas (verificare valori)">📄 DETALII</button>
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer" title="Bifat: Av=L (CALMECO — mai mic pentru L&lt;40m). Nebifat: Av=max(L,40) (safeguard NTE).">
+        <input type="checkbox" id="sag-av-span" onchange="runSagMT()">
+        <span style="font-size:9px;color:var(--text2)">Av = L <span style="color:var(--text3)">(CALMECO)</span></span>
+      </label>
       <label style="display:flex;align-items:center;gap:5px;cursor:pointer;margin-left:4px">
         <input type="checkbox" id="sag-overlay-cb" onchange="toggleSagOverlay(this.checked)">
         <span style="font-size:9px;color:var(--text2)">Vizualizare pe schemă</span>
