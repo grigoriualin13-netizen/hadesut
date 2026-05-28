@@ -3014,6 +3014,11 @@ ${(r * 0.1).toFixed(4)}
   function onMv(e) {
     const pt = svgPt(e);
     document.getElementById("stxy").textContent = `X:${Math.round(pt.x)} Y:${Math.round(pt.y)}`;
+    const ppm = S.pxPerMeter || 20;
+    const cx = document.getElementById("tb-cx");
+    if (cx) cx.textContent = (pt.x / ppm).toFixed(1);
+    const cy = document.getElementById("tb-cy");
+    if (cy) cy.textContent = (pt.y / ppm).toFixed(1);
     if (!(S.mode === "connect" && S.connStart) && S.mode !== "measure" && S.mode !== "dim") {
       if (_dxfSnap) {
         _dxfSnap = null;

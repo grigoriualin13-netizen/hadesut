@@ -163,6 +163,11 @@ body.export-active{cursor:crosshair}
   font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;color:#000;
   margin-bottom:8px;flex-shrink:0;box-shadow:var(--glow);letter-spacing:-.5px}
 .sep{width:40px;height:1px;background:var(--border);margin:4px 0;flex-shrink:0}
+.coord-box{width:56px;height:19px;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;
+  display:flex;align-items:center;padding:0 5px;gap:4px;box-sizing:border-box;flex-shrink:0;margin:1px 0}
+.coord-lbl{font-size:8px;font-weight:800;color:var(--text3);font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.coord-val{font-size:8px;color:var(--accent);font-family:'JetBrains Mono',monospace;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;text-align:right}
 .cat{font-size:8px;font-weight:800;letter-spacing:.08em;color:var(--text3);text-align:center;
   padding:0 2px;flex-shrink:0;text-transform:uppercase}
 .tb{width:56px;height:50px;border-radius:8px;display:flex;flex-direction:column;
@@ -418,6 +423,9 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
 <!-- TOOLBAR -->
 <div id="toolbar">
   <div class="logo">EC</div>
+  <div class="coord-box"><span class="coord-lbl">X</span><span id="tb-cx" class="coord-val">0</span></div>
+  <div class="coord-box"><span class="coord-lbl">Y</span><span id="tb-cy" class="coord-val">0</span></div>
+  <div class="sep" style="margin-top:4px"></div>
   <div class="tb active" id="btn-sel" onclick="setMode('select')" title="Selectează (S)">
     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4l5.5 15 3-7 7-2.5L4 4z"/></svg>
     <span class="tb-lbl">Select</span>
