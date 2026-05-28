@@ -326,11 +326,15 @@ function _updateLayerInfo() {
 }
 
 // ── Clear DXF layer ───────────────────────────────────────────────────────────
-export function clearDxf() {
+export function resetDxfSilent() {
   S.dxfData = null;
   renderDxfLayer();
   const ctrl = document.getElementById('dxf-controls');
   if (ctrl) ctrl.style.display = 'none';
+}
+
+export function clearDxf() {
+  resetDxfSilent();
   toast('Strat DXF șters.', 'ok');
 }
 

@@ -3,6 +3,7 @@ import { render, renderBg } from './renderer.js';
 import { updateProps } from './ui.js';
 import { toast, generateUUID, updateStat } from './utils.js';
 import { getCloudFunctions } from './auth.js';
+import { resetDxfSilent } from './dxf-import.js';
 
 // ── IndexedDB ──
 let ecDB = null;
@@ -74,6 +75,7 @@ function loadProjectData(data) {
   if (data.bgData) S.bgData = data.bgData;
   else S.bgData = { url: null, x: 0, y: 0, w: 0, h: 0, op: 0.5, locked: true };
   S.sel = null; S.multiSel.clear(); S.undoStack = []; S.redoStack = [];
+  resetDxfSilent();
   render(); renderBg(); updateProps(); updateStat();
 }
 
@@ -324,6 +326,7 @@ export function newProject() {
   }
   S.EL = []; S.CN = []; S.sel = null; S.multiSel.clear(); S.undoStack = []; S.redoStack = [];
   S.bgData = { url: null, x: 0, y: 0, w: 0, h: 0, op: 0.5, locked: true };
+  resetDxfSilent();
   Object.keys(S.counters).forEach(k => delete S.counters[k]);
   S.vdResults = null;
   currentProjectId = null; currentProjectName = null;

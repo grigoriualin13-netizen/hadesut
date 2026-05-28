@@ -1201,11 +1201,14 @@
     const total = new Set(S.dxfData.allEntities.map((e) => e.layer)).size;
     info.textContent = n > 0 ? `${n}/${total} selectate` : `${total} straturi`;
   }
-  function clearDxf() {
+  function resetDxfSilent() {
     S.dxfData = null;
     renderDxfLayer();
     const ctrl = document.getElementById("dxf-controls");
     if (ctrl) ctrl.style.display = "none";
+  }
+  function clearDxf() {
+    resetDxfSilent();
     toast("Strat DXF \u0219ters.", "ok");
   }
   function setDxfOpacity(val) {
@@ -2418,6 +2421,7 @@ ${(r * 0.1).toFixed(4)}
     S.multiSel.clear();
     S.undoStack = [];
     S.redoStack = [];
+    resetDxfSilent();
     render();
     renderBg();
     updateProps();
@@ -2723,6 +2727,7 @@ ${(r * 0.1).toFixed(4)}
     S.undoStack = [];
     S.redoStack = [];
     S.bgData = { url: null, x: 0, y: 0, w: 0, h: 0, op: 0.5, locked: true };
+    resetDxfSilent();
     Object.keys(S.counters).forEach((k) => delete S.counters[k]);
     S.vdResults = null;
     currentProjectId = null;
@@ -2751,6 +2756,7 @@ ${(r * 0.1).toFixed(4)}
       init_ui();
       init_utils();
       init_auth();
+      init_dxf_import();
       ecDB = null;
       currentProjectId = null;
       currentProjectName = null;
