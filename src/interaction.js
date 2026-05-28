@@ -457,7 +457,10 @@ export function initKeyboard() {
       if (e.key === 's') { e.preventDefault(); save(); return; }
     }
     if (!inp) {
-      if (e.key === 'Delete' || e.key === 'Backspace') delSel();
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (S.mode === 'dim') { if (S.dims.length) { S.dims.pop(); renderDimLayer(); toast('Ultima cotă ștearsă.', 'ok'); } }
+        else delSel();
+      }
       if (e.key === 'Escape') { S.multiSel.clear(); S.sel = null; setMode('select'); render(); updateProps(); _mpts = []; _renderMeasure(); _dimPts = []; renderDimLayer(); _dxfSnap = null; _renderDxfSnap(); const b = document.getElementById('btn-dim'); if (b) b.classList.remove('active'); }
       if (e.key === 's') setMode('select');
       if (e.key === 'c') setMode('connect');

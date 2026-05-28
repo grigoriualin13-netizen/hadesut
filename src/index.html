@@ -543,7 +543,7 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
 
   <div class="sep"></div>
 
-  <div class="tb" id="btn-dim" onclick="startDim()" title="Cotă [M]: P1 → P2 → offset → click plasare. Esc = ieși">
+  <div class="tb" id="btn-dim" onclick="startDim()" title="Cotă [M]: P1 → P2 → offset → click plasare. În modul Cotă: Delete = șterge ultima. Esc = ieși">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
       <line x1="3" y1="17" x2="21" y2="17"/>
       <line x1="3" y1="8" x2="21" y2="8"/>
@@ -553,6 +553,13 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
       <line x1="21" y1="12" x2="21" y2="17"/>
     </svg>
     <span class="tb-lbl">Cotă</span>
+  </div>
+  <div class="tb" onclick="clearDims()" title="Șterge toate cotele" style="opacity:0.7">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <line x1="3" y1="8" x2="21" y2="8"/><line x1="3" y1="13" x2="14" y2="13"/>
+      <line x1="16" y1="16" x2="22" y2="22"/><line x1="22" y1="16" x2="16" y2="22"/>
+    </svg>
+    <span class="tb-lbl">Cote ×</span>
   </div>
   <div class="tb" id="btn-measure" onclick="toggleMeasure()" title="Măsurare [N]: multi-punct, click dreapta = finalizează">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">

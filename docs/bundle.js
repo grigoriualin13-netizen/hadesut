@@ -3392,7 +3392,15 @@ ${(r * 0.1).toFixed(4)}
         }
       }
       if (!inp) {
-        if (e.key === "Delete" || e.key === "Backspace") delSel();
+        if (e.key === "Delete" || e.key === "Backspace") {
+          if (S.mode === "dim") {
+            if (S.dims.length) {
+              S.dims.pop();
+              renderDimLayer();
+              toast("Ultima cot\u0103 \u0219tears\u0103.", "ok");
+            }
+          } else delSel();
+        }
         if (e.key === "Escape") {
           S.multiSel.clear();
           S.sel = null;
