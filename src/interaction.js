@@ -2,11 +2,30 @@ import { S } from './state.js';
 import { svgPt, sn, toast, applyView, termWorldPos, setMode, updateStat } from './utils.js';
 import { getDxfSnapPoint } from './dxf-import.js';
 import { isConnectionActive } from './elements.js';
-import { render, renderFlowLayer, toggleFlowAnim } from './renderer.js';
+import { render, renderFlowLayer, toggleFlowAnim, renderDimLayer } from './renderer.js';
 import { saveState, addElem, delSel, rotateSel, copyEl, pasteEl, finalConn, updateConnectedCables, selectEl, placeMTSpanAt } from './element-manager.js';
 import { updateProps } from './ui.js';
 import { doExportPNG, doExportPDF, doExportSVG } from './export.js';
 import { save, saveAsNew } from './project.js';
+
+// ── Dimension placement state ─────────────────────────────────────────────────
+let _dimPts = [];
+
+function _dimSignedDist(pt, p1, p2) {
+  const dx = p2.x - p1.x, dy = p2.y - p1.y, len = Math.hypot(dx, dy);
+  if (len < 1) return 30;
+  return ((pt.x - p1.x) * (-dy) + (pt.y - p1.y) * dx) / len;
+}
+
+export function startDim() {
+  _dimPts = []; setMode('dim');
+  const btn = document.getElementById('btn-dim'); if (btn) btn.classList.add('active');
+  toast('Click P1...', 'ok');
+}
+
+export function clearDims() {
+  S.dims = []; renderDimLayer(); toast('Cote șterse.', 'ok');
+}
 
 // ── DXF snap indicator ───────────────────────────────────────────────────────
 let _dxfSnap = null;
@@ -87,6 +106,12 @@ export function toggleMeasure() {
 export function onDn(e) {
   const pt = svgPt(e);
   if (e.button === 2) {
+    if (S.mode === 'dim') {
+      if (_dimPts.length >= 1) { _dimPts = []; toast('Cotă anulată.', 'w'); }
+      else { setMode('select'); const b = document.getElementById('btn-dim'); if (b) b.classList.remove('active'); }
+      _dxfSnap = null; _renderDxfSnap(); renderDimLayer();
+      return;
+    }
     if (S.mode === 'measure') {
       if (_mpts.length >= 2) {
         const ppm = S.pxPerMeter || 5;
@@ -124,6 +149,21 @@ export function onDn(e) {
   }
   if (S.mode === 'place') { addElem(pt.x, pt.y); return; }
   if (S.mode === 'mt_span') { placeMTSpanAt(pt.x, pt.y); return; }
+  if (S.mode === 'dim') {
+    const sp = _dxfSnap ? { x: _dxfSnap.x, y: _dxfSnap.y } : { x: pt.x, y: pt.y };
+    _dimPts.push(sp);
+    if (_dimPts.length === 1) toast('Click P2...', 'ok');
+    else if (_dimPts.length === 2) toast('Mișcă pentru offset, click pentru a plasa.', 'ok');
+    else if (_dimPts.length === 3) {
+      const [p1, p2] = _dimPts;
+      const offset = _dimSignedDist(sp, p1, p2);
+      S.dims.push({ id: Date.now(), p1, p2, offset });
+      renderDimLayer();
+      _dimPts = [_dimPts[1]]; // reuse last point as new P1 for chaining
+      toast('Cotă plasată. Click P2 pentru cotă nouă sau Esc.', 'ok');
+    }
+    return;
+  }
   if (S.mode === 'measure') {
     const snappedPt = _dxfSnap ? { x: _dxfSnap.x, y: _dxfSnap.y } : { x: pt.x, y: pt.y };
     _mpts.push(snappedPt);
@@ -172,8 +212,8 @@ export function onDn(e) {
 export function onMv(e) {
   const pt = svgPt(e);
   document.getElementById('stxy').textContent = `X:${Math.round(pt.x)} Y:${Math.round(pt.y)}`;
-  // Clear snap indicator when not actively drawing a cable
-  if (!(S.mode === 'connect' && S.connStart)) {
+  // Clear snap indicator when not in a snap-aware mode
+  if (!(S.mode === 'connect' && S.connStart) && S.mode !== 'measure' && S.mode !== 'dim') {
     if (_dxfSnap) { _dxfSnap = null; _renderDxfSnap(); }
   }
   if (S.mode === 'export_box' && S.exportRectStart) {
@@ -187,6 +227,23 @@ export function onMv(e) {
     S.bgData.x = pt.x - S.dragOff.x; S.bgData.y = pt.y - S.dragOff.y;
     const img = document.getElementById('html-bg-img');
     if (img) { img.style.left = S.bgData.x + 'px'; img.style.top = S.bgData.y + 'px'; }
+    return;
+  }
+  if (S.mode === 'dim') {
+    if (S.dxfData) _dxfSnap = getDxfSnapPoint(pt.x, pt.y, 20 / (S.view.s || 1)); else _dxfSnap = null;
+    _renderDxfSnap();
+    const cur = _dxfSnap ? { x: _dxfSnap.x, y: _dxfSnap.y } : pt;
+    const tp = document.getElementById('tpoly');
+    if (_dimPts.length === 0) { tp.style.display = 'none'; renderDimLayer(); }
+    else if (_dimPts.length === 1) {
+      tp.style.display = 'block';
+      tp.setAttribute('points', `${_dimPts[0].x.toFixed(1)},${_dimPts[0].y.toFixed(1)} ${cur.x.toFixed(1)},${cur.y.toFixed(1)}`);
+      renderDimLayer();
+    } else if (_dimPts.length === 2) {
+      tp.style.display = 'none';
+      const offset = _dimSignedDist(cur, _dimPts[0], _dimPts[1]);
+      renderDimLayer({ id: -1, p1: _dimPts[0], p2: _dimPts[1], offset });
+    }
     return;
   }
   if (S.mode === 'measure') {
@@ -398,7 +455,7 @@ export function initKeyboard() {
     }
     if (!inp) {
       if (e.key === 'Delete' || e.key === 'Backspace') delSel();
-      if (e.key === 'Escape') { S.multiSel.clear(); S.sel = null; setMode('select'); render(); updateProps(); _mpts = []; _renderMeasure(); _dxfSnap = null; _renderDxfSnap(); }
+      if (e.key === 'Escape') { S.multiSel.clear(); S.sel = null; setMode('select'); render(); updateProps(); _mpts = []; _renderMeasure(); _dimPts = []; renderDimLayer(); _dxfSnap = null; _renderDxfSnap(); const b = document.getElementById('btn-dim'); if (b) b.classList.remove('active'); }
       if (e.key === 's') setMode('select');
       if (e.key === 'c') setMode('connect');
       if (e.key === 'r') rotateSel(90);

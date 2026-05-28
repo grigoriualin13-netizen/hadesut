@@ -91,6 +91,8 @@
         currentProfile: null,
         // Prosumator
         prosExtraClients: [],
+        // Cote (dimensiuni AutoCAD-style)
+        dims: [],
         // IndexedDB
         ecDB: null,
         // UI
@@ -2771,6 +2773,23 @@ ${(r * 0.1).toFixed(4)}
   });
 
   // src/interaction.js
+  function _dimSignedDist(pt, p1, p2) {
+    const dx = p2.x - p1.x, dy = p2.y - p1.y, len = Math.hypot(dx, dy);
+    if (len < 1) return 30;
+    return ((pt.x - p1.x) * -dy + (pt.y - p1.y) * dx) / len;
+  }
+  function startDim() {
+    _dimPts = [];
+    setMode("dim");
+    const btn = document.getElementById("btn-dim");
+    if (btn) btn.classList.add("active");
+    toast("Click P1...", "ok");
+  }
+  function clearDims() {
+    S.dims = [];
+    renderDimLayer();
+    toast("Cote \u0219terse.", "ok");
+  }
   function _renderDxfSnap() {
     const layer = document.getElementById("SNAP");
     if (!layer) return;
@@ -2845,6 +2864,20 @@ ${(r * 0.1).toFixed(4)}
   function onDn(e) {
     const pt = svgPt(e);
     if (e.button === 2) {
+      if (S.mode === "dim") {
+        if (_dimPts.length >= 1) {
+          _dimPts = [];
+          toast("Cot\u0103 anulat\u0103.", "w");
+        } else {
+          setMode("select");
+          const b = document.getElementById("btn-dim");
+          if (b) b.classList.remove("active");
+        }
+        _dxfSnap = null;
+        _renderDxfSnap();
+        renderDimLayer();
+        return;
+      }
       if (S.mode === "measure") {
         if (_mpts.length >= 2) {
           const ppm = S.pxPerMeter || 5;
@@ -2907,6 +2940,21 @@ ${(r * 0.1).toFixed(4)}
       placeMTSpanAt(pt.x, pt.y);
       return;
     }
+    if (S.mode === "dim") {
+      const sp = _dxfSnap ? { x: _dxfSnap.x, y: _dxfSnap.y } : { x: pt.x, y: pt.y };
+      _dimPts.push(sp);
+      if (_dimPts.length === 1) toast("Click P2...", "ok");
+      else if (_dimPts.length === 2) toast("Mi\u0219c\u0103 pentru offset, click pentru a plasa.", "ok");
+      else if (_dimPts.length === 3) {
+        const [p1, p2] = _dimPts;
+        const offset = _dimSignedDist(sp, p1, p2);
+        S.dims.push({ id: Date.now(), p1, p2, offset });
+        renderDimLayer();
+        _dimPts = [_dimPts[1]];
+        toast("Cot\u0103 plasat\u0103. Click P2 pentru cot\u0103 nou\u0103 sau Esc.", "ok");
+      }
+      return;
+    }
     if (S.mode === "measure") {
       const snappedPt = _dxfSnap ? { x: _dxfSnap.x, y: _dxfSnap.y } : { x: pt.x, y: pt.y };
       _mpts.push(snappedPt);
@@ -2966,7 +3014,7 @@ ${(r * 0.1).toFixed(4)}
   function onMv(e) {
     const pt = svgPt(e);
     document.getElementById("stxy").textContent = `X:${Math.round(pt.x)} Y:${Math.round(pt.y)}`;
-    if (!(S.mode === "connect" && S.connStart)) {
+    if (!(S.mode === "connect" && S.connStart) && S.mode !== "measure" && S.mode !== "dim") {
       if (_dxfSnap) {
         _dxfSnap = null;
         _renderDxfSnap();
@@ -2989,6 +3037,26 @@ ${(r * 0.1).toFixed(4)}
       if (img) {
         img.style.left = S.bgData.x + "px";
         img.style.top = S.bgData.y + "px";
+      }
+      return;
+    }
+    if (S.mode === "dim") {
+      if (S.dxfData) _dxfSnap = getDxfSnapPoint(pt.x, pt.y, 20 / (S.view.s || 1));
+      else _dxfSnap = null;
+      _renderDxfSnap();
+      const cur = _dxfSnap ? { x: _dxfSnap.x, y: _dxfSnap.y } : pt;
+      const tp = document.getElementById("tpoly");
+      if (_dimPts.length === 0) {
+        tp.style.display = "none";
+        renderDimLayer();
+      } else if (_dimPts.length === 1) {
+        tp.style.display = "block";
+        tp.setAttribute("points", `${_dimPts[0].x.toFixed(1)},${_dimPts[0].y.toFixed(1)} ${cur.x.toFixed(1)},${cur.y.toFixed(1)}`);
+        renderDimLayer();
+      } else if (_dimPts.length === 2) {
+        tp.style.display = "none";
+        const offset = _dimSignedDist(cur, _dimPts[0], _dimPts[1]);
+        renderDimLayer({ id: -1, p1: _dimPts[0], p2: _dimPts[1], offset });
       }
       return;
     }
@@ -3328,8 +3396,12 @@ ${(r * 0.1).toFixed(4)}
           updateProps();
           _mpts = [];
           _renderMeasure();
+          _dimPts = [];
+          renderDimLayer();
           _dxfSnap = null;
           _renderDxfSnap();
+          const b = document.getElementById("btn-dim");
+          if (b) b.classList.remove("active");
         }
         if (e.key === "s") setMode("select");
         if (e.key === "c") setMode("connect");
@@ -3360,7 +3432,7 @@ ${(r * 0.1).toFixed(4)}
     toast(msg, "ok");
     if (dir && !S.flowAnimOn) toggleFlowAnim();
   }
-  var _dxfSnap, _mpts;
+  var _dimPts, _dxfSnap, _mpts;
   var init_interaction = __esm({
     "src/interaction.js"() {
       init_state();
@@ -3372,6 +3444,7 @@ ${(r * 0.1).toFixed(4)}
       init_ui();
       init_export();
       init_project();
+      _dimPts = [];
       _dxfSnap = null;
       _mpts = [];
     }
@@ -5666,6 +5739,7 @@ ${(r * 0.1).toFixed(4)}
     mk: () => mk,
     render: () => render,
     renderBg: () => renderBg,
+    renderDimLayer: () => renderDimLayer,
     renderFlowLayer: () => renderFlowLayer,
     renderVDOverlay: () => renderVDOverlay,
     startCalib: () => startCalib,
@@ -5894,6 +5968,54 @@ ${(r * 0.1).toFixed(4)}
       path2.style.animationDelay = `-${offset.toFixed(1)}s`;
       gl.appendChild(path2);
     });
+  }
+  function renderDimLayer(preview = null) {
+    const el = document.getElementById("DIM");
+    if (!el) return;
+    const all = preview ? [...S.dims, preview] : S.dims;
+    if (!all.length) {
+      el.innerHTML = "";
+      return;
+    }
+    const dark = !S.lightMode;
+    const col = dark ? "#00e5a0" : "#007a55";
+    const ppm = S.pxPerMeter || 5;
+    const OVS = 10;
+    const GAP = 5;
+    const ARL = 9;
+    const ARW = 3.5;
+    const TXTOFF = 10;
+    let html = "";
+    for (const d of all) {
+      const { p1, p2, offset } = d;
+      const ddx = p2.x - p1.x, ddy = p2.y - p1.y;
+      const len = Math.hypot(ddx, ddy);
+      if (len < 2) continue;
+      const ux = ddx / len, uy = ddy / len;
+      const nx = -uy, ny = ux;
+      const ns = offset >= 0 ? 1 : -1;
+      const d1x = p1.x + nx * offset, d1y = p1.y + ny * offset;
+      const d2x = p2.x + nx * offset, d2y = p2.y + ny * offset;
+      const g = GAP * ns, o = (Math.abs(offset) + OVS) * ns;
+      html += `<line x1="${(p1.x + nx * g).toFixed(1)}" y1="${(p1.y + ny * g).toFixed(1)}" x2="${(p1.x + nx * o).toFixed(1)}" y2="${(p1.y + ny * o).toFixed(1)}" stroke="${col}" stroke-width="0.9" opacity="0.85"/>`;
+      html += `<line x1="${(p2.x + nx * g).toFixed(1)}" y1="${(p2.y + ny * g).toFixed(1)}" x2="${(p2.x + nx * o).toFixed(1)}" y2="${(p2.y + ny * o).toFixed(1)}" stroke="${col}" stroke-width="0.9" opacity="0.85"/>`;
+      html += `<line x1="${d1x.toFixed(1)}" y1="${d1y.toFixed(1)}" x2="${d2x.toFixed(1)}" y2="${d2y.toFixed(1)}" stroke="${col}" stroke-width="1.2" opacity="0.9"/>`;
+      const b1x = d1x + ux * ARL, b1y = d1y + uy * ARL;
+      html += `<polygon points="${d1x.toFixed(1)},${d1y.toFixed(1)} ${(b1x - nx * ARW).toFixed(1)},${(b1y - ny * ARW).toFixed(1)} ${(b1x + nx * ARW).toFixed(1)},${(b1y + ny * ARW).toFixed(1)}" fill="${col}" opacity="0.9"/>`;
+      const b2x = d2x - ux * ARL, b2y = d2y - uy * ARL;
+      html += `<polygon points="${d2x.toFixed(1)},${d2y.toFixed(1)} ${(b2x - nx * ARW).toFixed(1)},${(b2y - ny * ARW).toFixed(1)} ${(b2x + nx * ARW).toFixed(1)},${(b2y + ny * ARW).toFixed(1)}" fill="${col}" opacity="0.9"/>`;
+      const mx = (d1x + d2x) / 2 + nx * ns * TXTOFF, my = (d1y + d2y) / 2 + ny * ns * TXTOFF;
+      let ang = Math.atan2(ddy, ddx) * 180 / Math.PI;
+      if (ang > 90) ang -= 180;
+      else if (ang < -90) ang += 180;
+      const distM = (len / ppm).toFixed(2);
+      html += `<text x="${mx.toFixed(1)}" y="${my.toFixed(1)}" font-size="11" fill="${col}"
+               font-family="JetBrains Mono,monospace" font-weight="700" text-anchor="middle" dominant-baseline="central"
+               transform="rotate(${ang.toFixed(1)},${mx.toFixed(1)},${my.toFixed(1)})"
+               paint-order="stroke" stroke="${dark ? "#000a" : "#fffa"}" stroke-width="2.5"
+               stroke-linecap="round">${distM} m</text>`;
+    }
+    el.innerHTML = html;
   }
   function render() {
     _NL.innerHTML = "";
@@ -6185,6 +6307,7 @@ ${(r * 0.1).toFixed(4)}
     });
     if (S.vdOverlayOn && S.vdResults) renderVDOverlay();
     if (S.flowAnimOn) renderFlowLayer();
+    renderDimLayer();
   }
   var _svgEl2, _VP2, _NL, _CL, _GL, MT_PHASE_PX, _MT_FAZA_DIR, _MT_POLE_R;
   var init_renderer = __esm({
@@ -6210,6 +6333,7 @@ ${(r * 0.1).toFixed(4)}
   init_element_manager();
   init_project();
   init_auth();
+  init_renderer();
   init_export();
 
   // src/fc-helpers.js
@@ -11264,6 +11388,9 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
   window.toggleSagOverlay = toggleSagOverlay;
   window.renderSagLayer = renderSagLayer;
   window.toggleMeasure = toggleMeasure;
+  window.startDim = startDim;
+  window.clearDims = clearDims;
+  window.renderDimLayer = renderDimLayer;
   window.openProfilLEA = openProfilLEA;
   window.closeProfilLEA = closeProfilLEA;
   window.runProfilLEA = runProfilLEA;

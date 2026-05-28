@@ -99,6 +99,9 @@ export const S = {
   // Prosumator
   prosExtraClients: [],
 
+  // Cote (dimensiuni AutoCAD-style)
+  dims: [],
+
   // IndexedDB
   ecDB: null,
 

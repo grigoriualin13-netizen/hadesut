@@ -10,7 +10,7 @@ import {
   startCalib, confirmCalib, closeCalib,
   toggleTheme, toggleVDOverlay, toggleFlowAnim, renderFlowLayer
 } from './renderer.js';
-import { onDn, onMv, onUp, initKeyboard, setMultiFlow, toggleMeasure } from './interaction.js';
+import { onDn, onMv, onUp, initKeyboard, setMultiFlow, toggleMeasure, startDim, clearDims } from './interaction.js';
 import {
   updateProps, clearAll, toggleLeg, buildLeg,
   toggleVD, runVD, populateVDCircuits, copyVDTable,
@@ -38,6 +38,7 @@ import {
   checkUserApproval, pendingLogout, setAuthHandlers,
   resumeSession, setupAuthStateListener
 } from './auth.js';
+import { renderDimLayer } from './renderer.js';
 import {
   startExport, buildExportSVG,
   doExportPNG, doExportSVG, doExportPDF, doExportDXF,
@@ -261,6 +262,9 @@ window.exportSagCalcDetails = exportSagCalcDetails;
 window.toggleSagOverlay    = toggleSagOverlay;
 window.renderSagLayer   = renderSagLayer;
 window.toggleMeasure    = toggleMeasure;
+window.startDim         = startDim;
+window.clearDims        = clearDims;
+window.renderDimLayer   = renderDimLayer;
 
 // Profil în lung LEA
 window.openProfilLEA   = openProfilLEA;

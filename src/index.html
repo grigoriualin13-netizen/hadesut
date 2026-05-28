@@ -535,7 +535,18 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
 
   <div class="sep"></div>
 
-  <div class="tb" id="btn-measure" onclick="toggleMeasure()" title="Măsoară distanță (2 click-uri)">
+  <div class="tb" id="btn-dim" onclick="startDim()" title="Cotă (AutoCAD-style): P1 → P2 → offset → plasare. Esc = ieși">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <line x1="3" y1="17" x2="21" y2="17"/>
+      <line x1="3" y1="8" x2="21" y2="8"/>
+      <polyline points="6,6 3,8 6,10" fill="currentColor" stroke-width="1.4"/>
+      <polyline points="18,6 21,8 18,10" fill="currentColor" stroke-width="1.4"/>
+      <line x1="3" y1="12" x2="3" y2="17"/>
+      <line x1="21" y1="12" x2="21" y2="17"/>
+    </svg>
+    <span class="tb-lbl">Cotă</span>
+  </div>
+  <div class="tb" id="btn-measure" onclick="toggleMeasure()" title="Măsoară distanță (multi-punct, click dreapta = finalizează)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
       <line x1="3" y1="12" x2="21" y2="12"/>
       <line x1="3" y1="9" x2="3" y2="15"/>
@@ -810,7 +821,7 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
     <g id="VP">
       <g id="BG"></g>
       <g id="DXF" pointer-events="none"></g>
-      <g id="CL"></g><g id="GL"></g><g id="NL"></g><g id="SAG" pointer-events="none"></g><g id="MEAS" pointer-events="none"></g><g id="SNAP" pointer-events="none"></g>
+      <g id="CL"></g><g id="GL"></g><g id="NL"></g><g id="DIM" pointer-events="none"></g><g id="SAG" pointer-events="none"></g><g id="MEAS" pointer-events="none"></g><g id="SNAP" pointer-events="none"></g>
       <rect id="sel-rect" display="none" x="0" y="0" width="0" height="0"/>
       <rect id="export-rect" display="none" x="0" y="0" width="0" height="0"/>
       <g id="TL">
