@@ -98,6 +98,84 @@ function init() {
   }
 }
 
+// ── Touch support (mobile) ────────────────────────────────────────────────
+
+function _initTouch(svgEl) {
+  let _pinchDist = 0;
+  let _pinchActive = false;
+  let _touchDragging = false;
+
+  function fakeEv(type, touch, orig) {
+    return {
+      type, clientX: touch.clientX, clientY: touch.clientY,
+      button: 0, buttons: type === 'mouseup' ? 0 : 1,
+      ctrlKey: orig.ctrlKey || false, metaKey: orig.metaKey || false,
+      shiftKey: orig.shiftKey || false,
+      target: orig.target,
+      preventDefault() {}, stopPropagation() {}
+    };
+  }
+
+  function dist2(e) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  svgEl.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (e.touches.length === 2) {
+      _pinchActive = true;
+      _pinchDist = dist2(e);
+      if (_touchDragging) { onUp(fakeEv('mouseup', e.touches[0], e)); _touchDragging = false; }
+    } else if (e.touches.length === 1 && !_pinchActive) {
+      _touchDragging = true;
+      onDn(fakeEv('mousedown', e.touches[0], e));
+    }
+  }, { passive: false });
+
+  let _pinchCx = 0, _pinchCy = 0;
+
+  svgEl.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (e.touches.length === 2) {
+      const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      if (!_pinchActive) {
+        _pinchActive = true; _pinchDist = dist2(e);
+        _pinchCx = cx; _pinchCy = cy;
+        return;
+      }
+      const d = dist2(e);
+      const f = d / _pinchDist;
+      _pinchDist = d;
+      const r = svgEl.getBoundingClientRect();
+      const ox = cx - r.left, oy = cy - r.top;
+      // zoom around pinch center
+      S.view.x = ox - (ox - S.view.x) * f;
+      S.view.y = oy - (oy - S.view.y) * f;
+      S.view.s = Math.max(0.06, Math.min(14, S.view.s * f));
+      // pan from center movement
+      S.view.x += cx - _pinchCx;
+      S.view.y += cy - _pinchCy;
+      _pinchCx = cx; _pinchCy = cy;
+      applyView();
+    } else if (e.touches.length === 1 && _touchDragging) {
+      onMv(fakeEv('mousemove', e.touches[0], e));
+    }
+  }, { passive: false });
+
+  svgEl.addEventListener('touchend', e => {
+    e.preventDefault();
+    if (e.touches.length === 0) _pinchActive = false;
+    if (e.touches.length < 2) _pinchActive = false;
+    if (_touchDragging && e.changedTouches.length > 0) {
+      onUp(fakeEv('mouseup', e.changedTouches[0], e));
+      _touchDragging = false;
+    }
+  }, { passive: false });
+}
+
 // ── SVG wheel + auth enter keys on DOM ready ──────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -113,6 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
       S.view.s = Math.max(0.06, Math.min(14, S.view.s * f));
       applyView();
     }, { passive: false });
+    _initTouch(svgEl);
   }
 
   ['auth-email', 'auth-pass', 'auth-name'].forEach(id => {
