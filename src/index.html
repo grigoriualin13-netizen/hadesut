@@ -809,6 +809,7 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
     </defs>
     <g id="VP">
       <g id="BG"></g>
+      <g id="DXF" pointer-events="none"></g>
       <g id="CL"></g><g id="GL"></g><g id="NL"></g><g id="SAG" pointer-events="none"></g><g id="MEAS" pointer-events="none"></g>
       <rect id="sel-rect" display="none" x="0" y="0" width="0" height="0"/>
       <rect id="export-rect" display="none" x="0" y="0" width="0" height="0"/>
@@ -844,6 +845,23 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
     </div>
     <div style="padding:12px;display:flex;flex-direction:column;gap:12px">
       <label class="bprop bdup" style="cursor:pointer;margin:0">📂 ÎNCARCĂ PLAN (PNG/JPG)<input type="file" accept="image/*" style="display:none" onchange="loadBg(this)"></label>
+      <label class="bprop bdup" style="cursor:pointer;margin:0;background:rgba(68,153,200,.1);color:#44aacc;border-color:rgba(68,153,200,.3)">📐 ÎNCARCĂ DXF VECTORIAL<input type="file" accept=".dxf,.DXF" style="display:none" onchange="loadDxf(this)"></label>
+      <div id="dxf-controls" style="display:none;flex-direction:column;gap:8px">
+        <div style="font-size:9px;color:var(--text3);padding:2px 0" id="dxf-layer-info"></div>
+        <div style="display:flex;align-items:center;gap:6px;background:var(--bg2);padding:6px 10px;border-radius:6px;border:1px solid var(--border2)">
+          <span style="font-size:9px;color:var(--text2);font-weight:700;text-transform:uppercase;white-space:nowrap">Filtru straturi</span>
+          <input type="text" id="dxf-filter" placeholder='ex: "PS Don" sau gol=toate' oninput="setDxfFilter(this.value)" style="flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:3px 6px;color:var(--text);font-size:10px">
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg2);padding:6px 10px;border-radius:6px;border:1px solid var(--border2)">
+          <span style="font-size:9px;color:var(--text2);font-weight:700;text-transform:uppercase">Opacitate</span>
+          <input type="range" id="dxf-op" min="0.05" max="1" step="0.05" value="0.65" oninput="setDxfOpacity(this.value)" style="flex:1">
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg2);padding:6px 10px;border-radius:6px;border:1px solid var(--border2)">
+          <span style="font-size:9px;color:var(--text2);font-weight:700;text-transform:uppercase">Scară %</span>
+          <input type="number" id="dxf-scale" min="10" max="1000" step="10" value="100" onchange="setDxfScale(this.value)" style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:3px 6px;color:var(--text);font-size:11px" title="100% = 1mm DXF = 1mm pe schema (scara implicită)">
+        </div>
+        <button class="bprop bdel" style="background:rgba(68,153,200,.08);color:#44aacc;border-color:rgba(68,153,200,.25)" onclick="clearDxf()">🗑 ȘTERGE STRAT DXF</button>
+      </div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg2);padding:6px 10px;border-radius:6px;border:1px solid var(--border2)">
         <span style="font-size:9px;color:var(--text2);font-weight:700;text-transform:uppercase">Opacitate</span><input type="range" id="bg-op" min="0.1" max="1" step="0.05" value="0.5" oninput="updateBgOp(this.value)" style="flex:1">
       </div>

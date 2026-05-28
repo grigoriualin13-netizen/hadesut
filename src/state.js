@@ -61,9 +61,12 @@ export const S = {
   undoStack: [],
   redoStack: [],
 
-  // Fundal cadastral
+  // Fundal cadastral (raster)
   bgData: { url: null, x: 0, y: 0, w: 0, h: 0, op: 0.5, locked: true },
   draggingBg: false,
+
+  // Strat DXF vectorial
+  dxfData: null,
 
   // Contor etichete automate per tip element
   counters: {},
