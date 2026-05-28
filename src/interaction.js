@@ -69,7 +69,7 @@ function _renderMeasure(pt2 = null) {
 
 export function toggleMeasure() {
   if (S.mode === 'measure') {
-    setMode('select'); _mpt1 = null; _renderMeasure();
+    setMode('select'); _mpt1 = null; _renderMeasure(); _dxfSnap = null; _renderDxfSnap();
   } else {
     setMode('measure'); _mpt1 = null; _renderMeasure();
     toast('Clic punct 1, clic punct 2 → distanță. Esc = anulare.', 'ok');
@@ -108,12 +108,13 @@ export function onDn(e) {
   if (S.mode === 'place') { addElem(pt.x, pt.y); return; }
   if (S.mode === 'mt_span') { placeMTSpanAt(pt.x, pt.y); return; }
   if (S.mode === 'measure') {
-    if (!_mpt1) { _mpt1 = { x: pt.x, y: pt.y }; _renderMeasure(); }
+    const snappedPt = _dxfSnap ? { x: _dxfSnap.x, y: _dxfSnap.y } : { x: pt.x, y: pt.y };
+    if (!_mpt1) { _mpt1 = snappedPt; _renderMeasure(); }
     else {
-      _renderMeasure(pt);
-      const d = (Math.hypot(pt.x - _mpt1.x, pt.y - _mpt1.y) / (S.pxPerMeter || 5)).toFixed(2);
+      _renderMeasure(snappedPt);
+      const d = (Math.hypot(snappedPt.x - _mpt1.x, snappedPt.y - _mpt1.y) / (S.pxPerMeter || 5)).toFixed(2);
       toast(`${d} m`, 'ok');
-      _mpt1 = null;
+      _mpt1 = null; _dxfSnap = null; _renderDxfSnap();
     }
     return;
   }
@@ -170,7 +171,17 @@ export function onMv(e) {
     if (img) { img.style.left = S.bgData.x + 'px'; img.style.top = S.bgData.y + 'px'; }
     return;
   }
-  if (S.mode === 'measure' && _mpt1) { _renderMeasure(pt); return; }
+  if (S.mode === 'measure') {
+    if (S.dxfData) {
+      const snap = getDxfSnapPoint(pt.x, pt.y, 20 / (S.view.s || 1));
+      _dxfSnap = snap;
+    } else {
+      _dxfSnap = null;
+    }
+    _renderDxfSnap();
+    if (_mpt1) { _renderMeasure(_dxfSnap ? { x: _dxfSnap.x, y: _dxfSnap.y } : pt); }
+    return;
+  }
   if (S.mode === 'calibrate' && S.calibPts.length === 1) {
     const tp = document.getElementById('tpoly'); tp.style.display = 'block';
     tp.setAttribute('points', `${S.calibPts[0].x},${S.calibPts[0].y} ${pt.x},${pt.y}`); return;

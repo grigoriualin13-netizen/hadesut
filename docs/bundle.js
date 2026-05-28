@@ -2830,6 +2830,8 @@ ${(r * 0.1).toFixed(4)}
       setMode("select");
       _mpt1 = null;
       _renderMeasure();
+      _dxfSnap = null;
+      _renderDxfSnap();
     } else {
       setMode("measure");
       _mpt1 = null;
@@ -2889,14 +2891,17 @@ ${(r * 0.1).toFixed(4)}
       return;
     }
     if (S.mode === "measure") {
+      const snappedPt = _dxfSnap ? { x: _dxfSnap.x, y: _dxfSnap.y } : { x: pt.x, y: pt.y };
       if (!_mpt1) {
-        _mpt1 = { x: pt.x, y: pt.y };
+        _mpt1 = snappedPt;
         _renderMeasure();
       } else {
-        _renderMeasure(pt);
-        const d = (Math.hypot(pt.x - _mpt1.x, pt.y - _mpt1.y) / (S.pxPerMeter || 5)).toFixed(2);
+        _renderMeasure(snappedPt);
+        const d = (Math.hypot(snappedPt.x - _mpt1.x, snappedPt.y - _mpt1.y) / (S.pxPerMeter || 5)).toFixed(2);
         toast(`${d} m`, "ok");
         _mpt1 = null;
+        _dxfSnap = null;
+        _renderDxfSnap();
       }
       return;
     }
@@ -2973,8 +2978,17 @@ ${(r * 0.1).toFixed(4)}
       }
       return;
     }
-    if (S.mode === "measure" && _mpt1) {
-      _renderMeasure(pt);
+    if (S.mode === "measure") {
+      if (S.dxfData) {
+        const snap = getDxfSnapPoint(pt.x, pt.y, 20 / (S.view.s || 1));
+        _dxfSnap = snap;
+      } else {
+        _dxfSnap = null;
+      }
+      _renderDxfSnap();
+      if (_mpt1) {
+        _renderMeasure(_dxfSnap ? { x: _dxfSnap.x, y: _dxfSnap.y } : pt);
+      }
       return;
     }
     if (S.mode === "calibrate" && S.calibPts.length === 1) {
