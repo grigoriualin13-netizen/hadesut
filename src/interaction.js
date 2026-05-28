@@ -1,11 +1,28 @@
 import { S } from './state.js';
 import { svgPt, sn, toast, applyView, termWorldPos, setMode, updateStat } from './utils.js';
+import { getDxfSnapPoint } from './dxf-import.js';
 import { isConnectionActive } from './elements.js';
 import { render, renderFlowLayer, toggleFlowAnim } from './renderer.js';
 import { saveState, addElem, delSel, rotateSel, copyEl, pasteEl, finalConn, updateConnectedCables, selectEl, placeMTSpanAt } from './element-manager.js';
 import { updateProps } from './ui.js';
 import { doExportPNG, doExportPDF, doExportSVG } from './export.js';
 import { save, saveAsNew } from './project.js';
+
+// ── DXF snap indicator ───────────────────────────────────────────────────────
+let _dxfSnap = null;
+
+function _renderDxfSnap() {
+  const layer = document.getElementById('SNAP');
+  if (!layer) return;
+  if (!_dxfSnap) { layer.innerHTML = ''; return; }
+  const { x, y, type } = _dxfSnap;
+  const col = type === 'vertex' ? '#44aacc' : '#ffaa44';
+  const r = 7;
+  layer.innerHTML =
+    `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="none" stroke="${col}" stroke-width="1.5" opacity="0.95"/>` +
+    `<line x1="${(x-r).toFixed(1)}" y1="${y.toFixed(1)}" x2="${(x+r).toFixed(1)}" y2="${y.toFixed(1)}" stroke="${col}" stroke-width="1.2" opacity="0.95"/>` +
+    `<line x1="${x.toFixed(1)}" y1="${(y-r).toFixed(1)}" x2="${x.toFixed(1)}" y2="${(y+r).toFixed(1)}" stroke="${col}" stroke-width="1.2" opacity="0.95"/>`;
+}
 
 // ── Measure tool ─────────────────────────────────────────────────────────────
 let _mpt1 = null;
@@ -106,10 +123,15 @@ export function onDn(e) {
     return;
   }
   if (S.mode === 'connect' && S.connStart) {
-    let cur = { x: sn(pt.x), y: sn(pt.y) };
-    if (S.orthoOn || S.shiftOn) {
-      const last = S.connPts[S.connPts.length - 1];
-      cur = Math.abs(pt.x - last.x) > Math.abs(pt.y - last.y) ? { x: sn(pt.x), y: last.y } : { x: last.x, y: sn(pt.y) };
+    let cur;
+    if (_dxfSnap) {
+      cur = { x: _dxfSnap.x, y: _dxfSnap.y };
+    } else {
+      cur = { x: sn(pt.x), y: sn(pt.y) };
+      if (S.orthoOn || S.shiftOn) {
+        const last = S.connPts[S.connPts.length - 1];
+        cur = Math.abs(pt.x - last.x) > Math.abs(pt.y - last.y) ? { x: sn(pt.x), y: last.y } : { x: last.x, y: sn(pt.y) };
+      }
     }
     S.connPts.push(cur); return;
   }
@@ -131,6 +153,10 @@ export function onDn(e) {
 export function onMv(e) {
   const pt = svgPt(e);
   document.getElementById('stxy').textContent = `X:${Math.round(pt.x)} Y:${Math.round(pt.y)}`;
+  // Clear snap indicator when not actively drawing a cable
+  if (!(S.mode === 'connect' && S.connStart)) {
+    if (_dxfSnap) { _dxfSnap = null; _renderDxfSnap(); }
+  }
   if (S.mode === 'export_box' && S.exportRectStart) {
     const dx = pt.x - S.exportRectStart.x, dy = pt.y - S.exportRectStart.y;
     const er = document.getElementById('export-rect');
@@ -157,17 +183,31 @@ export function onMv(e) {
   }
   if (S.mode === 'connect' && S.connStart) {
     const tp = document.getElementById('tpoly'); tp.style.display = 'block';
-    let cur = { x: pt.x, y: pt.y }; const tdHov = e.target.closest('.td');
+    let cur = { x: pt.x, y: pt.y };
+    const tdHov = e.target.closest('.td');
     if (tdHov) {
       const pg = tdHov.closest('g.el');
       if (pg) {
         const pe = S.EL.find(x => x.id === parseInt(pg.dataset.eid));
         if (pe) { const lcx = parseFloat(tdHov.dataset.lcx), lcy = parseFloat(tdHov.dataset.lcy); const wp = termWorldPos(pe, lcx, lcy); cur = { x: wp.x, y: wp.y }; }
       }
-    } else if (S.orthoOn || S.shiftOn) {
-      const last = S.connPts[S.connPts.length - 1];
-      cur = Math.abs(pt.x - last.x) > Math.abs(pt.y - last.y) ? { x: pt.x, y: last.y } : { x: last.x, y: sn(pt.y) };
+      _dxfSnap = null;
+    } else {
+      // DXF snap — priority over ortho
+      if (S.dxfData) {
+        const snap = getDxfSnapPoint(pt.x, pt.y, 20 / (S.view.s || 1));
+        _dxfSnap = snap;
+        if (snap) cur = { x: snap.x, y: snap.y };
+      } else {
+        _dxfSnap = null;
+      }
+      // Ortho/shift only when no DXF snap active
+      if (!_dxfSnap && (S.orthoOn || S.shiftOn)) {
+        const last = S.connPts[S.connPts.length - 1];
+        cur = Math.abs(pt.x - last.x) > Math.abs(pt.y - last.y) ? { x: pt.x, y: last.y } : { x: last.x, y: sn(pt.y) };
+      }
     }
+    _renderDxfSnap();
     tp.setAttribute('points', [...S.connPts, cur].map(p => `${p.x},${p.y}`).join(' ')); return;
   }
   if (S.dragging && S.dragEl) {

@@ -926,6 +926,364 @@
     }
   });
 
+  // src/dxf-import.js
+  function layerStyle(name) {
+    for (const s of LAYER_STYLES) {
+      if (name.includes(s.match)) return s;
+    }
+    return STYLE_DEFAULT;
+  }
+  function parseDxf(text) {
+    const lines = text.split(/\r?\n/);
+    const N = lines.length;
+    let i = 0;
+    function next() {
+      while (i < N && lines[i].trim() === "") i++;
+      if (i >= N) return null;
+      const code = parseInt(lines[i++].trim(), 10);
+      const val = i < N ? lines[i++].trim() : "";
+      return { code, val };
+    }
+    const entities = [];
+    let section = null;
+    let etype = null;
+    let layer = "";
+    let x0, y0, x1, y1, cx, cy, r, sa, ea;
+    let verts = [];
+    let closed = false;
+    function commit() {
+      if (!etype) return;
+      if (etype === "LINE" && x0 != null && x1 != null) {
+        entities.push({ t: "L", layer, x0, y0, x1, y1 });
+      } else if (etype === "POLY" && verts.length >= 2) {
+        entities.push({ t: "P", layer, verts: verts.slice(), closed });
+      } else if (etype === "CIRCLE" && cx != null && r > 0) {
+        entities.push({ t: "C", layer, cx, cy, r });
+      } else if (etype === "ARC" && cx != null && r > 0) {
+        entities.push({ t: "A", layer, cx, cy, r, sa, ea });
+      }
+      etype = null;
+      layer = "";
+      verts = [];
+      closed = false;
+      x0 = y0 = x1 = y1 = cx = cy = r = sa = ea = void 0;
+    }
+    while (i < N) {
+      const p = next();
+      if (!p) break;
+      const { code, val } = p;
+      if (code === 0) {
+        commit();
+        if (val === "SECTION") {
+          const sp = next();
+          section = sp?.code === 2 ? sp.val : null;
+        } else if (val === "ENDSEC") {
+          section = null;
+        } else if (section === "ENTITIES" || section === "BLOCKS") {
+          if (val === "LINE") etype = "LINE";
+          else if (val === "LWPOLYLINE") etype = "POLY";
+          else if (val === "CIRCLE") etype = "CIRCLE";
+          else if (val === "ARC") etype = "ARC";
+          else etype = null;
+        }
+      } else if (etype) {
+        if (code === 8) {
+          layer = val;
+        } else if (etype === "LINE") {
+          if (code === 10) x0 = +val;
+          else if (code === 20) y0 = +val;
+          else if (code === 11) x1 = +val;
+          else if (code === 21) y1 = +val;
+        } else if (etype === "POLY") {
+          if (code === 70) closed = (parseInt(val, 10) & 1) !== 0;
+          else if (code === 10) verts.push({ x: +val, y: 0 });
+          else if (code === 20 && verts.length) verts[verts.length - 1].y = +val;
+        } else if (etype === "CIRCLE" || etype === "ARC") {
+          if (code === 10) cx = +val;
+          else if (code === 20) cy = +val;
+          else if (code === 40) r = +val;
+          else if (code === 50) sa = +val;
+          else if (code === 51) ea = +val;
+        }
+      }
+    }
+    commit();
+    return entities;
+  }
+  function pct(arr, p) {
+    if (!arr.length) return 0;
+    const s = arr.slice().sort((a, b) => a - b);
+    return s[Math.min(s.length - 1, Math.floor(p * s.length))];
+  }
+  function computeBbox(ents) {
+    const xArr = [], yArr = [];
+    for (const e of ents) {
+      if (e.t === "L") {
+        xArr.push(e.x0, e.x1);
+        yArr.push(e.y0, e.y1);
+      } else if (e.t === "P") {
+        for (const v of e.verts) {
+          xArr.push(v.x);
+          yArr.push(v.y);
+        }
+      } else if (e.t === "C" || e.t === "A") {
+        xArr.push(e.cx - e.r, e.cx + e.r);
+        yArr.push(e.cy - e.r, e.cy + e.r);
+      }
+    }
+    if (!xArr.length) return { cx: 0, cy: 0 };
+    const xLo = pct(xArr, 0.02), xHi = pct(xArr, 0.98);
+    const yLo = pct(yArr, 0.02), yHi = pct(yArr, 0.98);
+    return { cx: (xLo + xHi) / 2, cy: (yLo + yHi) / 2 };
+  }
+  function entityPath(e, cx, cy, s) {
+    const px = (x) => ((x - cx) * s).toFixed(2);
+    const py = (y) => ((cy - y) * s).toFixed(2);
+    if (e.t === "L") {
+      return `M${px(e.x0)},${py(e.y0)}L${px(e.x1)},${py(e.y1)}`;
+    }
+    if (e.t === "P") {
+      return e.verts.map((v, i) => (i ? "L" : "M") + px(v.x) + "," + py(v.y)).join("") + (e.closed ? "Z" : "");
+    }
+    if (e.t === "C") {
+      const rcx = +px(e.cx), rcy = +py(e.cy), rr = +(e.r * s).toFixed(2);
+      if (rr < 0.5) return "";
+      return `M${(rcx - rr).toFixed(2)},${rcy} A${rr},${rr} 0 1 0 ${(rcx + rr).toFixed(2)},${rcy} A${rr},${rr} 0 1 0 ${(rcx - rr).toFixed(2)},${rcy}Z`;
+    }
+    if (e.t === "A") {
+      const rr = +(e.r * s).toFixed(2);
+      if (rr < 0.5) return "";
+      const saR = e.sa * Math.PI / 180;
+      const eaR = e.ea * Math.PI / 180;
+      const sx2 = ((e.cx + e.r * Math.cos(saR) - cx) * s).toFixed(2);
+      const sy2 = ((cy - (e.cy + e.r * Math.sin(saR))) * s).toFixed(2);
+      const ex2 = ((e.cx + e.r * Math.cos(eaR) - cx) * s).toFixed(2);
+      const ey2 = ((cy - (e.cy + e.r * Math.sin(eaR))) * s).toFixed(2);
+      let sweep = e.ea - e.sa;
+      if (sweep < 0) sweep += 360;
+      return `M${sx2},${sy2}A${rr},${rr} 0 ${sweep > 180 ? 1 : 0} 0 ${ex2},${ey2}`;
+    }
+    return "";
+  }
+  function _visibleEntities() {
+    if (!S.dxfData) return [];
+    const { allEntities, selectedLayers, layerFilter } = S.dxfData;
+    if (selectedLayers && selectedLayers.size > 0)
+      return allEntities.filter((e) => selectedLayers.has(e.layer));
+    const fLow = (layerFilter || "").toLowerCase().trim();
+    return fLow ? allEntities.filter((e) => e.layer.toLowerCase().includes(fLow)) : allEntities;
+  }
+  function renderDxfLayer() {
+    const el = document.getElementById("DXF");
+    if (!el) return;
+    if (!S.dxfData) {
+      el.innerHTML = "";
+      return;
+    }
+    const { bscale, opacity } = S.dxfData;
+    const visible = _visibleEntities();
+    if (!visible.length) {
+      el.innerHTML = "";
+      return;
+    }
+    const { cx: bcx, cy: bcy } = computeBbox(visible);
+    S.dxfData.bcx = bcx;
+    S.dxfData.bcy = bcy;
+    const byLayer = /* @__PURE__ */ new Map();
+    for (const e of visible) {
+      if (!byLayer.has(e.layer)) byLayer.set(e.layer, []);
+      byLayer.get(e.layer).push(e);
+    }
+    let html = `<g opacity="${opacity ?? 0.65}">`;
+    for (const [layer, ents] of byLayer) {
+      const st = layerStyle(layer);
+      let d = "";
+      for (const e of ents) d += entityPath(e, bcx, bcy, bscale);
+      if (!d) continue;
+      const dashAttr = st.dash ? ` stroke-dasharray="${st.dash}"` : "";
+      html += `<path d="${d}" stroke="${st.stroke}" stroke-width="${st.sw}" fill="none"${dashAttr}/>`;
+    }
+    html += "</g>";
+    el.innerHTML = html;
+  }
+  function loadDxf(inp) {
+    const f = inp && inp.files ? inp.files[0] : inp;
+    if (!f) return;
+    toast("Citesc DXF... (poate dura c\xE2teva secunde)", "ok");
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const allEntities = parseDxf(ev.target.result);
+        if (!allEntities.length) {
+          toast("DXF: nu s-au g\u0103sit entit\u0103\u021Bi geometrice.", "err");
+          return;
+        }
+        const bscale = S.pxPerMeter / 1e3;
+        const layerSet = new Set(allEntities.map((e) => e.layer));
+        S.dxfData = { allEntities, layerFilter: "", selectedLayers: /* @__PURE__ */ new Set(), bcx: 0, bcy: 0, bscale, opacity: 0.65 };
+        renderDxfLayer();
+        toast(`DXF: ${allEntities.length} entit\u0103\u021Bi, ${layerSet.size} straturi.`, "ok");
+        const ctrl = document.getElementById("dxf-controls");
+        if (ctrl) ctrl.style.display = "flex";
+        const info = document.getElementById("dxf-layer-info");
+        if (info) info.textContent = layerSet.size + " straturi";
+        const list = document.getElementById("dxf-layer-list");
+        if (list) {
+          const counts = {};
+          for (const e of allEntities) counts[e.layer] = (counts[e.layer] || 0) + 1;
+          const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+          const header = `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 10px 6px;border-bottom:1px solid var(--border2);margin-bottom:2px">
+          <span style="font-size:9px;font-weight:700;text-transform:uppercase;color:var(--text2)">Selecteaz\u0103 straturi</span>
+          <button onclick="clearDxfLayerSel()" style="font-size:9px;color:#44aacc;background:none;border:none;cursor:pointer;padding:0" title="Deselecteaz\u0103 tot">\u2715 gole\u0219te</button>
+        </div>`;
+          const rows = sorted.map(([l, c]) => {
+            const esc = l.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+            return `<label style="display:flex;align-items:center;gap:6px;padding:3px 10px;cursor:pointer;white-space:nowrap;overflow:hidden"
+                         onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+                    <input type="checkbox" data-layer="${esc}" onchange="toggleDxfLayerCheck('${esc}')" style="cursor:pointer;flex-shrink:0">
+                    <span style="color:var(--text3);min-width:28px;text-align:right;font-variant-numeric:tabular-nums">${c}</span>
+                    <span style="overflow:hidden;text-overflow:ellipsis">${l}</span>
+                  </label>`;
+          }).join("");
+          list.innerHTML = header + rows;
+          list.style.display = "none";
+        }
+        const sl = document.getElementById("dxf-op");
+        if (sl) sl.value = "0.65";
+        const sf = document.getElementById("dxf-filter");
+        if (sf) sf.value = "";
+      } catch (err) {
+        toast("Eroare DXF: " + err.message, "err");
+      }
+    };
+    reader.onerror = () => toast("Eroare la citirea fi\u0219ierului.", "err");
+    reader.readAsText(f, "windows-1250");
+    if (inp && inp.value !== void 0) inp.value = "";
+  }
+  function setDxfFilter(text) {
+    if (!S.dxfData) return;
+    S.dxfData.layerFilter = text;
+    if (text) {
+      S.dxfData.selectedLayers.clear();
+      document.querySelectorAll("#dxf-layer-list input[type=checkbox]").forEach((cb) => {
+        cb.checked = false;
+      });
+      _updateLayerInfo();
+    }
+    renderDxfLayer();
+  }
+  function toggleDxfLayerCheck(name) {
+    if (!S.dxfData) return;
+    const sel = S.dxfData.selectedLayers;
+    if (sel.has(name)) sel.delete(name);
+    else sel.add(name);
+    S.dxfData.layerFilter = "";
+    const tf = document.getElementById("dxf-filter");
+    if (tf) tf.value = "";
+    _updateLayerInfo();
+    renderDxfLayer();
+  }
+  function clearDxfLayerSel() {
+    if (!S.dxfData) return;
+    S.dxfData.selectedLayers.clear();
+    document.querySelectorAll("#dxf-layer-list input[type=checkbox]").forEach((cb) => {
+      cb.checked = false;
+    });
+    _updateLayerInfo();
+    renderDxfLayer();
+  }
+  function _updateLayerInfo() {
+    const info = document.getElementById("dxf-layer-info");
+    if (!info || !S.dxfData) return;
+    const n = S.dxfData.selectedLayers.size;
+    const total = new Set(S.dxfData.allEntities.map((e) => e.layer)).size;
+    info.textContent = n > 0 ? `${n}/${total} selectate` : `${total} straturi`;
+  }
+  function clearDxf() {
+    S.dxfData = null;
+    renderDxfLayer();
+    const ctrl = document.getElementById("dxf-controls");
+    if (ctrl) ctrl.style.display = "none";
+    toast("Strat DXF \u0219ters.", "ok");
+  }
+  function setDxfOpacity(val) {
+    if (!S.dxfData) return;
+    S.dxfData.opacity = parseFloat(val);
+    const g = document.querySelector("#DXF > g");
+    if (g) g.setAttribute("opacity", S.dxfData.opacity);
+  }
+  function setDxfScale(factorPct) {
+    if (!S.dxfData) return;
+    S.dxfData.bscale = S.pxPerMeter / 1e3 * (parseFloat(factorPct) / 100);
+    renderDxfLayer();
+  }
+  function getDxfSnapPoint(cx, cy, threshCanvas) {
+    if (!S.dxfData) return null;
+    const { bscale, bcx, bcy } = S.dxfData;
+    if (!bscale) return null;
+    const visible = _visibleEntities();
+    if (!visible.length) return null;
+    const dx = cx / bscale + bcx;
+    const dy = bcy - cy / bscale;
+    const thr2 = (threshCanvas / bscale) ** 2;
+    const toC = (vx, vy) => ({ x: (vx - bcx) * bscale, y: (bcy - vy) * bscale });
+    let bestV = null, bestVd2 = thr2;
+    let bestP = null, bestPd2 = thr2;
+    for (const e of visible) {
+      const verts = e.t === "L" ? [{ x: e.x0, y: e.y0 }, { x: e.x1, y: e.y1 }] : e.t === "P" ? e.verts : [];
+      for (const v of verts) {
+        const d2 = (v.x - dx) ** 2 + (v.y - dy) ** 2;
+        if (d2 < bestVd2) {
+          bestVd2 = d2;
+          bestV = toC(v.x, v.y);
+        }
+      }
+      const segs = e.t === "L" ? [[e.x0, e.y0, e.x1, e.y1]] : e.t === "P" ? e.verts.slice(1).map((v, i) => [e.verts[i].x, e.verts[i].y, v.x, v.y]).concat(e.closed && e.verts.length > 2 ? [[e.verts[e.verts.length - 1].x, e.verts[e.verts.length - 1].y, e.verts[0].x, e.verts[0].y]] : []) : [];
+      for (const [x0, y0, x1, y1] of segs) {
+        const ex = x1 - x0, ey = y1 - y0, len2 = ex * ex + ey * ey;
+        if (len2 < 1) continue;
+        const t = Math.max(0, Math.min(1, ((dx - x0) * ex + (dy - y0) * ey) / len2));
+        const fx = x0 + t * ex, fy = y0 + t * ey;
+        const d2 = (fx - dx) ** 2 + (fy - dy) ** 2;
+        if (d2 < bestPd2) {
+          bestPd2 = d2;
+          bestP = toC(fx, fy);
+        }
+      }
+    }
+    if (bestV) return { ...bestV, type: "vertex" };
+    if (bestP) return { ...bestP, type: "perp" };
+    return null;
+  }
+  function toggleDxfLayerList() {
+    const list = document.getElementById("dxf-layer-list");
+    if (!list) return;
+    const arrow = document.getElementById("dxf-layer-arrow");
+    const open = list.style.display === "none" || !list.style.display;
+    list.style.display = open ? "block" : "none";
+    if (arrow) arrow.textContent = open ? "\u25B2" : "\u25BC";
+  }
+  var LAYER_STYLES, STYLE_DEFAULT;
+  var init_dxf_import = __esm({
+    "src/dxf-import.js"() {
+      init_state();
+      init_utils();
+      LAYER_STYLES = [
+        { match: "DRUMURI", stroke: "#3b75c8", sw: 1.4 },
+        { match: "AX DRUM", stroke: "#7ba4e0", sw: 0.6, dash: "6,4" },
+        { match: "CORP_PROPR", stroke: "#7a7a7a", sw: 0.9 },
+        { match: "Imobile", stroke: "#c46a3a", sw: 1 },
+        { match: "IMOBILE", stroke: "#c46a3a", sw: 1 },
+        { match: "CV CANAL", stroke: "#44aacc", sw: 0.7, dash: "4,3" },
+        { match: "CUTIE GAZ", stroke: "#e09d22", sw: 0.7 },
+        { match: "NR_CAD", stroke: "#aaaaaa", sw: 0.4 },
+        { match: "Cotari", stroke: "#aaaaaa", sw: 0.4 },
+        { match: "pct_", stroke: "#cccccc", sw: 0.3 }
+      ];
+      STYLE_DEFAULT = { stroke: "#888888", sw: 0.6 };
+    }
+  });
+
   // src/export.js
   function getProjectBounds() {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -2413,6 +2771,18 @@ ${(r * 0.1).toFixed(4)}
   });
 
   // src/interaction.js
+  function _renderDxfSnap() {
+    const layer = document.getElementById("SNAP");
+    if (!layer) return;
+    if (!_dxfSnap) {
+      layer.innerHTML = "";
+      return;
+    }
+    const { x, y, type } = _dxfSnap;
+    const col = type === "vertex" ? "#44aacc" : "#ffaa44";
+    const r = 7;
+    layer.innerHTML = `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="none" stroke="${col}" stroke-width="1.5" opacity="0.95"/><line x1="${(x - r).toFixed(1)}" y1="${y.toFixed(1)}" x2="${(x + r).toFixed(1)}" y2="${y.toFixed(1)}" stroke="${col}" stroke-width="1.2" opacity="0.95"/><line x1="${x.toFixed(1)}" y1="${(y - r).toFixed(1)}" x2="${x.toFixed(1)}" y2="${(y + r).toFixed(1)}" stroke="${col}" stroke-width="1.2" opacity="0.95"/>`;
+  }
   function _renderMeasure(pt2 = null) {
     const layer = document.getElementById("MEAS");
     if (!layer) return;
@@ -2536,10 +2906,15 @@ ${(r * 0.1).toFixed(4)}
       return;
     }
     if (S.mode === "connect" && S.connStart) {
-      let cur = { x: sn(pt.x), y: sn(pt.y) };
-      if (S.orthoOn || S.shiftOn) {
-        const last = S.connPts[S.connPts.length - 1];
-        cur = Math.abs(pt.x - last.x) > Math.abs(pt.y - last.y) ? { x: sn(pt.x), y: last.y } : { x: last.x, y: sn(pt.y) };
+      let cur;
+      if (_dxfSnap) {
+        cur = { x: _dxfSnap.x, y: _dxfSnap.y };
+      } else {
+        cur = { x: sn(pt.x), y: sn(pt.y) };
+        if (S.orthoOn || S.shiftOn) {
+          const last = S.connPts[S.connPts.length - 1];
+          cur = Math.abs(pt.x - last.x) > Math.abs(pt.y - last.y) ? { x: sn(pt.x), y: last.y } : { x: last.x, y: sn(pt.y) };
+        }
       }
       S.connPts.push(cur);
       return;
@@ -2572,6 +2947,12 @@ ${(r * 0.1).toFixed(4)}
   function onMv(e) {
     const pt = svgPt(e);
     document.getElementById("stxy").textContent = `X:${Math.round(pt.x)} Y:${Math.round(pt.y)}`;
+    if (!(S.mode === "connect" && S.connStart)) {
+      if (_dxfSnap) {
+        _dxfSnap = null;
+        _renderDxfSnap();
+      }
+    }
     if (S.mode === "export_box" && S.exportRectStart) {
       const dx = pt.x - S.exportRectStart.x, dy = pt.y - S.exportRectStart.y;
       const er = document.getElementById("export-rect");
@@ -2628,10 +3009,21 @@ ${(r * 0.1).toFixed(4)}
             cur = { x: wp.x, y: wp.y };
           }
         }
-      } else if (S.orthoOn || S.shiftOn) {
-        const last = S.connPts[S.connPts.length - 1];
-        cur = Math.abs(pt.x - last.x) > Math.abs(pt.y - last.y) ? { x: pt.x, y: last.y } : { x: last.x, y: sn(pt.y) };
+        _dxfSnap = null;
+      } else {
+        if (S.dxfData) {
+          const snap = getDxfSnapPoint(pt.x, pt.y, 20 / (S.view.s || 1));
+          _dxfSnap = snap;
+          if (snap) cur = { x: snap.x, y: snap.y };
+        } else {
+          _dxfSnap = null;
+        }
+        if (!_dxfSnap && (S.orthoOn || S.shiftOn)) {
+          const last = S.connPts[S.connPts.length - 1];
+          cur = Math.abs(pt.x - last.x) > Math.abs(pt.y - last.y) ? { x: pt.x, y: last.y } : { x: last.x, y: sn(pt.y) };
+        }
       }
+      _renderDxfSnap();
       tp.setAttribute("points", [...S.connPts, cur].map((p) => `${p.x},${p.y}`).join(" "));
       return;
     }
@@ -2941,17 +3333,19 @@ ${(r * 0.1).toFixed(4)}
     toast(msg, "ok");
     if (dir && !S.flowAnimOn) toggleFlowAnim();
   }
-  var _mpt1;
+  var _dxfSnap, _mpt1;
   var init_interaction = __esm({
     "src/interaction.js"() {
       init_state();
       init_utils();
+      init_dxf_import();
       init_elements();
       init_renderer();
       init_element_manager();
       init_ui();
       init_export();
       init_project();
+      _dxfSnap = null;
       _mpt1 = null;
     }
   });
@@ -10672,317 +11066,8 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
     });
   }
 
-  // src/dxf-import.js
-  init_state();
-  init_utils();
-  var LAYER_STYLES = [
-    { match: "DRUMURI", stroke: "#3b75c8", sw: 1.4 },
-    { match: "AX DRUM", stroke: "#7ba4e0", sw: 0.6, dash: "6,4" },
-    { match: "CORP_PROPR", stroke: "#7a7a7a", sw: 0.9 },
-    { match: "Imobile", stroke: "#c46a3a", sw: 1 },
-    { match: "IMOBILE", stroke: "#c46a3a", sw: 1 },
-    { match: "CV CANAL", stroke: "#44aacc", sw: 0.7, dash: "4,3" },
-    { match: "CUTIE GAZ", stroke: "#e09d22", sw: 0.7 },
-    { match: "NR_CAD", stroke: "#aaaaaa", sw: 0.4 },
-    { match: "Cotari", stroke: "#aaaaaa", sw: 0.4 },
-    { match: "pct_", stroke: "#cccccc", sw: 0.3 }
-  ];
-  var STYLE_DEFAULT = { stroke: "#888888", sw: 0.6 };
-  function layerStyle(name) {
-    for (const s of LAYER_STYLES) {
-      if (name.includes(s.match)) return s;
-    }
-    return STYLE_DEFAULT;
-  }
-  function parseDxf(text) {
-    const lines = text.split(/\r?\n/);
-    const N = lines.length;
-    let i = 0;
-    function next() {
-      while (i < N && lines[i].trim() === "") i++;
-      if (i >= N) return null;
-      const code = parseInt(lines[i++].trim(), 10);
-      const val = i < N ? lines[i++].trim() : "";
-      return { code, val };
-    }
-    const entities = [];
-    let section = null;
-    let etype = null;
-    let layer = "";
-    let x0, y0, x1, y1, cx, cy, r, sa, ea;
-    let verts = [];
-    let closed = false;
-    function commit() {
-      if (!etype) return;
-      if (etype === "LINE" && x0 != null && x1 != null) {
-        entities.push({ t: "L", layer, x0, y0, x1, y1 });
-      } else if (etype === "POLY" && verts.length >= 2) {
-        entities.push({ t: "P", layer, verts: verts.slice(), closed });
-      } else if (etype === "CIRCLE" && cx != null && r > 0) {
-        entities.push({ t: "C", layer, cx, cy, r });
-      } else if (etype === "ARC" && cx != null && r > 0) {
-        entities.push({ t: "A", layer, cx, cy, r, sa, ea });
-      }
-      etype = null;
-      layer = "";
-      verts = [];
-      closed = false;
-      x0 = y0 = x1 = y1 = cx = cy = r = sa = ea = void 0;
-    }
-    while (i < N) {
-      const p = next();
-      if (!p) break;
-      const { code, val } = p;
-      if (code === 0) {
-        commit();
-        if (val === "SECTION") {
-          const sp = next();
-          section = sp?.code === 2 ? sp.val : null;
-        } else if (val === "ENDSEC") {
-          section = null;
-        } else if (section === "ENTITIES" || section === "BLOCKS") {
-          if (val === "LINE") etype = "LINE";
-          else if (val === "LWPOLYLINE") etype = "POLY";
-          else if (val === "CIRCLE") etype = "CIRCLE";
-          else if (val === "ARC") etype = "ARC";
-          else etype = null;
-        }
-      } else if (etype) {
-        if (code === 8) {
-          layer = val;
-        } else if (etype === "LINE") {
-          if (code === 10) x0 = +val;
-          else if (code === 20) y0 = +val;
-          else if (code === 11) x1 = +val;
-          else if (code === 21) y1 = +val;
-        } else if (etype === "POLY") {
-          if (code === 70) closed = (parseInt(val, 10) & 1) !== 0;
-          else if (code === 10) verts.push({ x: +val, y: 0 });
-          else if (code === 20 && verts.length) verts[verts.length - 1].y = +val;
-        } else if (etype === "CIRCLE" || etype === "ARC") {
-          if (code === 10) cx = +val;
-          else if (code === 20) cy = +val;
-          else if (code === 40) r = +val;
-          else if (code === 50) sa = +val;
-          else if (code === 51) ea = +val;
-        }
-      }
-    }
-    commit();
-    return entities;
-  }
-  function pct(arr, p) {
-    if (!arr.length) return 0;
-    const s = arr.slice().sort((a, b) => a - b);
-    return s[Math.min(s.length - 1, Math.floor(p * s.length))];
-  }
-  function computeBbox(ents) {
-    const xArr = [], yArr = [];
-    for (const e of ents) {
-      if (e.t === "L") {
-        xArr.push(e.x0, e.x1);
-        yArr.push(e.y0, e.y1);
-      } else if (e.t === "P") {
-        for (const v of e.verts) {
-          xArr.push(v.x);
-          yArr.push(v.y);
-        }
-      } else if (e.t === "C" || e.t === "A") {
-        xArr.push(e.cx - e.r, e.cx + e.r);
-        yArr.push(e.cy - e.r, e.cy + e.r);
-      }
-    }
-    if (!xArr.length) return { cx: 0, cy: 0 };
-    const xLo = pct(xArr, 0.02), xHi = pct(xArr, 0.98);
-    const yLo = pct(yArr, 0.02), yHi = pct(yArr, 0.98);
-    return { cx: (xLo + xHi) / 2, cy: (yLo + yHi) / 2 };
-  }
-  function entityPath(e, cx, cy, s) {
-    const px = (x) => ((x - cx) * s).toFixed(2);
-    const py = (y) => ((cy - y) * s).toFixed(2);
-    if (e.t === "L") {
-      return `M${px(e.x0)},${py(e.y0)}L${px(e.x1)},${py(e.y1)}`;
-    }
-    if (e.t === "P") {
-      return e.verts.map((v, i) => (i ? "L" : "M") + px(v.x) + "," + py(v.y)).join("") + (e.closed ? "Z" : "");
-    }
-    if (e.t === "C") {
-      const rcx = +px(e.cx), rcy = +py(e.cy), rr = +(e.r * s).toFixed(2);
-      if (rr < 0.5) return "";
-      return `M${(rcx - rr).toFixed(2)},${rcy} A${rr},${rr} 0 1 0 ${(rcx + rr).toFixed(2)},${rcy} A${rr},${rr} 0 1 0 ${(rcx - rr).toFixed(2)},${rcy}Z`;
-    }
-    if (e.t === "A") {
-      const rr = +(e.r * s).toFixed(2);
-      if (rr < 0.5) return "";
-      const saR = e.sa * Math.PI / 180;
-      const eaR = e.ea * Math.PI / 180;
-      const sx2 = ((e.cx + e.r * Math.cos(saR) - cx) * s).toFixed(2);
-      const sy2 = ((cy - (e.cy + e.r * Math.sin(saR))) * s).toFixed(2);
-      const ex2 = ((e.cx + e.r * Math.cos(eaR) - cx) * s).toFixed(2);
-      const ey2 = ((cy - (e.cy + e.r * Math.sin(eaR))) * s).toFixed(2);
-      let sweep = e.ea - e.sa;
-      if (sweep < 0) sweep += 360;
-      return `M${sx2},${sy2}A${rr},${rr} 0 ${sweep > 180 ? 1 : 0} 0 ${ex2},${ey2}`;
-    }
-    return "";
-  }
-  function renderDxfLayer() {
-    const el = document.getElementById("DXF");
-    if (!el) return;
-    if (!S.dxfData) {
-      el.innerHTML = "";
-      return;
-    }
-    const { allEntities, layerFilter, selectedLayers, bscale, opacity } = S.dxfData;
-    const visible = selectedLayers && selectedLayers.size > 0 ? allEntities.filter((e) => selectedLayers.has(e.layer)) : (() => {
-      const fLow = (layerFilter || "").toLowerCase().trim();
-      return fLow ? allEntities.filter((e) => e.layer.toLowerCase().includes(fLow)) : allEntities;
-    })();
-    if (!visible.length) {
-      el.innerHTML = "";
-      return;
-    }
-    const { cx: bcx, cy: bcy } = computeBbox(visible);
-    S.dxfData.bcx = bcx;
-    S.dxfData.bcy = bcy;
-    const byLayer = /* @__PURE__ */ new Map();
-    for (const e of visible) {
-      if (!byLayer.has(e.layer)) byLayer.set(e.layer, []);
-      byLayer.get(e.layer).push(e);
-    }
-    let html = `<g opacity="${opacity ?? 0.65}">`;
-    for (const [layer, ents] of byLayer) {
-      const st = layerStyle(layer);
-      let d = "";
-      for (const e of ents) d += entityPath(e, bcx, bcy, bscale);
-      if (!d) continue;
-      const dashAttr = st.dash ? ` stroke-dasharray="${st.dash}"` : "";
-      html += `<path d="${d}" stroke="${st.stroke}" stroke-width="${st.sw}" fill="none"${dashAttr}/>`;
-    }
-    html += "</g>";
-    el.innerHTML = html;
-  }
-  function loadDxf(inp) {
-    const f = inp && inp.files ? inp.files[0] : inp;
-    if (!f) return;
-    toast("Citesc DXF... (poate dura c\xE2teva secunde)", "ok");
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const allEntities = parseDxf(ev.target.result);
-        if (!allEntities.length) {
-          toast("DXF: nu s-au g\u0103sit entit\u0103\u021Bi geometrice.", "err");
-          return;
-        }
-        const bscale = S.pxPerMeter / 1e3;
-        const layerSet = new Set(allEntities.map((e) => e.layer));
-        S.dxfData = { allEntities, layerFilter: "", selectedLayers: /* @__PURE__ */ new Set(), bcx: 0, bcy: 0, bscale, opacity: 0.65 };
-        renderDxfLayer();
-        toast(`DXF: ${allEntities.length} entit\u0103\u021Bi, ${layerSet.size} straturi.`, "ok");
-        const ctrl = document.getElementById("dxf-controls");
-        if (ctrl) ctrl.style.display = "flex";
-        const info = document.getElementById("dxf-layer-info");
-        if (info) info.textContent = layerSet.size + " straturi";
-        const list = document.getElementById("dxf-layer-list");
-        if (list) {
-          const counts = {};
-          for (const e of allEntities) counts[e.layer] = (counts[e.layer] || 0) + 1;
-          const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-          const header = `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 10px 6px;border-bottom:1px solid var(--border2);margin-bottom:2px">
-          <span style="font-size:9px;font-weight:700;text-transform:uppercase;color:var(--text2)">Selecteaz\u0103 straturi</span>
-          <button onclick="clearDxfLayerSel()" style="font-size:9px;color:#44aacc;background:none;border:none;cursor:pointer;padding:0" title="Deselecteaz\u0103 tot">\u2715 gole\u0219te</button>
-        </div>`;
-          const rows = sorted.map(([l, c]) => {
-            const esc = l.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-            return `<label style="display:flex;align-items:center;gap:6px;padding:3px 10px;cursor:pointer;white-space:nowrap;overflow:hidden"
-                         onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
-                    <input type="checkbox" data-layer="${esc}" onchange="toggleDxfLayerCheck('${esc}')" style="cursor:pointer;flex-shrink:0">
-                    <span style="color:var(--text3);min-width:28px;text-align:right;font-variant-numeric:tabular-nums">${c}</span>
-                    <span style="overflow:hidden;text-overflow:ellipsis">${l}</span>
-                  </label>`;
-          }).join("");
-          list.innerHTML = header + rows;
-          list.style.display = "none";
-        }
-        const sl = document.getElementById("dxf-op");
-        if (sl) sl.value = "0.65";
-        const sf = document.getElementById("dxf-filter");
-        if (sf) sf.value = "";
-      } catch (err) {
-        toast("Eroare DXF: " + err.message, "err");
-      }
-    };
-    reader.onerror = () => toast("Eroare la citirea fi\u0219ierului.", "err");
-    reader.readAsText(f, "windows-1250");
-    if (inp && inp.value !== void 0) inp.value = "";
-  }
-  function setDxfFilter(text) {
-    if (!S.dxfData) return;
-    S.dxfData.layerFilter = text;
-    if (text) {
-      S.dxfData.selectedLayers.clear();
-      document.querySelectorAll("#dxf-layer-list input[type=checkbox]").forEach((cb) => {
-        cb.checked = false;
-      });
-      _updateLayerInfo();
-    }
-    renderDxfLayer();
-  }
-  function toggleDxfLayerCheck(name) {
-    if (!S.dxfData) return;
-    const sel = S.dxfData.selectedLayers;
-    if (sel.has(name)) sel.delete(name);
-    else sel.add(name);
-    S.dxfData.layerFilter = "";
-    const tf = document.getElementById("dxf-filter");
-    if (tf) tf.value = "";
-    _updateLayerInfo();
-    renderDxfLayer();
-  }
-  function clearDxfLayerSel() {
-    if (!S.dxfData) return;
-    S.dxfData.selectedLayers.clear();
-    document.querySelectorAll("#dxf-layer-list input[type=checkbox]").forEach((cb) => {
-      cb.checked = false;
-    });
-    _updateLayerInfo();
-    renderDxfLayer();
-  }
-  function _updateLayerInfo() {
-    const info = document.getElementById("dxf-layer-info");
-    if (!info || !S.dxfData) return;
-    const n = S.dxfData.selectedLayers.size;
-    const total = new Set(S.dxfData.allEntities.map((e) => e.layer)).size;
-    info.textContent = n > 0 ? `${n}/${total} selectate` : `${total} straturi`;
-  }
-  function clearDxf() {
-    S.dxfData = null;
-    renderDxfLayer();
-    const ctrl = document.getElementById("dxf-controls");
-    if (ctrl) ctrl.style.display = "none";
-    toast("Strat DXF \u0219ters.", "ok");
-  }
-  function setDxfOpacity(val) {
-    if (!S.dxfData) return;
-    S.dxfData.opacity = parseFloat(val);
-    const g = document.querySelector("#DXF > g");
-    if (g) g.setAttribute("opacity", S.dxfData.opacity);
-  }
-  function setDxfScale(factorPct) {
-    if (!S.dxfData) return;
-    S.dxfData.bscale = S.pxPerMeter / 1e3 * (parseFloat(factorPct) / 100);
-    renderDxfLayer();
-  }
-  function toggleDxfLayerList() {
-    const list = document.getElementById("dxf-layer-list");
-    if (!list) return;
-    const arrow = document.getElementById("dxf-layer-arrow");
-    const open = list.style.display === "none" || !list.style.display;
-    list.style.display = open ? "block" : "none";
-    if (arrow) arrow.textContent = open ? "\u25B2" : "\u25BC";
-  }
-
   // src/app.js
+  init_dxf_import();
   function init() {
     const svgEl = document.getElementById("svg");
     const VP = document.getElementById("VP");

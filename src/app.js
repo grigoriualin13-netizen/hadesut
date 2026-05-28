@@ -52,7 +52,7 @@ import './prosumator.js'; // side-effect: sets window.runProsumator etc.
 import { openImportXLS } from './import-xls.js';
 import { openSagMT, closeSagMT, runSagMT, copySagMT, exportSagCalcDetails, toggleSagOverlay, renderSagLayer } from './sag-mt.js';
 import { openProfilLEA, closeProfilLEA, runProfilLEA, exportProfilSVG } from './profil-lea.js';
-import { loadDxf, clearDxf, setDxfOpacity, setDxfScale, setDxfFilter, renderDxfLayer, toggleDxfLayerList, toggleDxfLayerCheck, clearDxfLayerSel } from './dxf-import.js';
+import { loadDxf, clearDxf, setDxfOpacity, setDxfScale, setDxfFilter, renderDxfLayer, toggleDxfLayerList, toggleDxfLayerCheck, clearDxfLayerSel, getDxfSnapPoint } from './dxf-import.js';
 
 // ── Init ──────────────────────────────────────────────────────────────────
 

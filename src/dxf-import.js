@@ -164,21 +164,24 @@ function entityPath(e, cx, cy, s) {
   return '';
 }
 
+// ── Visible entities helper (respects checkbox selection + text filter) ───────
+function _visibleEntities() {
+  if (!S.dxfData) return [];
+  const { allEntities, selectedLayers, layerFilter } = S.dxfData;
+  if (selectedLayers && selectedLayers.size > 0)
+    return allEntities.filter(e => selectedLayers.has(e.layer));
+  const fLow = (layerFilter || '').toLowerCase().trim();
+  return fLow ? allEntities.filter(e => e.layer.toLowerCase().includes(fLow)) : allEntities;
+}
+
 // ── Render DXF layer ──────────────────────────────────────────────────────────
 export function renderDxfLayer() {
   const el = document.getElementById('DXF');
   if (!el) return;
   if (!S.dxfData) { el.innerHTML = ''; return; }
 
-  const { allEntities, layerFilter, selectedLayers, bscale, opacity } = S.dxfData;
-
-  // Selected layers (checkboxes) take priority over text filter
-  const visible = selectedLayers && selectedLayers.size > 0
-    ? allEntities.filter(e => selectedLayers.has(e.layer))
-    : (() => {
-        const fLow = (layerFilter || '').toLowerCase().trim();
-        return fLow ? allEntities.filter(e => e.layer.toLowerCase().includes(fLow)) : allEntities;
-      })();
+  const { bscale, opacity } = S.dxfData;
+  const visible = _visibleEntities();
 
   if (!visible.length) { el.innerHTML = ''; return; }
 
@@ -345,6 +348,59 @@ export function setDxfScale(factorPct) {
   if (!S.dxfData) return;
   S.dxfData.bscale = (S.pxPerMeter / 1000) * (parseFloat(factorPct) / 100);
   renderDxfLayer();
+}
+
+// ── Snap to nearest DXF feature ──────────────────────────────────────────────
+// Returns { x, y, type:'vertex'|'perp' } in canvas coords, or null.
+// threshCanvas = snap radius in canvas units (screen_px / S.view.s).
+export function getDxfSnapPoint(cx, cy, threshCanvas) {
+  if (!S.dxfData) return null;
+  const { bscale, bcx, bcy } = S.dxfData;
+  if (!bscale) return null;
+  const visible = _visibleEntities();
+  if (!visible.length) return null;
+
+  // Canvas → DXF mm
+  const dx = cx / bscale + bcx;
+  const dy = bcy - cy / bscale;
+  const thr2 = (threshCanvas / bscale) ** 2;
+
+  // DXF mm → canvas
+  const toC = (vx, vy) => ({ x: (vx - bcx) * bscale, y: (bcy - vy) * bscale });
+
+  let bestV = null, bestVd2 = thr2;
+  let bestP = null, bestPd2 = thr2;
+
+  for (const e of visible) {
+    // Vertex candidates
+    const verts = e.t === 'L'  ? [{ x: e.x0, y: e.y0 }, { x: e.x1, y: e.y1 }]
+                : e.t === 'P'  ? e.verts
+                : [];
+    for (const v of verts) {
+      const d2 = (v.x - dx) ** 2 + (v.y - dy) ** 2;
+      if (d2 < bestVd2) { bestVd2 = d2; bestV = toC(v.x, v.y); }
+    }
+
+    // Segment perp-foot candidates
+    const segs = e.t === 'L' ? [[e.x0, e.y0, e.x1, e.y1]]
+               : e.t === 'P' ? e.verts.slice(1).map((v, i) => [e.verts[i].x, e.verts[i].y, v.x, v.y])
+                   .concat(e.closed && e.verts.length > 2
+                     ? [[e.verts[e.verts.length - 1].x, e.verts[e.verts.length - 1].y, e.verts[0].x, e.verts[0].y]]
+                     : [])
+               : [];
+    for (const [x0, y0, x1, y1] of segs) {
+      const ex = x1 - x0, ey = y1 - y0, len2 = ex * ex + ey * ey;
+      if (len2 < 1) continue;
+      const t = Math.max(0, Math.min(1, ((dx - x0) * ex + (dy - y0) * ey) / len2));
+      const fx = x0 + t * ex, fy = y0 + t * ey;
+      const d2 = (fx - dx) ** 2 + (fy - dy) ** 2;
+      if (d2 < bestPd2) { bestPd2 = d2; bestP = toC(fx, fy); }
+    }
+  }
+
+  if (bestV) return { ...bestV, type: 'vertex' };
+  if (bestP) return { ...bestP, type: 'perp' };
+  return null;
 }
 
 // ── Toggle layer list panel ───────────────────────────────────────────────────
