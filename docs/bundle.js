@@ -1211,6 +1211,52 @@
     resetDxfSilent();
     toast("Strat DXF \u0219ters.", "ok");
   }
+  function getDxfProjectData() {
+    if (!S.dxfData) return null;
+    const { allEntities, bcx, bcy, bscale, opacity, layerFilter, selectedLayers } = S.dxfData;
+    return { allEntities, bcx, bcy, bscale, opacity, layerFilter: layerFilter || "", selectedLayersArr: [...selectedLayers] };
+  }
+  function restoreDxfFromProject(saved) {
+    if (!saved || !saved.allEntities) return;
+    const sel = new Set(saved.selectedLayersArr || []);
+    S.dxfData = { allEntities: saved.allEntities, bcx: saved.bcx || 0, bcy: saved.bcy || 0, bscale: saved.bscale || S.pxPerMeter / 1e3, opacity: saved.opacity ?? 0.65, layerFilter: saved.layerFilter || "", selectedLayers: sel };
+    renderDxfLayer();
+    const ctrl = document.getElementById("dxf-controls");
+    if (ctrl) ctrl.style.display = "flex";
+    const opEl = document.getElementById("dxf-op");
+    if (opEl) opEl.value = S.dxfData.opacity;
+    const sfEl = document.getElementById("dxf-filter");
+    if (sfEl) sfEl.value = S.dxfData.layerFilter;
+    const allEntities = saved.allEntities;
+    const list = document.getElementById("dxf-layer-list");
+    if (list) {
+      const counts = {};
+      for (const e of allEntities) counts[e.layer] = (counts[e.layer] || 0) + 1;
+      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      const header = `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 10px 6px;border-bottom:1px solid var(--border2);margin-bottom:2px">
+      <span style="font-size:9px;font-weight:700;text-transform:uppercase;color:var(--text2)">Selecteaz\u0103 straturi</span>
+      <button onclick="clearDxfLayerSel()" style="font-size:9px;color:#44aacc;background:none;border:none;cursor:pointer;padding:0" title="Deselecteaz\u0103 tot">\u2715 gole\u0219te</button>
+    </div>`;
+      const rows = sorted.map(([l, c]) => {
+        const esc = l.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+        const checked = sel.has(l) ? " checked" : "";
+        return `<label style="display:flex;align-items:center;gap:6px;padding:3px 10px;cursor:pointer;white-space:nowrap;overflow:hidden"
+                     onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+                <input type="checkbox" data-layer="${esc}" onchange="toggleDxfLayerCheck('${esc}')"${checked} style="cursor:pointer;flex-shrink:0">
+                <span style="color:var(--text3);min-width:28px;text-align:right;font-variant-numeric:tabular-nums">${c}</span>
+                <span style="overflow:hidden;text-overflow:ellipsis">${l}</span>
+              </label>`;
+      }).join("");
+      list.innerHTML = header + rows;
+      list.style.display = "none";
+    }
+    const layerSet = new Set(allEntities.map((e) => e.layer));
+    const info = document.getElementById("dxf-layer-info");
+    if (info) {
+      const selCount = sel.size;
+      info.textContent = selCount > 0 ? `${selCount}/${layerSet.size} selectate` : `${layerSet.size} straturi`;
+    }
+  }
   function setDxfOpacity(val) {
     if (!S.dxfData) return;
     S.dxfData.opacity = parseFloat(val);
@@ -2410,7 +2456,7 @@ ${(r * 0.1).toFixed(4)}
     hasUnsavedChanges = true;
   }
   function getProjectData() {
-    return { EL: S.EL, CN: S.CN, bgData: S.bgData.url ? S.bgData : null };
+    return { EL: S.EL, CN: S.CN, bgData: S.bgData.url ? S.bgData : null, dxfData: getDxfProjectData() };
   }
   function loadProjectData(data) {
     S.EL = data.EL || [];
@@ -2421,7 +2467,8 @@ ${(r * 0.1).toFixed(4)}
     S.multiSel.clear();
     S.undoStack = [];
     S.redoStack = [];
-    resetDxfSilent();
+    if (data.dxfData) restoreDxfFromProject(data.dxfData);
+    else resetDxfSilent();
     render();
     renderBg();
     updateProps();

@@ -338,6 +338,62 @@ export function clearDxf() {
   toast('Strat DXF șters.', 'ok');
 }
 
+// Returns serializable snapshot of current DXF state (for project save).
+export function getDxfProjectData() {
+  if (!S.dxfData) return null;
+  const { allEntities, bcx, bcy, bscale, opacity, layerFilter, selectedLayers } = S.dxfData;
+  return { allEntities, bcx, bcy, bscale, opacity, layerFilter: layerFilter || '', selectedLayersArr: [...selectedLayers] };
+}
+
+// Restores DXF state from saved project data (no toast).
+export function restoreDxfFromProject(saved) {
+  if (!saved || !saved.allEntities) return;
+  const sel = new Set(saved.selectedLayersArr || []);
+  S.dxfData = { allEntities: saved.allEntities, bcx: saved.bcx || 0, bcy: saved.bcy || 0, bscale: saved.bscale || S.pxPerMeter / 1000, opacity: saved.opacity ?? 0.65, layerFilter: saved.layerFilter || '', selectedLayers: sel };
+
+  renderDxfLayer();
+
+  const ctrl = document.getElementById('dxf-controls');
+  if (ctrl) ctrl.style.display = 'flex';
+
+  const opEl = document.getElementById('dxf-op');
+  if (opEl) opEl.value = S.dxfData.opacity;
+  const sfEl = document.getElementById('dxf-filter');
+  if (sfEl) sfEl.value = S.dxfData.layerFilter;
+
+  // Rebuild layer list
+  const allEntities = saved.allEntities;
+  const list = document.getElementById('dxf-layer-list');
+  if (list) {
+    const counts = {};
+    for (const e of allEntities) counts[e.layer] = (counts[e.layer] || 0) + 1;
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const header = `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 10px 6px;border-bottom:1px solid var(--border2);margin-bottom:2px">
+      <span style="font-size:9px;font-weight:700;text-transform:uppercase;color:var(--text2)">Selectează straturi</span>
+      <button onclick="clearDxfLayerSel()" style="font-size:9px;color:#44aacc;background:none;border:none;cursor:pointer;padding:0" title="Deselectează tot">✕ golește</button>
+    </div>`;
+    const rows = sorted.map(([l, c]) => {
+      const esc = l.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const checked = sel.has(l) ? ' checked' : '';
+      return `<label style="display:flex;align-items:center;gap:6px;padding:3px 10px;cursor:pointer;white-space:nowrap;overflow:hidden"
+                     onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+                <input type="checkbox" data-layer="${esc}" onchange="toggleDxfLayerCheck('${esc}')"${checked} style="cursor:pointer;flex-shrink:0">
+                <span style="color:var(--text3);min-width:28px;text-align:right;font-variant-numeric:tabular-nums">${c}</span>
+                <span style="overflow:hidden;text-overflow:ellipsis">${l}</span>
+              </label>`;
+    }).join('');
+    list.innerHTML = header + rows;
+    list.style.display = 'none';
+  }
+
+  const layerSet = new Set(allEntities.map(e => e.layer));
+  const info = document.getElementById('dxf-layer-info');
+  if (info) {
+    const selCount = sel.size;
+    info.textContent = selCount > 0 ? `${selCount}/${layerSet.size} selectate` : `${layerSet.size} straturi`;
+  }
+}
+
 // ── Opacity control ───────────────────────────────────────────────────────────
 export function setDxfOpacity(val) {
   if (!S.dxfData) return;
