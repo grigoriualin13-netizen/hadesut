@@ -11359,8 +11359,11 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
     }
   }
   function _applyFeatureGating() {
-    const btn = document.getElementById("btn-sag-mt");
-    if (btn) btn.style.display = isCurrentUserAdmin() ? "" : "none";
+    const ok = isCurrentUserAdmin();
+    const mt = document.getElementById("mt-section");
+    if (mt) mt.style.display = ok ? "contents" : "none";
+    const sag = document.getElementById("btn-sag-mt");
+    if (sag) sag.style.display = ok ? "" : "none";
   }
   function _initTouch(svgEl) {
     let _pinchDist = 0;
