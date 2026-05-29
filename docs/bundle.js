@@ -2198,6 +2198,9 @@ ${(r * 0.1).toFixed(4)}
     hideAuthScreen();
     updateUserBar();
   }
+  function isCurrentUserAdmin() {
+    return !!(currentProfile && currentProfile.is_admin);
+  }
   function checkUserApproval() {
     if (!currentUser || !supaClient) return Promise.resolve(false);
     if (currentUser.email === ADMIN_EMAIL) {
@@ -11317,19 +11320,19 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
     if (window.__TAURI__) return;
     startAutoSave();
     setAuthHandlers({
-      onAuthSuccess: (user) => {
-        _applyFeatureGating(user?.email);
+      onAuthSuccess: () => {
+        _applyFeatureGating();
         showProjectManagerAfterAuth();
       },
       onLogout: () => {
-        _applyFeatureGating(null);
+        _applyFeatureGating();
       }
     });
     const hasSupabase = initSupabase();
     if (hasSupabase) {
       setupAuthStateListener();
-      resumeSession((user) => {
-        _applyFeatureGating(user?.email);
+      resumeSession(() => {
+        _applyFeatureGating();
         showProjectManagerAfterAuth();
       }).then((resumed) => {
         if (!resumed) showAuthScreen();
@@ -11338,11 +11341,9 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
       showProjectManagerAfterAuth();
     }
   }
-  var _PREMIUM_EMAILS = ["grigoriualin13@gmail.com"];
-  function _applyFeatureGating(email) {
-    const ok = _PREMIUM_EMAILS.includes((email || "").toLowerCase().trim());
+  function _applyFeatureGating() {
     const btn = document.getElementById("btn-sag-mt");
-    if (btn) btn.style.display = ok ? "" : "none";
+    if (btn) btn.style.display = isCurrentUserAdmin() ? "" : "none";
   }
   function _initTouch(svgEl) {
     let _pinchDist = 0;

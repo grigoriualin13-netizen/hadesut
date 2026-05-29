@@ -36,7 +36,7 @@ import {
   updateUserBar, openAdminPanel, closeAdminPanel,
   refreshAdminList, approveUser, rejectUser, disableUser,
   checkUserApproval, pendingLogout, setAuthHandlers,
-  resumeSession, setupAuthStateListener
+  resumeSession, setupAuthStateListener, isCurrentUserAdmin
 } from './auth.js';
 import { renderDimLayer } from './renderer.js';
 import {
@@ -83,14 +83,14 @@ function init() {
   startAutoSave();
 
   setAuthHandlers({
-    onAuthSuccess: (user) => { _applyFeatureGating(user?.email); showProjectManagerAfterAuth(); },
-    onLogout: () => { _applyFeatureGating(null); },
+    onAuthSuccess: () => { _applyFeatureGating(); showProjectManagerAfterAuth(); },
+    onLogout: () => { _applyFeatureGating(); },
   });
 
   const hasSupabase = initSupabase();
   if (hasSupabase) {
     setupAuthStateListener();
-    resumeSession(user => { _applyFeatureGating(user?.email); showProjectManagerAfterAuth(); }).then(resumed => {
+    resumeSession(() => { _applyFeatureGating(); showProjectManagerAfterAuth(); }).then(resumed => {
       if (!resumed) showAuthScreen();
     }).catch(() => showAuthScreen());
   } else {
@@ -100,12 +100,9 @@ function init() {
 
 // ── Feature gating ────────────────────────────────────────────────────────
 
-const _PREMIUM_EMAILS = ['grigoriualin13@gmail.com'];
-
-function _applyFeatureGating(email) {
-  const ok = _PREMIUM_EMAILS.includes((email || '').toLowerCase().trim());
+function _applyFeatureGating() {
   const btn = document.getElementById('btn-sag-mt');
-  if (btn) btn.style.display = ok ? '' : 'none';
+  if (btn) btn.style.display = isCurrentUserAdmin() ? '' : 'none';
 }
 
 // ── Touch support (mobile) ────────────────────────────────────────────────

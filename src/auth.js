@@ -165,6 +165,10 @@ export function authSkip() {
   updateUserBar();
 }
 
+export function isCurrentUserAdmin() {
+  return !!(currentProfile && currentProfile.is_admin);
+}
+
 export function checkUserApproval() {
   if (!currentUser || !supaClient) return Promise.resolve(false);
   if (currentUser.email === ADMIN_EMAIL) {
