@@ -15,9 +15,11 @@ let authMode = 'login';
 // ── Callbacks set by app.js ──
 let _onAuthSuccess = null;
 let _onLogout = null;
-export function setAuthHandlers({ onAuthSuccess, onLogout }) {
+let _onStateChange = null;
+export function setAuthHandlers({ onAuthSuccess, onLogout, onStateChange }) {
   _onAuthSuccess = onAuthSuccess;
   _onLogout = onLogout;
+  _onStateChange = onStateChange;
 }
 
 // ── Getter for project.js and others ──
@@ -125,6 +127,7 @@ function _onAuthSuccess_internal(user) {
   currentUser = user;
   updateUserBar();
   checkUserApproval().then(approved => {
+    _onStateChange && _onStateChange();
     if (approved) {
       hideAuthScreen();
       toast('Conectat: ' + user.email, 'ok');
@@ -161,8 +164,10 @@ export function authLogout() {
 
 export function authSkip() {
   currentUser = null;
+  currentProfile = null;
   hideAuthScreen();
   updateUserBar();
+  _onStateChange && _onStateChange();
 }
 
 export function isCurrentUserAdmin() {

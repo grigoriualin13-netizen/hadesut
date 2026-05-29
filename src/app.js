@@ -85,6 +85,7 @@ function init() {
   setAuthHandlers({
     onAuthSuccess: () => { _applyFeatureGating(); showProjectManagerAfterAuth(); },
     onLogout: () => { _applyFeatureGating(); },
+    onStateChange: () => { _applyFeatureGating(); },
   });
 
   const hasSupabase = initSupabase();

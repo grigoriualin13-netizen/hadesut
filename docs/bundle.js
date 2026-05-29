@@ -2057,9 +2057,10 @@ ${(r * 0.1).toFixed(4)}
   });
 
   // src/auth.js
-  function setAuthHandlers({ onAuthSuccess, onLogout }) {
+  function setAuthHandlers({ onAuthSuccess, onLogout, onStateChange }) {
     _onAuthSuccess = onAuthSuccess;
     _onLogout = onLogout;
+    _onStateChange = onStateChange;
   }
   function getCloudFunctions() {
     return { currentUser, supaClient, cloudSaveProject, cloudLoadProjects, cloudGetProject, cloudDeleteProject };
@@ -2162,6 +2163,7 @@ ${(r * 0.1).toFixed(4)}
     currentUser = user;
     updateUserBar();
     checkUserApproval().then((approved) => {
+      _onStateChange && _onStateChange();
       if (approved) {
         hideAuthScreen();
         toast("Conectat: " + user.email, "ok");
@@ -2195,8 +2197,10 @@ ${(r * 0.1).toFixed(4)}
   }
   function authSkip() {
     currentUser = null;
+    currentProfile = null;
     hideAuthScreen();
     updateUserBar();
+    _onStateChange && _onStateChange();
   }
   function isCurrentUserAdmin() {
     return !!(currentProfile && currentProfile.is_admin);
@@ -2383,7 +2387,7 @@ ${(r * 0.1).toFixed(4)}
       }
     });
   }
-  var SUPABASE_URL, SUPABASE_ANON_KEY, ADMIN_EMAIL, supaClient, currentUser, currentProfile, authMode, _onAuthSuccess, _onLogout;
+  var SUPABASE_URL, SUPABASE_ANON_KEY, ADMIN_EMAIL, supaClient, currentUser, currentProfile, authMode, _onAuthSuccess, _onLogout, _onStateChange;
   var init_auth = __esm({
     "src/auth.js"() {
       init_state();
@@ -2397,6 +2401,7 @@ ${(r * 0.1).toFixed(4)}
       authMode = "login";
       _onAuthSuccess = null;
       _onLogout = null;
+      _onStateChange = null;
     }
   });
 
@@ -11325,6 +11330,9 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
         showProjectManagerAfterAuth();
       },
       onLogout: () => {
+        _applyFeatureGating();
+      },
+      onStateChange: () => {
         _applyFeatureGating();
       }
     });
