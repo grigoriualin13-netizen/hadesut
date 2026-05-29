@@ -2215,7 +2215,16 @@ ${(r * 0.1).toFixed(4)}
     }
     return supaClient.from("profiles").select("approved, is_admin, display_name").eq("id", currentUser.id).single().then((res) => {
       if (res.error) {
-        if (res.error.code === "PGRST116") return false;
+        if (res.error.code === "PGRST116") {
+          supaClient.from("profiles").insert({
+            id: currentUser.id,
+            email: currentUser.email,
+            display_name: currentUser.user_metadata?.display_name || currentUser.email,
+            approved: false,
+            is_admin: false
+          }).then(() => {
+          });
+        }
         return false;
       }
       if (!res.data) return false;

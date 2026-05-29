@@ -188,7 +188,16 @@ export function checkUserApproval() {
     .single()
     .then(res => {
       if (res.error) {
-        if (res.error.code === 'PGRST116') return false;
+        if (res.error.code === 'PGRST116') {
+          // Profil inexistent — creează automat ca pending
+          supaClient.from('profiles').insert({
+            id: currentUser.id,
+            email: currentUser.email,
+            display_name: currentUser.user_metadata?.display_name || currentUser.email,
+            approved: false,
+            is_admin: false
+          }).then(() => {});
+        }
         return false;
       }
       if (!res.data) return false;
