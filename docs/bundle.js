@@ -11340,7 +11340,7 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
   }
   var _PREMIUM_EMAILS = ["grigoriualin13@gmail.com"];
   function _applyFeatureGating(email) {
-    const ok = window.__TAURI__ || _PREMIUM_EMAILS.includes((email || "").toLowerCase().trim());
+    const ok = _PREMIUM_EMAILS.includes((email || "").toLowerCase().trim());
     const btn = document.getElementById("btn-sag-mt");
     if (btn) btn.style.display = ok ? "" : "none";
   }

@@ -103,7 +103,7 @@ function init() {
 const _PREMIUM_EMAILS = ['grigoriualin13@gmail.com'];
 
 function _applyFeatureGating(email) {
-  const ok = window.__TAURI__ || _PREMIUM_EMAILS.includes((email || '').toLowerCase().trim());
+  const ok = _PREMIUM_EMAILS.includes((email || '').toLowerCase().trim());
   const btn = document.getElementById('btn-sag-mt');
   if (btn) btn.style.display = ok ? '' : 'none';
 }
