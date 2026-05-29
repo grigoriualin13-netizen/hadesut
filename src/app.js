@@ -83,19 +83,29 @@ function init() {
   startAutoSave();
 
   setAuthHandlers({
-    onAuthSuccess: showProjectManagerAfterAuth,
-    onLogout: () => {},
+    onAuthSuccess: (user) => { _applyFeatureGating(user?.email); showProjectManagerAfterAuth(); },
+    onLogout: () => { _applyFeatureGating(null); },
   });
 
   const hasSupabase = initSupabase();
   if (hasSupabase) {
     setupAuthStateListener();
-    resumeSession(showProjectManagerAfterAuth).then(resumed => {
+    resumeSession(user => { _applyFeatureGating(user?.email); showProjectManagerAfterAuth(); }).then(resumed => {
       if (!resumed) showAuthScreen();
     }).catch(() => showAuthScreen());
   } else {
     showProjectManagerAfterAuth();
   }
+}
+
+// ── Feature gating ────────────────────────────────────────────────────────
+
+const _PREMIUM_EMAILS = ['grigoriualin13@gmail.com'];
+
+function _applyFeatureGating(email) {
+  const ok = window.__TAURI__ || _PREMIUM_EMAILS.includes((email || '').toLowerCase().trim());
+  const btn = document.getElementById('btn-sag-mt');
+  if (btn) btn.style.display = ok ? '' : 'none';
 }
 
 // ── Touch support (mobile) ────────────────────────────────────────────────

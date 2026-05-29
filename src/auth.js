@@ -128,7 +128,7 @@ function _onAuthSuccess_internal(user) {
     if (approved) {
       hideAuthScreen();
       toast('Conectat: ' + user.email, 'ok');
-      _onAuthSuccess && _onAuthSuccess();
+      _onAuthSuccess && _onAuthSuccess(user);
     } else {
       _showPendingScreen();
     }
@@ -331,7 +331,7 @@ export async function resumeSession(onApproved) {
       currentUser = res.data.session.user;
       updateUserBar();
       const approved = await checkUserApproval();
-      if (approved) { hideAuthScreen(); onApproved && onApproved(); }
+      if (approved) { hideAuthScreen(); onApproved && onApproved(currentUser); }
       else { _showPendingScreen(); }
       return true;
     }

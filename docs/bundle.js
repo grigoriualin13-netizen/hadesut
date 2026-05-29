@@ -2165,7 +2165,7 @@ ${(r * 0.1).toFixed(4)}
       if (approved) {
         hideAuthScreen();
         toast("Conectat: " + user.email, "ok");
-        _onAuthSuccess && _onAuthSuccess();
+        _onAuthSuccess && _onAuthSuccess(user);
       } else {
         _showPendingScreen();
       }
@@ -2357,7 +2357,7 @@ ${(r * 0.1).toFixed(4)}
         const approved = await checkUserApproval();
         if (approved) {
           hideAuthScreen();
-          onApproved && onApproved();
+          onApproved && onApproved(currentUser);
         } else {
           _showPendingScreen();
         }
@@ -11317,19 +11317,32 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
     if (window.__TAURI__) return;
     startAutoSave();
     setAuthHandlers({
-      onAuthSuccess: showProjectManagerAfterAuth,
+      onAuthSuccess: (user) => {
+        _applyFeatureGating(user?.email);
+        showProjectManagerAfterAuth();
+      },
       onLogout: () => {
+        _applyFeatureGating(null);
       }
     });
     const hasSupabase = initSupabase();
     if (hasSupabase) {
       setupAuthStateListener();
-      resumeSession(showProjectManagerAfterAuth).then((resumed) => {
+      resumeSession((user) => {
+        _applyFeatureGating(user?.email);
+        showProjectManagerAfterAuth();
+      }).then((resumed) => {
         if (!resumed) showAuthScreen();
       }).catch(() => showAuthScreen());
     } else {
       showProjectManagerAfterAuth();
     }
+  }
+  var _PREMIUM_EMAILS = ["grigoriualin13@gmail.com"];
+  function _applyFeatureGating(email) {
+    const ok = window.__TAURI__ || _PREMIUM_EMAILS.includes((email || "").toLowerCase().trim());
+    const btn = document.getElementById("btn-sag-mt");
+    if (btn) btn.style.display = ok ? "" : "none";
   }
   function _initTouch(svgEl) {
     let _pinchDist = 0;
