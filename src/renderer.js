@@ -135,7 +135,7 @@ export function renderVDOverlay() {
   byEl.forEach((dataList, elId) => {
     const el = S.EL.find(x => x.id === elId);
     if (!el || el.type === 'text' || el.type === 'polyline') return;
-    if (el.type.startsWith('cd') || el.type.startsWith('ptab_') || el.type === 'trafo' || el.type === 'celula_linie_mt' || el.type === 'celula_trafo_mt' || el.type === 'bara_mt' || el.type === 'bara_statie_mt') return;
+    if (el.type.startsWith('cd') || el.type.startsWith('ptab_') || el.type === 'trafo' || el.type === 'celula_linie_mt' || el.type === 'celula_trafo_mt' || el.type === 'bara_mt' || el.type === 'bara_statie_mt' || el.type === 'manson') return;
     dataList.forEach((data, index) => {
       if (data.duNod === 0 && !data.duTronson) return;
       const evalFuse = data.protected_by || fuseA;
