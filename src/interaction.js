@@ -214,12 +214,12 @@ export function onDn(e) {
     }
   }
   if (tg || hb) return;
-  if (S.mode === 'select') {
-    if (e.ctrlKey || e.metaKey || e.shiftKey) {
-      S.selRectStart = { x: pt.x, y: pt.y }; S.selRect = null; S.panning = false;
-    } else { S.multiSel.clear(); S.sel = null; updateProps(); S.selRectStart = null; S.panning = true; }
-    S.panS = { x: e.clientX, y: e.clientY }; render();
+  if (e.ctrlKey || e.metaKey || e.shiftKey) {
+    if (S.mode === 'select') { S.selRectStart = { x: pt.x, y: pt.y }; S.selRect = null; S.panning = false; }
+  } else {
+    S.multiSel.clear(); S.sel = null; updateProps(); S.selRectStart = null; S.panning = true;
   }
+  S.panS = { x: e.clientX, y: e.clientY }; render();
 }
 
 export function onMv(e) {
