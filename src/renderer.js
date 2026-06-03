@@ -317,14 +317,14 @@ export function render() {
           S.multiDragStart = { mouseX: svgPt(ev).x, mouseY: svgPt(ev).y, origPositions: S.EL.filter(e => S.multiSel.has(e.id)).map(e => ({ id: e.id, x: e.x, y: e.y })), origConnPaths: S.CN.filter(c => S.multiSel.has(c.id)).map(c => ({ id: c.id, path: JSON.parse(JSON.stringify(c.path)) })) };
           const _selIds = new Set(S.multiDragStart.origPositions.map(o => o.id));
           S.CN.forEach(cn2 => { if (!S.multiSel.has(cn2.id) && (_selIds.has(cn2.fromElId) && _selIds.has(cn2.toElId))) cn2._origPath = JSON.parse(JSON.stringify(cn2.path)); });
-          S.dragging = true; S.dragEl = null;
+          if (S.schemaMode !== 'proiectat' || cn._layer !== 'existent') { S.dragging = true; S.dragEl = null; }
         } else { S.multiSel.clear(); selectEl(cn.id); }
       }
     });
     if (isSel && S.mode === 'select') {
       cn.path.forEach((p, i) => {
         const h = mk('circle'); h.setAttribute('class', 'ph'); h.setAttribute('cx', p.x); h.setAttribute('cy', p.y); h.setAttribute('r', '6');
-        h.addEventListener('mousedown', ev => { ev.stopPropagation(); if (ev.button === 2 && cn.path.length > 2) { saveState('rmv pt'); cn.path.splice(i, 1); render(); } else { S.vxDrag = true; S.vxConn = cn; S.vxIdx = i; } });
+        h.addEventListener('mousedown', ev => { ev.stopPropagation(); if (S.schemaMode === 'proiectat' && cn._layer === 'existent') return; if (ev.button === 2 && cn.path.length > 2) { saveState('rmv pt'); cn.path.splice(i, 1); render(); } else { S.vxDrag = true; S.vxConn = cn; S.vxIdx = i; } });
         g.appendChild(h);
       });
     }
@@ -357,7 +357,7 @@ export function render() {
       const sc = el.scale || 1;
       g.setAttribute('transform', `translate(${el.x},${el.y}) rotate(${el.rotation || 0}) scale(${sc})`);
       g.innerHTML = `<text x="0" y="0" font-size="${el.fontSize || 10}" fill="${el.color || (S.lightMode ? '#1a2740' : '#dce8f5')}" font-family="Barlow Condensed,sans-serif" font-weight="700" style="${hlStyle}">${el.label || 'Text'}</text>`;
-      g.addEventListener('mousedown', ev => { if (S.mode === 'select') { ev.stopPropagation(); S.dragging = true; S.dragEl = el; S.dragOff = { x: svgPt(ev).x - el.x, y: svgPt(ev).y - el.y }; selectEl(el.id); } });
+      g.addEventListener('mousedown', ev => { if (S.mode === 'select') { ev.stopPropagation(); if (S.schemaMode !== 'proiectat' || el._layer !== 'existent') { S.dragging = true; S.dragEl = el; S.dragOff = { x: svgPt(ev).x - el.x, y: svgPt(ev).y - el.y }; } selectEl(el.id); } });
       _NL.appendChild(g); return;
     }
     if (el.type === 'polyline') {
@@ -372,7 +372,7 @@ export function render() {
       if (el.arrowStart) markersAttr += ` marker-start="url(#arr-s-${el.id})"`;
       g.innerHTML = `<defs>${markersDef}</defs><polyline points="${pts}" fill="none" stroke="${el.color || '#00cfff'}" stroke-width="${sw}" ${dash} ${markersAttr}/>`;
       if (isSel) el.points.forEach((p, i) => { const h = mk('circle'); h.setAttribute('class', 'ph'); h.setAttribute('cx', p.x); h.setAttribute('cy', p.y); h.setAttribute('r', '6'); h.addEventListener('mousedown', ev => { ev.stopPropagation(); S.vxDrag = true; S.vxConn = el; S.vxIdx = i; }); g.appendChild(h); });
-      g.addEventListener('mousedown', ev => { if (S.mode === 'select') { ev.stopPropagation(); S.dragging = true; S.dragEl = el; S.dragOff = { x: svgPt(ev).x - el.points[0].x, y: svgPt(ev).y - el.points[0].y }; selectEl(el.id); } });
+      g.addEventListener('mousedown', ev => { if (S.mode === 'select') { ev.stopPropagation(); if (S.schemaMode !== 'proiectat' || el._layer !== 'existent') { S.dragging = true; S.dragEl = el; S.dragOff = { x: svgPt(ev).x - el.points[0].x, y: svgPt(ev).y - el.points[0].y }; } selectEl(el.id); } });
       _NL.appendChild(g); return;
     }
 
@@ -403,8 +403,8 @@ export function render() {
           S.multiDragStart = { mouseX: svgPt(ev).x, mouseY: svgPt(ev).y, origPositions: S.EL.filter(e => S.multiSel.has(e.id)).map(e => ({ id: e.id, x: e.x, y: e.y })), origConnPaths: S.CN.filter(c => S.multiSel.has(c.id)).map(c => ({ id: c.id, path: JSON.parse(JSON.stringify(c.path)) })) };
           const _selIds = new Set(S.multiDragStart.origPositions.map(o => o.id));
           S.CN.forEach(cn2 => { if (!S.multiSel.has(cn2.id) && (_selIds.has(cn2.fromElId) && _selIds.has(cn2.toElId))) cn2._origPath = JSON.parse(JSON.stringify(cn2.path)); });
-          S.dragging = true; S.dragEl = null;
-        } else { S.multiSel.clear(); S.dragging = true; S.dragEl = el; S.dragOff = { x: svgPt(ev).x - el.x, y: svgPt(ev).y - el.y }; selectEl(el.id); }
+          if (S.schemaMode !== 'proiectat' || el._layer !== 'existent') { S.dragging = true; S.dragEl = null; }
+        } else { S.multiSel.clear(); if (S.schemaMode !== 'proiectat' || el._layer !== 'existent') { S.dragging = true; S.dragEl = el; S.dragOff = { x: svgPt(ev).x - el.x, y: svgPt(ev).y - el.y }; } selectEl(el.id); }
         render();
       }
     });

@@ -6235,8 +6235,10 @@ ${(r * 0.1).toFixed(4)}
             S.CN.forEach((cn2) => {
               if (!S.multiSel.has(cn2.id) && (_selIds.has(cn2.fromElId) && _selIds.has(cn2.toElId))) cn2._origPath = JSON.parse(JSON.stringify(cn2.path));
             });
-            S.dragging = true;
-            S.dragEl = null;
+            if (S.schemaMode !== "proiectat" || cn._layer !== "existent") {
+              S.dragging = true;
+              S.dragEl = null;
+            }
           } else {
             S.multiSel.clear();
             selectEl(cn.id);
@@ -6252,6 +6254,7 @@ ${(r * 0.1).toFixed(4)}
           h.setAttribute("r", "6");
           h.addEventListener("mousedown", (ev) => {
             ev.stopPropagation();
+            if (S.schemaMode === "proiectat" && cn._layer === "existent") return;
             if (ev.button === 2 && cn.path.length > 2) {
               saveState("rmv pt");
               cn.path.splice(i, 1);
@@ -6315,9 +6318,11 @@ ${(r * 0.1).toFixed(4)}
         g2.addEventListener("mousedown", (ev) => {
           if (S.mode === "select") {
             ev.stopPropagation();
-            S.dragging = true;
-            S.dragEl = el;
-            S.dragOff = { x: svgPt(ev).x - el.x, y: svgPt(ev).y - el.y };
+            if (S.schemaMode !== "proiectat" || el._layer !== "existent") {
+              S.dragging = true;
+              S.dragEl = el;
+              S.dragOff = { x: svgPt(ev).x - el.x, y: svgPt(ev).y - el.y };
+            }
             selectEl(el.id);
           }
         });
@@ -6354,9 +6359,11 @@ ${(r * 0.1).toFixed(4)}
         g2.addEventListener("mousedown", (ev) => {
           if (S.mode === "select") {
             ev.stopPropagation();
-            S.dragging = true;
-            S.dragEl = el;
-            S.dragOff = { x: svgPt(ev).x - el.points[0].x, y: svgPt(ev).y - el.points[0].y };
+            if (S.schemaMode !== "proiectat" || el._layer !== "existent") {
+              S.dragging = true;
+              S.dragEl = el;
+              S.dragOff = { x: svgPt(ev).x - el.points[0].x, y: svgPt(ev).y - el.points[0].y };
+            }
             selectEl(el.id);
           }
         });
@@ -6401,13 +6408,17 @@ ${(r * 0.1).toFixed(4)}
             S.CN.forEach((cn2) => {
               if (!S.multiSel.has(cn2.id) && (_selIds.has(cn2.fromElId) && _selIds.has(cn2.toElId))) cn2._origPath = JSON.parse(JSON.stringify(cn2.path));
             });
-            S.dragging = true;
-            S.dragEl = null;
+            if (S.schemaMode !== "proiectat" || el._layer !== "existent") {
+              S.dragging = true;
+              S.dragEl = null;
+            }
           } else {
             S.multiSel.clear();
-            S.dragging = true;
-            S.dragEl = el;
-            S.dragOff = { x: svgPt(ev).x - el.x, y: svgPt(ev).y - el.y };
+            if (S.schemaMode !== "proiectat" || el._layer !== "existent") {
+              S.dragging = true;
+              S.dragEl = el;
+              S.dragOff = { x: svgPt(ev).x - el.x, y: svgPt(ev).y - el.y };
+            }
             selectEl(el.id);
           }
           render();
