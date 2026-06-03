@@ -105,9 +105,6 @@ export const S = {
   // IndexedDB
   ecDB: null,
 
-  // Straturi Existent / Proiectat
-  schemaMode: 'proiectat',
-
   // UI
   lightMode: false,
   toastTimer: null,

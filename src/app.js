@@ -21,8 +21,7 @@ import {
   saveState, undo, redo, copyEl, pasteEl,
   addElem, delSel, updSel, rotateSel, setRotationAbs,
   selectEl, updateConnectedCables, finalConn,
-  setMTConnect, startMTSpan, addMTSpanFrom,
-  fixeazaExistent, setSchemaMode
+  setMTConnect, startMTSpan, addMTSpanFrom
 } from './element-manager.js';
 import {
   startAutoSave, save, saveAsNew, exportJSON, load,
@@ -274,8 +273,6 @@ window.finalConn      = finalConn;
 window.setMTConnect   = setMTConnect;
 window.startMTSpan    = startMTSpan;
 window.addMTSpanFrom  = addMTSpanFrom;
-window.fixeazaExistent = fixeazaExistent;
-window.setSchemaMode   = setSchemaMode;
 
 // UI
 window.updateProps       = updateProps;

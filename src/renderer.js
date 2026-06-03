@@ -246,8 +246,6 @@ export function render() {
   _NL.innerHTML = ''; _CL.innerHTML = '';
 
   S.CN.forEach(cn => {
-    if (S.schemaMode === 'existent' && cn._layer === 'proiectat') return;
-    const _cnFaded = S.schemaMode === 'proiectat' && cn._layer === 'existent';
     const reCN = cn;
     const renderPath = cn.path;
     const isSel = cn.id === S.sel || S.multiSel.has(cn.id), col = reCN.color || '#ef4444', sw = reCN.strokeWidth || 2, dash = reCN.lineType === 'dashed' ? 'stroke-dasharray="10,5"' : '';
@@ -279,7 +277,6 @@ export function render() {
       }
     }
     const g = mk('g'); g.setAttribute('class', `conn ${isSel ? 'sel' : ''}`);
-    if (_cnFaded) g.setAttribute('opacity', '0.72');
     const isDemontat = reCN.stare === 'demontat', demDash = isDemontat ? 'stroke-dasharray="8,6"' : '', finalDash = dash || demDash;
     let hlPath = ''; if (reCN.fillColor && reCN.fillColor !== 'none') hlPath = `<path d="${dStr}" fill="none" stroke="${reCN.fillColor}" stroke-width="${sw + 8}" opacity="0.45" pointer-events="none"/>`;
     let demXmarks = '';
@@ -335,12 +332,9 @@ export function render() {
   });
 
   S.EL.forEach(el => {
-    if (S.schemaMode === 'existent' && el._layer === 'proiectat') return;
-    const _elFaded = S.schemaMode === 'proiectat' && el._layer === 'existent';
     if (el.type === 'dim') {
       const isSel = el.id === S.sel || S.multiSel.has(el.id);
       const g = mk('g'); g.setAttribute('class', `el ${isSel ? 'sel' : ''}`); g.dataset.eid = el.id;
-      if (_elFaded) g.setAttribute('opacity', '0.72');
       g.innerHTML = _dimSVG(el, isSel);
       g.addEventListener('mousedown', ev => {
         if (S.mode === 'select') {
@@ -357,7 +351,6 @@ export function render() {
     const renderX = re.x || 0, renderY = re.y || 0, renderRot = re.rotation || 0, renderScale = re.scale || 1;
     if (re.type === 'text') {
       const g = mk('g'); g.setAttribute('class', `el ${isSel ? 'sel' : ''}`); g.dataset.eid = el.id;
-      if (_elFaded) g.setAttribute('opacity', '0.72');
       const hlStyle = re.fillColor && re.fillColor !== 'none' ? `stroke:${re.fillColor}; stroke-width:4px; paint-order:stroke fill;` : '';
       g.setAttribute('transform', `translate(${renderX},${renderY}) rotate(${renderRot}) scale(${renderScale})`);
       g.innerHTML = `<text x="0" y="0" font-size="${re.fontSize || 10}" fill="${re.color || (S.lightMode ? '#1a2740' : '#dce8f5')}" font-family="Barlow Condensed,sans-serif" font-weight="700" style="${hlStyle}">${re.label || 'Text'}</text>`;
@@ -366,7 +359,6 @@ export function render() {
     }
     if (re.type === 'polyline') {
       const g = mk('g'); g.setAttribute('class', `el ${isSel ? 'sel' : ''}`); g.dataset.eid = el.id;
-      if (_elFaded) g.setAttribute('opacity', '0.72');
       const renderPts = re.points || el.points;
       const pts = renderPts.map(p => `${p.x},${p.y}`).join(' '), dash = re.lineType === 'dashed' ? 'stroke-dasharray="10,5"' : '', sw = re.strokeWidth || 2.5;
       let markersDef = '';
@@ -382,7 +374,6 @@ export function render() {
     }
 
     const { inner } = sym(re); const g = mk('g'); g.setAttribute('class', `el ${isSel ? 'sel' : ''}`); g.dataset.eid = el.id;
-    if (_elFaded) g.setAttribute('opacity', '0.72');
     g.setAttribute('transform', `translate(${renderX},${renderY}) rotate(${renderRot}) scale(${renderScale})`);
     const isMSel = S.multiSel.has(el.id), wBox = symW(re), hBox = symH(re);
     let selBox = '';

@@ -98,8 +98,8 @@ export function addElem(x, y) {
   const el = {
     id: uid(), type: S.pendType, x: sn(x), y: sn(y),
     label: nextLbl(S.pendType), color: CM[S.pendType] || '#555',
-    fillColor: 'none', rotation: 0, scale: 1, _layer: S.schemaMode === 'existent' ? 'existent' : 'proiectat',
-    stare: S.schemaMode === 'proiectat' ? 'proiectat_racordare' : 'existent'
+    fillColor: 'none', rotation: 0, scale: 1,
+    stare: 'proiectat_racordare'
   };
   if (S.pendType === 'stalp_cs') el.cs_fuse = 100;
   if (S.pendType === 'meter') el.bmptText = '';
@@ -195,7 +195,7 @@ export function placeMTSpanAt(x, y) {
     id: uid(), type: _mtSpanType,
     x: sn(x), y: sn(y), rotation: 0, scale: 1,
     label: nextLbl(_mtSpanType),
-    color: '#555', fillColor: 'none', stare: S.schemaMode === 'proiectat' ? 'proiectat_racordare' : 'existent', _layer: S.schemaMode === 'existent' ? 'existent' : 'proiectat',
+    color: '#555', fillColor: 'none', stare: 'proiectat_racordare',
   };
   S.EL.push(newEl);
 
@@ -236,7 +236,6 @@ function _connectMTPoles(fromEl, toEl, sec) {
       lineType: 'solid', strokeWidth: 2.5,
       tipConductor: 'OL-AL', sectiune: sec,
       tipRetea: 'Trifazat', putereConc: 0, faza,
-      _layer: S.schemaMode === 'existent' ? 'existent' : 'proiectat',
     });
   });
 }
@@ -285,47 +284,13 @@ export function finalConn() {
     fromCircuit: S.connFromCircuit, toCircuit: S.connToCircuit,
     tipConductor: isMT ? 'OL-AL'    : 'Clasic Al',
     sectiune:     isMT ? _pendingSecMT : 16,
-    tipRetea: 'Trifazat', putereConc: 0, _layer: S.schemaMode === 'existent' ? 'existent' : 'proiectat',
-    stare: S.schemaMode === 'proiectat' ? 'proiectat_racordare' : 'existent',
+    tipRetea: 'Trifazat', putereConc: 0,
+    stare: 'proiectat_racordare',
     ...(isMT ? { faza: _pendingFaza } : {}),
   });
   S.connStart = null; S.connPts = []; S.connFromEl = null; S.connFromTerm = null;
   S.connToEl = null; S.connToTerm = null; S.connFromCircuit = null; S.connToCircuit = null;
   setMode('select'); render(); updateStat();
-}
-
-// ── Existent / Proiectat layer system ────────────────────────────────────────
-
-export function fixeazaExistent() {
-  saveState('fixează existent');
-  S.EL.forEach(el => {
-    el._layer = 'existent';
-    const snap = JSON.parse(JSON.stringify(el));
-    delete snap._exSnapshot; delete snap._layer;
-    el._exSnapshot = snap;
-    el._exPos = { x: el.x, y: el.y, rotation: el.rotation || 0, scale: el.scale || 1 };
-    if (el.points) el._exPoints = JSON.parse(JSON.stringify(el.points));
-  });
-  S.CN.forEach(cn => {
-    cn._layer = 'existent';
-    const snap = JSON.parse(JSON.stringify(cn));
-    delete snap._exSnapshot; delete snap._layer;
-    cn._exSnapshot = snap;
-    cn._exPath = JSON.parse(JSON.stringify(cn.path));
-  });
-  render();
-  toast('Toate elementele marcate ca Existente — starea este înghețată', 'ok');
-}
-
-export function setSchemaMode(mode) {
-  S.schemaMode = mode;
-  const btnE = document.getElementById('btn-mode-existent');
-  const btnP = document.getElementById('btn-mode-proiectat');
-  if (btnE) btnE.classList.toggle('on', mode === 'existent');
-  if (btnP) btnP.classList.toggle('on', mode === 'proiectat');
-  if (mode === 'existent') { S.multiSel.clear(); S.sel = null; setMode('select'); }
-  render();
-  toast(mode === 'existent' ? 'Mod Existent — rețeaua actuală (read-only)' : 'Mod Proiectat — toate elementele vizibile', 'ok');
 }
 
 window.baraStatieTerUpd = function (elId, idx, key, val) {
