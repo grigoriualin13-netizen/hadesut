@@ -248,8 +248,8 @@ export function render() {
   S.CN.forEach(cn => {
     if (S.schemaMode === 'existent' && cn._layer === 'proiectat') return;
     const _cnFaded = S.schemaMode === 'proiectat' && cn._layer === 'existent';
-    const reCN = (S.schemaMode === 'existent' && cn._exSnapshot) ? cn._exSnapshot : cn;
-    const renderPath = reCN.path || cn.path;
+    const reCN = cn;
+    const renderPath = cn.path;
     const isSel = cn.id === S.sel || S.multiSel.has(cn.id), col = reCN.color || '#ef4444', sw = reCN.strokeWidth || 2, dash = reCN.lineType === 'dashed' ? 'stroke-dasharray="10,5"' : '';
     const rp = reCN.faza ? _mtOffsetPath(renderPath, reCN.faza, reCN.fromElId, reCN.toElId) : renderPath;
     let dStr = '', JUMP_R = 6;
@@ -259,8 +259,7 @@ export function render() {
         let inters = [];
         S.CN.forEach(otherCn => {
           if (otherCn.id >= cn.id) return;
-          const otherSnap = (S.schemaMode === 'existent' && otherCn._exSnapshot) ? otherCn._exSnapshot : otherCn;
-          const otherRP = otherSnap.path || otherCn.path;
+          const otherRP = otherCn.path;
           for (let j = 0; j < otherRP.length - 1; j++) {
             const int = getLineIntersection(p1, p2, otherRP[j], otherRP[j + 1]);
             if (int) inters.push({ x: int.x, y: int.y, dist: Math.hypot(int.x - p1.x, int.y - p1.y) });
@@ -354,8 +353,7 @@ export function render() {
     }
     if (el.type === 'poly_arrow') { el.type = 'polyline'; el.arrowEnd = true; el.arrowStart = false; el.lineType = 'solid'; el.strokeWidth = 2.5; }
     const isSel = el.id === S.sel;
-    // re = snapshot in existent mode, actual element in proiectat mode
-    const re = (S.schemaMode === 'existent' && el._exSnapshot) ? el._exSnapshot : el;
+    const re = el;
     const renderX = re.x || 0, renderY = re.y || 0, renderRot = re.rotation || 0, renderScale = re.scale || 1;
     if (re.type === 'text') {
       const g = mk('g'); g.setAttribute('class', `el ${isSel ? 'sel' : ''}`); g.dataset.eid = el.id;

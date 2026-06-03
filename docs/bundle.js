@@ -2936,24 +2936,6 @@ ${(r * 0.1).toFixed(4)}
   }
   function onDn(e) {
     const pt = svgPt(e);
-    if (S.schemaMode === "existent") {
-      if (e.button === 1) {
-        e.preventDefault();
-        S.panning = true;
-        S.panS = { x: e.clientX, y: e.clientY };
-        return;
-      }
-      if (e.button !== 0) return;
-      const tg2 = e.target.closest("g.el"), hb2 = e.target.closest(".hb");
-      if (tg2 || hb2) return;
-      S.multiSel.clear();
-      S.sel = null;
-      updateProps();
-      S.panning = true;
-      S.panS = { x: e.clientX, y: e.clientY };
-      render();
-      return;
-    }
     if (e.button === 2) {
       if (S.mode === "dim") {
         if (_dimPts.length >= 1) {
@@ -3487,7 +3469,7 @@ ${(r * 0.1).toFixed(4)}
       }
       if (!inp) {
         if (e.key === "Delete" || e.key === "Backspace") {
-          if (S.schemaMode !== "existent") delSel();
+          delSel();
         }
         if (e.key === "Escape") {
           S.multiSel.clear();
@@ -6162,8 +6144,8 @@ ${(r * 0.1).toFixed(4)}
     S.CN.forEach((cn) => {
       if (S.schemaMode === "existent" && cn._layer === "proiectat") return;
       const _cnFaded = S.schemaMode === "proiectat" && cn._layer === "existent";
-      const reCN = S.schemaMode === "existent" && cn._exSnapshot ? cn._exSnapshot : cn;
-      const renderPath = reCN.path || cn.path;
+      const reCN = cn;
+      const renderPath = cn.path;
       const isSel = cn.id === S.sel || S.multiSel.has(cn.id), col = reCN.color || "#ef4444", sw = reCN.strokeWidth || 2, dash = reCN.lineType === "dashed" ? 'stroke-dasharray="10,5"' : "";
       const rp = reCN.faza ? _mtOffsetPath(renderPath, reCN.faza, reCN.fromElId, reCN.toElId) : renderPath;
       let dStr = "", JUMP_R = 6;
@@ -6174,8 +6156,7 @@ ${(r * 0.1).toFixed(4)}
           let inters = [];
           S.CN.forEach((otherCn) => {
             if (otherCn.id >= cn.id) return;
-            const otherSnap = S.schemaMode === "existent" && otherCn._exSnapshot ? otherCn._exSnapshot : otherCn;
-            const otherRP = otherSnap.path || otherCn.path;
+            const otherRP = otherCn.path;
             for (let j = 0; j < otherRP.length - 1; j++) {
               const int = getLineIntersection(p1, p2, otherRP[j], otherRP[j + 1]);
               if (int) inters.push({ x: int.x, y: int.y, dist: Math.hypot(int.x - p1.x, int.y - p1.y) });
@@ -6333,7 +6314,7 @@ ${(r * 0.1).toFixed(4)}
         el.strokeWidth = 2.5;
       }
       const isSel = el.id === S.sel;
-      const re = S.schemaMode === "existent" && el._exSnapshot ? el._exSnapshot : el;
+      const re = el;
       const renderX = re.x || 0, renderY = re.y || 0, renderRot = re.rotation || 0, renderScale = re.scale || 1;
       if (re.type === "text") {
         const g2 = mk("g");
