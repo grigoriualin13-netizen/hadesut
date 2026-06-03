@@ -3087,21 +3087,23 @@ ${(r * 0.1).toFixed(4)}
       }
     }
     if (tg || hb) return;
-    if (e.ctrlKey || e.metaKey || e.shiftKey) {
-      if (S.mode === "select") {
+    if (S.mode !== "select" && S.mode !== "connect") setMode("select");
+    if (S.mode === "connect" && !S.connStart) setMode("select");
+    if (S.mode === "select") {
+      if (e.ctrlKey || e.metaKey || e.shiftKey) {
         S.selRectStart = { x: pt.x, y: pt.y };
         S.selRect = null;
         S.panning = false;
+      } else {
+        S.multiSel.clear();
+        S.sel = null;
+        updateProps();
+        S.selRectStart = null;
+        S.panning = true;
       }
-    } else {
-      S.multiSel.clear();
-      S.sel = null;
-      updateProps();
-      S.selRectStart = null;
-      S.panning = true;
+      S.panS = { x: e.clientX, y: e.clientY };
+      render();
     }
-    S.panS = { x: e.clientX, y: e.clientY };
-    render();
   }
   function onMv(e) {
     const pt = svgPt(e);
