@@ -299,15 +299,21 @@ export function fixeazaExistent() {
   saveState('fixează existent');
   S.EL.forEach(el => {
     el._layer = 'existent';
+    const snap = JSON.parse(JSON.stringify(el));
+    delete snap._exSnapshot; delete snap._layer;
+    el._exSnapshot = snap;
     el._exPos = { x: el.x, y: el.y, rotation: el.rotation || 0, scale: el.scale || 1 };
     if (el.points) el._exPoints = JSON.parse(JSON.stringify(el.points));
   });
   S.CN.forEach(cn => {
     cn._layer = 'existent';
+    const snap = JSON.parse(JSON.stringify(cn));
+    delete snap._exSnapshot; delete snap._layer;
+    cn._exSnapshot = snap;
     cn._exPath = JSON.parse(JSON.stringify(cn.path));
   });
   render();
-  toast('Toate elementele marcate ca Existente — pozițiile sunt înghețate', 'ok');
+  toast('Toate elementele marcate ca Existente — starea este înghețată', 'ok');
 }
 
 export function setSchemaMode(mode) {

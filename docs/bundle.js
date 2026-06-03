@@ -5691,15 +5691,23 @@ ${(r * 0.1).toFixed(4)}
     saveState("fixeaz\u0103 existent");
     S.EL.forEach((el) => {
       el._layer = "existent";
+      const snap = JSON.parse(JSON.stringify(el));
+      delete snap._exSnapshot;
+      delete snap._layer;
+      el._exSnapshot = snap;
       el._exPos = { x: el.x, y: el.y, rotation: el.rotation || 0, scale: el.scale || 1 };
       if (el.points) el._exPoints = JSON.parse(JSON.stringify(el.points));
     });
     S.CN.forEach((cn) => {
       cn._layer = "existent";
+      const snap = JSON.parse(JSON.stringify(cn));
+      delete snap._exSnapshot;
+      delete snap._layer;
+      cn._exSnapshot = snap;
       cn._exPath = JSON.parse(JSON.stringify(cn.path));
     });
     render();
-    toast("Toate elementele marcate ca Existente \u2014 pozi\u021Biile sunt \xEEnghe\u021Bate", "ok");
+    toast("Toate elementele marcate ca Existente \u2014 starea este \xEEnghe\u021Bat\u0103", "ok");
   }
   function setSchemaMode(mode) {
     S.schemaMode = mode;
@@ -6141,9 +6149,10 @@ ${(r * 0.1).toFixed(4)}
     S.CN.forEach((cn) => {
       if (S.schemaMode === "existent" && cn._layer === "proiectat") return;
       const _cnFaded = S.schemaMode === "proiectat" && cn._layer === "existent";
-      const renderPath = S.schemaMode === "existent" && cn._exPath ? cn._exPath : cn.path;
-      const isSel = cn.id === S.sel || S.multiSel.has(cn.id), col = cn.color || "#ef4444", sw = cn.strokeWidth || 2, dash = cn.lineType === "dashed" ? 'stroke-dasharray="10,5"' : "";
-      const rp = cn.faza ? _mtOffsetPath(renderPath, cn.faza, cn.fromElId, cn.toElId) : renderPath;
+      const reCN = S.schemaMode === "existent" && cn._exSnapshot ? cn._exSnapshot : cn;
+      const renderPath = reCN.path || cn.path;
+      const isSel = cn.id === S.sel || S.multiSel.has(cn.id), col = reCN.color || "#ef4444", sw = reCN.strokeWidth || 2, dash = reCN.lineType === "dashed" ? 'stroke-dasharray="10,5"' : "";
+      const rp = reCN.faza ? _mtOffsetPath(renderPath, reCN.faza, reCN.fromElId, reCN.toElId) : renderPath;
       let dStr = "", JUMP_R = 6;
       if (rp.length > 0) {
         for (let i = 0; i < rp.length - 1; i++) {
@@ -6152,7 +6161,8 @@ ${(r * 0.1).toFixed(4)}
           let inters = [];
           S.CN.forEach((otherCn) => {
             if (otherCn.id >= cn.id) return;
-            const otherRP = S.schemaMode === "existent" && otherCn._exPath ? otherCn._exPath : otherCn.path;
+            const otherSnap = S.schemaMode === "existent" && otherCn._exSnapshot ? otherCn._exSnapshot : otherCn;
+            const otherRP = otherSnap.path || otherCn.path;
             for (let j = 0; j < otherRP.length - 1; j++) {
               const int = getLineIntersection(p1, p2, otherRP[j], otherRP[j + 1]);
               if (int) inters.push({ x: int.x, y: int.y, dist: Math.hypot(int.x - p1.x, int.y - p1.y) });
@@ -6180,9 +6190,9 @@ ${(r * 0.1).toFixed(4)}
       const g = mk("g");
       g.setAttribute("class", `conn ${isSel ? "sel" : ""}`);
       if (_cnFaded) g.setAttribute("opacity", "0.72");
-      const isDemontat = cn.stare === "demontat", demDash = isDemontat ? 'stroke-dasharray="8,6"' : "", finalDash = dash || demDash;
+      const isDemontat = reCN.stare === "demontat", demDash = isDemontat ? 'stroke-dasharray="8,6"' : "", finalDash = dash || demDash;
       let hlPath = "";
-      if (cn.fillColor && cn.fillColor !== "none") hlPath = `<path d="${dStr}" fill="none" stroke="${cn.fillColor}" stroke-width="${sw + 8}" opacity="0.45" pointer-events="none"/>`;
+      if (reCN.fillColor && reCN.fillColor !== "none") hlPath = `<path d="${dStr}" fill="none" stroke="${reCN.fillColor}" stroke-width="${sw + 8}" opacity="0.45" pointer-events="none"/>`;
       let demXmarks = "";
       if (isDemontat && renderPath.length >= 2) {
         for (let i = 0; i < renderPath.length - 1; i++) {
@@ -6217,12 +6227,12 @@ ${(r * 0.1).toFixed(4)}
           rot = -90;
         }
         let tr = rot ? `transform="rotate(${rot} ${tx} ${ty})"` : "";
-        let hlStyle = cn.fillColor && cn.fillColor !== "none" ? `stroke:${cn.fillColor}; stroke-width:3px; paint-order:stroke fill;` : "";
-        g.innerHTML += `<text class="el-lbl" x="${tx}" y="${ty}" text-anchor="middle" dominant-baseline="central" font-size="9" fill="${col}" font-family="JetBrains Mono,monospace" font-weight="700" pointer-events="none" style="${hlStyle}" ${tr}>L=${cn.length || 0}m</text>`;
-        if (cn.faza) {
-          const fazaCol = { R: "#ef4444", S: "#22c55e", T: "#3b82f6" }[cn.faza] || "#888";
+        let hlStyle = reCN.fillColor && reCN.fillColor !== "none" ? `stroke:${reCN.fillColor}; stroke-width:3px; paint-order:stroke fill;` : "";
+        g.innerHTML += `<text class="el-lbl" x="${tx}" y="${ty}" text-anchor="middle" dominant-baseline="central" font-size="9" fill="${col}" font-family="JetBrains Mono,monospace" font-weight="700" pointer-events="none" style="${hlStyle}" ${tr}>L=${reCN.length || 0}m</text>`;
+        if (reCN.faza) {
+          const fazaCol = { R: "#ef4444", S: "#22c55e", T: "#3b82f6" }[reCN.faza] || "#888";
           const bx = isHoriz ? mx + 18 : mx + 18, by = isHoriz ? my - 7 : my + 12;
-          g.innerHTML += `<circle cx="${bx}" cy="${by}" r="6" fill="${fazaCol}" stroke="rgba(0,0,0,.25)" stroke-width="1" pointer-events="none"/><text x="${bx}" y="${by}" text-anchor="middle" dominant-baseline="central" font-size="7.5" fill="white" font-weight="bold" pointer-events="none">${cn.faza}</text>`;
+          g.innerHTML += `<circle cx="${bx}" cy="${by}" r="6" fill="${fazaCol}" stroke="rgba(0,0,0,.25)" stroke-width="1" pointer-events="none"/><text x="${bx}" y="${by}" text-anchor="middle" dominant-baseline="central" font-size="7.5" fill="white" font-weight="bold" pointer-events="none">${reCN.faza}</text>`;
         }
       }
       g.querySelector(".hb").addEventListener("mousedown", (ev) => {
@@ -6310,19 +6320,16 @@ ${(r * 0.1).toFixed(4)}
         el.strokeWidth = 2.5;
       }
       const isSel = el.id === S.sel;
-      const _useEx = S.schemaMode === "existent" && el._exPos;
-      const renderX = _useEx ? el._exPos.x : el.x;
-      const renderY = _useEx ? el._exPos.y : el.y;
-      const renderRot = _useEx ? el._exPos.rotation || 0 : el.rotation || 0;
-      const renderScale = _useEx ? el._exPos.scale || 1 : el.scale || 1;
-      if (el.type === "text") {
+      const re = S.schemaMode === "existent" && el._exSnapshot ? el._exSnapshot : el;
+      const renderX = re.x || 0, renderY = re.y || 0, renderRot = re.rotation || 0, renderScale = re.scale || 1;
+      if (re.type === "text") {
         const g2 = mk("g");
         g2.setAttribute("class", `el ${isSel ? "sel" : ""}`);
         g2.dataset.eid = el.id;
         if (_elFaded) g2.setAttribute("opacity", "0.72");
-        const hlStyle2 = el.fillColor && el.fillColor !== "none" ? `stroke:${el.fillColor}; stroke-width:4px; paint-order:stroke fill;` : "";
+        const hlStyle2 = re.fillColor && re.fillColor !== "none" ? `stroke:${re.fillColor}; stroke-width:4px; paint-order:stroke fill;` : "";
         g2.setAttribute("transform", `translate(${renderX},${renderY}) rotate(${renderRot}) scale(${renderScale})`);
-        g2.innerHTML = `<text x="0" y="0" font-size="${el.fontSize || 10}" fill="${el.color || (S.lightMode ? "#1a2740" : "#dce8f5")}" font-family="Barlow Condensed,sans-serif" font-weight="700" style="${hlStyle2}">${el.label || "Text"}</text>`;
+        g2.innerHTML = `<text x="0" y="0" font-size="${re.fontSize || 10}" fill="${re.color || (S.lightMode ? "#1a2740" : "#dce8f5")}" font-family="Barlow Condensed,sans-serif" font-weight="700" style="${hlStyle2}">${re.label || "Text"}</text>`;
         g2.addEventListener("mousedown", (ev) => {
           if (S.mode === "select") {
             ev.stopPropagation();
@@ -6335,20 +6342,20 @@ ${(r * 0.1).toFixed(4)}
         _NL.appendChild(g2);
         return;
       }
-      if (el.type === "polyline") {
+      if (re.type === "polyline") {
         const g2 = mk("g");
         g2.setAttribute("class", `el ${isSel ? "sel" : ""}`);
         g2.dataset.eid = el.id;
         if (_elFaded) g2.setAttribute("opacity", "0.72");
-        const renderPts = _useEx && el._exPoints ? el._exPoints : el.points;
-        const pts = renderPts.map((p) => `${p.x},${p.y}`).join(" "), dash = el.lineType === "dashed" ? 'stroke-dasharray="10,5"' : "", sw = el.strokeWidth || 2.5;
+        const renderPts = re.points || el.points;
+        const pts = renderPts.map((p) => `${p.x},${p.y}`).join(" "), dash = re.lineType === "dashed" ? 'stroke-dasharray="10,5"' : "", sw = re.strokeWidth || 2.5;
         let markersDef = "";
-        if (el.arrowEnd) markersDef += `<marker id="arr-e-${el.id}" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="${el.color || "#00cfff"}"/></marker>`;
-        if (el.arrowStart) markersDef += `<marker id="arr-s-${el.id}" markerWidth="8" markerHeight="6" refX="1" refY="3" orient="auto-start-reverse"><polygon points="0 0,8 3,0 6" fill="${el.color || "#00cfff"}"/></marker>`;
+        if (re.arrowEnd) markersDef += `<marker id="arr-e-${el.id}" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="${re.color || "#00cfff"}"/></marker>`;
+        if (re.arrowStart) markersDef += `<marker id="arr-s-${el.id}" markerWidth="8" markerHeight="6" refX="1" refY="3" orient="auto-start-reverse"><polygon points="0 0,8 3,0 6" fill="${re.color || "#00cfff"}"/></marker>`;
         let markersAttr = "";
-        if (el.arrowEnd) markersAttr += ` marker-end="url(#arr-e-${el.id})"`;
-        if (el.arrowStart) markersAttr += ` marker-start="url(#arr-s-${el.id})"`;
-        g2.innerHTML = `<defs>${markersDef}</defs><polyline points="${pts}" fill="none" stroke="${el.color || "#00cfff"}" stroke-width="${sw}" ${dash} ${markersAttr}/>`;
+        if (re.arrowEnd) markersAttr += ` marker-end="url(#arr-e-${el.id})"`;
+        if (re.arrowStart) markersAttr += ` marker-start="url(#arr-s-${el.id})"`;
+        g2.innerHTML = `<defs>${markersDef}</defs><polyline points="${pts}" fill="none" stroke="${re.color || "#00cfff"}" stroke-width="${sw}" ${dash} ${markersAttr}/>`;
         if (isSel) el.points.forEach((p, i) => {
           const h = mk("circle");
           h.setAttribute("class", "ph");
@@ -6375,24 +6382,24 @@ ${(r * 0.1).toFixed(4)}
         _NL.appendChild(g2);
         return;
       }
-      const { inner } = sym(el);
+      const { inner } = sym(re);
       const g = mk("g");
       g.setAttribute("class", `el ${isSel ? "sel" : ""}`);
       g.dataset.eid = el.id;
       if (_elFaded) g.setAttribute("opacity", "0.72");
       g.setAttribute("transform", `translate(${renderX},${renderY}) rotate(${renderRot}) scale(${renderScale})`);
-      const isMSel = S.multiSel.has(el.id), wBox = symW(el), hBox = symH(el);
+      const isMSel = S.multiSel.has(el.id), wBox = symW(re), hBox = symH(re);
       let selBox = "";
       if (isSel) selBox = `<rect x="${-wBox / 2 - 5}" y="${-hBox / 2 - 5}" width="${wBox + 10}" height="${hBox + 10}" fill="none" stroke="rgba(0,207,255,.7)" stroke-width="2" stroke-dasharray="5,3" rx="3" pointer-events="none"/>`;
       else if (isMSel) selBox = `<rect x="${-wBox / 2 - 5}" y="${-hBox / 2 - 5}" width="${wBox + 10}" height="${hBox + 10}" fill="rgba(0,207,255,.06)" stroke="rgba(0,207,255,.45)" stroke-width="1.5" stroke-dasharray="4,4" rx="3" pointer-events="none"/>`;
-      const hlStyle = el.fillColor && el.fillColor !== "none" ? `stroke:${el.fillColor}; stroke-width:4px; paint-order:stroke fill;` : "";
+      const hlStyle = re.fillColor && re.fillColor !== "none" ? `stroke:${re.fillColor}; stroke-width:4px; paint-order:stroke fill;` : "";
       let lbl = "";
-      if (el.label) {
-        if (!el.type.startsWith("firida_") && !el.type.startsWith("stalp_") && !el.type.startsWith("ptab_")) {
-          lbl = `<text class="el-lbl" x="12" y="${-(hBox / 2) - 10}" text-anchor="start" font-size="11" fill="${el.color || (S.lightMode ? "#1a2740" : "#dce8f5")}" font-family="Barlow Condensed,sans-serif" font-weight="700" pointer-events="none" style="${hlStyle}">${el.label || ""}</text>`;
+      if (re.label) {
+        if (!re.type.startsWith("firida_") && !re.type.startsWith("stalp_") && !re.type.startsWith("ptab_")) {
+          lbl = `<text class="el-lbl" x="12" y="${-(hBox / 2) - 10}" text-anchor="start" font-size="11" fill="${re.color || (S.lightMode ? "#1a2740" : "#dce8f5")}" font-family="Barlow Condensed,sans-serif" font-weight="700" pointer-events="none" style="${hlStyle}">${re.label || ""}</text>`;
         } else {
-          const ly = hBox / 2 + 16, nodBadge = el.nod ? `<text class="el-lbl" x="12" y="${ly + 12}" text-anchor="start" font-size="8" fill="${el.nod === "nod" ? "#ff9f43" : el.nod === "capat" ? "#00e5a0" : "#00cfff"}" font-family="Barlow Condensed,sans-serif" font-weight="700" pointer-events="none" style="${hlStyle}">[${el.nod.toUpperCase()}]</text>` : "";
-          lbl = `<text class="el-lbl" x="12" y="${ly}" text-anchor="start" font-size="11" fill="${el.color || (S.lightMode ? "#1a2740" : "#dce8f5")}" font-family="Barlow Condensed,sans-serif" font-weight="700" pointer-events="none" style="${hlStyle}">${el.label || ""}</text>${nodBadge}`;
+          const ly = hBox / 2 + 16, nodBadge = re.nod ? `<text class="el-lbl" x="12" y="${ly + 12}" text-anchor="start" font-size="8" fill="${re.nod === "nod" ? "#ff9f43" : re.nod === "capat" ? "#00e5a0" : "#00cfff"}" font-family="Barlow Condensed,sans-serif" font-weight="700" pointer-events="none" style="${hlStyle}">[${re.nod.toUpperCase()}]</text>` : "";
+          lbl = `<text class="el-lbl" x="12" y="${ly}" text-anchor="start" font-size="11" fill="${re.color || (S.lightMode ? "#1a2740" : "#dce8f5")}" font-family="Barlow Condensed,sans-serif" font-weight="700" pointer-events="none" style="${hlStyle}">${re.label || ""}</text>${nodBadge}`;
         }
       }
       g.innerHTML = selBox + inner + lbl;
