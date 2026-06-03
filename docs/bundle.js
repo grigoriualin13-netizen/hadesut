@@ -5420,7 +5420,7 @@ ${(r * 0.1).toFixed(4)}
       fillColor: "none",
       rotation: 0,
       scale: 1,
-      _layer: "proiectat",
+      _layer: S.schemaMode === "existent" ? "existent" : "proiectat",
       stare: S.schemaMode === "proiectat" ? "proiectat_racordare" : "existent"
     };
     if (S.pendType === "stalp_cs") el.cs_fuse = 100;
@@ -5542,7 +5542,7 @@ ${(r * 0.1).toFixed(4)}
       color: "#555",
       fillColor: "none",
       stare: S.schemaMode === "proiectat" ? "proiectat_racordare" : "existent",
-      _layer: "proiectat"
+      _layer: S.schemaMode === "existent" ? "existent" : "proiectat"
     };
     S.EL.push(newEl);
     if (_mtSpanPrevId) {
@@ -5666,7 +5666,7 @@ ${(r * 0.1).toFixed(4)}
       sectiune: isMT ? _pendingSecMT : 16,
       tipRetea: "Trifazat",
       putereConc: 0,
-      _layer: "proiectat",
+      _layer: S.schemaMode === "existent" ? "existent" : "proiectat",
       stare: S.schemaMode === "proiectat" ? "proiectat_racordare" : "existent",
       ...isMT ? { faza: _pendingFaza } : {}
     });

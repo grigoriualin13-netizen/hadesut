@@ -98,7 +98,7 @@ export function addElem(x, y) {
   const el = {
     id: uid(), type: S.pendType, x: sn(x), y: sn(y),
     label: nextLbl(S.pendType), color: CM[S.pendType] || '#555',
-    fillColor: 'none', rotation: 0, scale: 1, _layer: 'proiectat',
+    fillColor: 'none', rotation: 0, scale: 1, _layer: S.schemaMode === 'existent' ? 'existent' : 'proiectat',
     stare: S.schemaMode === 'proiectat' ? 'proiectat_racordare' : 'existent'
   };
   if (S.pendType === 'stalp_cs') el.cs_fuse = 100;
@@ -195,7 +195,7 @@ export function placeMTSpanAt(x, y) {
     id: uid(), type: _mtSpanType,
     x: sn(x), y: sn(y), rotation: 0, scale: 1,
     label: nextLbl(_mtSpanType),
-    color: '#555', fillColor: 'none', stare: S.schemaMode === 'proiectat' ? 'proiectat_racordare' : 'existent', _layer: 'proiectat',
+    color: '#555', fillColor: 'none', stare: S.schemaMode === 'proiectat' ? 'proiectat_racordare' : 'existent', _layer: S.schemaMode === 'existent' ? 'existent' : 'proiectat',
   };
   S.EL.push(newEl);
 
@@ -284,7 +284,7 @@ export function finalConn() {
     fromCircuit: S.connFromCircuit, toCircuit: S.connToCircuit,
     tipConductor: isMT ? 'OL-AL'    : 'Clasic Al',
     sectiune:     isMT ? _pendingSecMT : 16,
-    tipRetea: 'Trifazat', putereConc: 0, _layer: 'proiectat',
+    tipRetea: 'Trifazat', putereConc: 0, _layer: S.schemaMode === 'existent' ? 'existent' : 'proiectat',
     stare: S.schemaMode === 'proiectat' ? 'proiectat_racordare' : 'existent',
     ...(isMT ? { faza: _pendingFaza } : {}),
   });
