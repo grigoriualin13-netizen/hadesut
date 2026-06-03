@@ -5689,12 +5689,15 @@ ${(r * 0.1).toFixed(4)}
     saveState("fixeaz\u0103 existent");
     S.EL.forEach((el) => {
       el._layer = "existent";
+      el._exPos = { x: el.x, y: el.y, rotation: el.rotation || 0, scale: el.scale || 1 };
+      if (el.points) el._exPoints = JSON.parse(JSON.stringify(el.points));
     });
     S.CN.forEach((cn) => {
       cn._layer = "existent";
+      cn._exPath = JSON.parse(JSON.stringify(cn.path));
     });
     render();
-    toast("Toate elementele marcate ca Existente", "ok");
+    toast("Toate elementele marcate ca Existente \u2014 pozi\u021Biile sunt \xEEnghe\u021Bate", "ok");
   }
   function setSchemaMode(mode) {
     S.schemaMode = mode;
@@ -6136,8 +6139,9 @@ ${(r * 0.1).toFixed(4)}
     S.CN.forEach((cn) => {
       if (S.schemaMode === "existent" && cn._layer === "proiectat") return;
       const _cnFaded = S.schemaMode === "proiectat" && cn._layer === "existent";
+      const renderPath = S.schemaMode === "existent" && cn._exPath ? cn._exPath : cn.path;
       const isSel = cn.id === S.sel || S.multiSel.has(cn.id), col = cn.color || "#ef4444", sw = cn.strokeWidth || 2, dash = cn.lineType === "dashed" ? 'stroke-dasharray="10,5"' : "";
-      const rp = cn.faza ? _mtOffsetPath(cn.path, cn.faza, cn.fromElId, cn.toElId) : cn.path;
+      const rp = cn.faza ? _mtOffsetPath(renderPath, cn.faza, cn.fromElId, cn.toElId) : renderPath;
       let dStr = "", JUMP_R = 6;
       if (rp.length > 0) {
         for (let i = 0; i < rp.length - 1; i++) {
@@ -6146,8 +6150,9 @@ ${(r * 0.1).toFixed(4)}
           let inters = [];
           S.CN.forEach((otherCn) => {
             if (otherCn.id >= cn.id) return;
-            for (let j = 0; j < otherCn.path.length - 1; j++) {
-              const int = getLineIntersection(p1, p2, otherCn.path[j], otherCn.path[j + 1]);
+            const otherRP = S.schemaMode === "existent" && otherCn._exPath ? otherCn._exPath : otherCn.path;
+            for (let j = 0; j < otherRP.length - 1; j++) {
+              const int = getLineIntersection(p1, p2, otherRP[j], otherRP[j + 1]);
               if (int) inters.push({ x: int.x, y: int.y, dist: Math.hypot(int.x - p1.x, int.y - p1.y) });
             }
           });
@@ -6177,9 +6182,9 @@ ${(r * 0.1).toFixed(4)}
       let hlPath = "";
       if (cn.fillColor && cn.fillColor !== "none") hlPath = `<path d="${dStr}" fill="none" stroke="${cn.fillColor}" stroke-width="${sw + 8}" opacity="0.45" pointer-events="none"/>`;
       let demXmarks = "";
-      if (isDemontat && cn.path.length >= 2) {
-        for (let i = 0; i < cn.path.length - 1; i++) {
-          const p1 = cn.path[i], p2 = cn.path[i + 1], segLen = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      if (isDemontat && renderPath.length >= 2) {
+        for (let i = 0; i < renderPath.length - 1; i++) {
+          const p1 = renderPath[i], p2 = renderPath[i + 1], segLen = Math.hypot(p2.x - p1.x, p2.y - p1.y);
           const xCount = Math.max(1, Math.floor(segLen / 40));
           for (let j = 1; j <= xCount; j++) {
             const t2 = j / (xCount + 1), cx2 = p1.x + (p2.x - p1.x) * t2, cy2 = p1.y + (p2.y - p1.y) * t2, xr = 4;
@@ -6235,10 +6240,8 @@ ${(r * 0.1).toFixed(4)}
             S.CN.forEach((cn2) => {
               if (!S.multiSel.has(cn2.id) && (_selIds.has(cn2.fromElId) && _selIds.has(cn2.toElId))) cn2._origPath = JSON.parse(JSON.stringify(cn2.path));
             });
-            if (S.schemaMode !== "proiectat" || cn._layer !== "existent") {
-              S.dragging = true;
-              S.dragEl = null;
-            }
+            S.dragging = true;
+            S.dragEl = null;
           } else {
             S.multiSel.clear();
             selectEl(cn.id);
@@ -6254,7 +6257,6 @@ ${(r * 0.1).toFixed(4)}
           h.setAttribute("r", "6");
           h.addEventListener("mousedown", (ev) => {
             ev.stopPropagation();
-            if (S.schemaMode === "proiectat" && cn._layer === "existent") return;
             if (ev.button === 2 && cn.path.length > 2) {
               saveState("rmv pt");
               cn.path.splice(i, 1);
@@ -6306,23 +6308,25 @@ ${(r * 0.1).toFixed(4)}
         el.strokeWidth = 2.5;
       }
       const isSel = el.id === S.sel;
+      const _useEx = S.schemaMode === "existent" && el._exPos;
+      const renderX = _useEx ? el._exPos.x : el.x;
+      const renderY = _useEx ? el._exPos.y : el.y;
+      const renderRot = _useEx ? el._exPos.rotation || 0 : el.rotation || 0;
+      const renderScale = _useEx ? el._exPos.scale || 1 : el.scale || 1;
       if (el.type === "text") {
         const g2 = mk("g");
         g2.setAttribute("class", `el ${isSel ? "sel" : ""}`);
         g2.dataset.eid = el.id;
         if (_elFaded) g2.setAttribute("opacity", "0.45");
         const hlStyle2 = el.fillColor && el.fillColor !== "none" ? `stroke:${el.fillColor}; stroke-width:4px; paint-order:stroke fill;` : "";
-        const sc = el.scale || 1;
-        g2.setAttribute("transform", `translate(${el.x},${el.y}) rotate(${el.rotation || 0}) scale(${sc})`);
+        g2.setAttribute("transform", `translate(${renderX},${renderY}) rotate(${renderRot}) scale(${renderScale})`);
         g2.innerHTML = `<text x="0" y="0" font-size="${el.fontSize || 10}" fill="${el.color || (S.lightMode ? "#1a2740" : "#dce8f5")}" font-family="Barlow Condensed,sans-serif" font-weight="700" style="${hlStyle2}">${el.label || "Text"}</text>`;
         g2.addEventListener("mousedown", (ev) => {
           if (S.mode === "select") {
             ev.stopPropagation();
-            if (S.schemaMode !== "proiectat" || el._layer !== "existent") {
-              S.dragging = true;
-              S.dragEl = el;
-              S.dragOff = { x: svgPt(ev).x - el.x, y: svgPt(ev).y - el.y };
-            }
+            S.dragging = true;
+            S.dragEl = el;
+            S.dragOff = { x: svgPt(ev).x - el.x, y: svgPt(ev).y - el.y };
             selectEl(el.id);
           }
         });
@@ -6334,7 +6338,8 @@ ${(r * 0.1).toFixed(4)}
         g2.setAttribute("class", `el ${isSel ? "sel" : ""}`);
         g2.dataset.eid = el.id;
         if (_elFaded) g2.setAttribute("opacity", "0.45");
-        const pts = el.points.map((p) => `${p.x},${p.y}`).join(" "), dash = el.lineType === "dashed" ? 'stroke-dasharray="10,5"' : "", sw = el.strokeWidth || 2.5;
+        const renderPts = _useEx && el._exPoints ? el._exPoints : el.points;
+        const pts = renderPts.map((p) => `${p.x},${p.y}`).join(" "), dash = el.lineType === "dashed" ? 'stroke-dasharray="10,5"' : "", sw = el.strokeWidth || 2.5;
         let markersDef = "";
         if (el.arrowEnd) markersDef += `<marker id="arr-e-${el.id}" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="${el.color || "#00cfff"}"/></marker>`;
         if (el.arrowStart) markersDef += `<marker id="arr-s-${el.id}" markerWidth="8" markerHeight="6" refX="1" refY="3" orient="auto-start-reverse"><polygon points="0 0,8 3,0 6" fill="${el.color || "#00cfff"}"/></marker>`;
@@ -6359,11 +6364,9 @@ ${(r * 0.1).toFixed(4)}
         g2.addEventListener("mousedown", (ev) => {
           if (S.mode === "select") {
             ev.stopPropagation();
-            if (S.schemaMode !== "proiectat" || el._layer !== "existent") {
-              S.dragging = true;
-              S.dragEl = el;
-              S.dragOff = { x: svgPt(ev).x - el.points[0].x, y: svgPt(ev).y - el.points[0].y };
-            }
+            S.dragging = true;
+            S.dragEl = el;
+            S.dragOff = { x: svgPt(ev).x - el.points[0].x, y: svgPt(ev).y - el.points[0].y };
             selectEl(el.id);
           }
         });
@@ -6375,7 +6378,7 @@ ${(r * 0.1).toFixed(4)}
       g.setAttribute("class", `el ${isSel ? "sel" : ""}`);
       g.dataset.eid = el.id;
       if (_elFaded) g.setAttribute("opacity", "0.45");
-      g.setAttribute("transform", `translate(${el.x},${el.y}) rotate(${el.rotation || 0}) scale(${el.scale || 1})`);
+      g.setAttribute("transform", `translate(${renderX},${renderY}) rotate(${renderRot}) scale(${renderScale})`);
       const isMSel = S.multiSel.has(el.id), wBox = symW(el), hBox = symH(el);
       let selBox = "";
       if (isSel) selBox = `<rect x="${-wBox / 2 - 5}" y="${-hBox / 2 - 5}" width="${wBox + 10}" height="${hBox + 10}" fill="none" stroke="rgba(0,207,255,.7)" stroke-width="2" stroke-dasharray="5,3" rx="3" pointer-events="none"/>`;
@@ -6408,17 +6411,13 @@ ${(r * 0.1).toFixed(4)}
             S.CN.forEach((cn2) => {
               if (!S.multiSel.has(cn2.id) && (_selIds.has(cn2.fromElId) && _selIds.has(cn2.toElId))) cn2._origPath = JSON.parse(JSON.stringify(cn2.path));
             });
-            if (S.schemaMode !== "proiectat" || el._layer !== "existent") {
-              S.dragging = true;
-              S.dragEl = null;
-            }
+            S.dragging = true;
+            S.dragEl = null;
           } else {
             S.multiSel.clear();
-            if (S.schemaMode !== "proiectat" || el._layer !== "existent") {
-              S.dragging = true;
-              S.dragEl = el;
-              S.dragOff = { x: svgPt(ev).x - el.x, y: svgPt(ev).y - el.y };
-            }
+            S.dragging = true;
+            S.dragEl = el;
+            S.dragOff = { x: svgPt(ev).x - el.x, y: svgPt(ev).y - el.y };
             selectEl(el.id);
           }
           render();

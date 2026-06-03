@@ -248,8 +248,9 @@ export function render() {
   S.CN.forEach(cn => {
     if (S.schemaMode === 'existent' && cn._layer === 'proiectat') return;
     const _cnFaded = S.schemaMode === 'proiectat' && cn._layer === 'existent';
+    const renderPath = (S.schemaMode === 'existent' && cn._exPath) ? cn._exPath : cn.path;
     const isSel = cn.id === S.sel || S.multiSel.has(cn.id), col = cn.color || '#ef4444', sw = cn.strokeWidth || 2, dash = cn.lineType === 'dashed' ? 'stroke-dasharray="10,5"' : '';
-    const rp = cn.faza ? _mtOffsetPath(cn.path, cn.faza, cn.fromElId, cn.toElId) : cn.path;
+    const rp = cn.faza ? _mtOffsetPath(renderPath, cn.faza, cn.fromElId, cn.toElId) : renderPath;
     let dStr = '', JUMP_R = 6;
     if (rp.length > 0) {
       for (let i = 0; i < rp.length - 1; i++) {
@@ -257,8 +258,9 @@ export function render() {
         let inters = [];
         S.CN.forEach(otherCn => {
           if (otherCn.id >= cn.id) return;
-          for (let j = 0; j < otherCn.path.length - 1; j++) {
-            const int = getLineIntersection(p1, p2, otherCn.path[j], otherCn.path[j + 1]);
+          const otherRP = (S.schemaMode === 'existent' && otherCn._exPath) ? otherCn._exPath : otherCn.path;
+          for (let j = 0; j < otherRP.length - 1; j++) {
+            const int = getLineIntersection(p1, p2, otherRP[j], otherRP[j + 1]);
             if (int) inters.push({ x: int.x, y: int.y, dist: Math.hypot(int.x - p1.x, int.y - p1.y) });
           }
         });
@@ -280,9 +282,9 @@ export function render() {
     const isDemontat = cn.stare === 'demontat', demDash = isDemontat ? 'stroke-dasharray="8,6"' : '', finalDash = dash || demDash;
     let hlPath = ''; if (cn.fillColor && cn.fillColor !== 'none') hlPath = `<path d="${dStr}" fill="none" stroke="${cn.fillColor}" stroke-width="${sw + 8}" opacity="0.45" pointer-events="none"/>`;
     let demXmarks = '';
-    if (isDemontat && cn.path.length >= 2) {
-      for (let i = 0; i < cn.path.length - 1; i++) {
-        const p1 = cn.path[i], p2 = cn.path[i + 1], segLen = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+    if (isDemontat && renderPath.length >= 2) {
+      for (let i = 0; i < renderPath.length - 1; i++) {
+        const p1 = renderPath[i], p2 = renderPath[i + 1], segLen = Math.hypot(p2.x - p1.x, p2.y - p1.y);
         const xCount = Math.max(1, Math.floor(segLen / 40));
         for (let j = 1; j <= xCount; j++) {
           const t2 = j / (xCount + 1), cx2 = p1.x + (p2.x - p1.x) * t2, cy2 = p1.y + (p2.y - p1.y) * t2, xr = 4;
@@ -317,14 +319,14 @@ export function render() {
           S.multiDragStart = { mouseX: svgPt(ev).x, mouseY: svgPt(ev).y, origPositions: S.EL.filter(e => S.multiSel.has(e.id)).map(e => ({ id: e.id, x: e.x, y: e.y })), origConnPaths: S.CN.filter(c => S.multiSel.has(c.id)).map(c => ({ id: c.id, path: JSON.parse(JSON.stringify(c.path)) })) };
           const _selIds = new Set(S.multiDragStart.origPositions.map(o => o.id));
           S.CN.forEach(cn2 => { if (!S.multiSel.has(cn2.id) && (_selIds.has(cn2.fromElId) && _selIds.has(cn2.toElId))) cn2._origPath = JSON.parse(JSON.stringify(cn2.path)); });
-          if (S.schemaMode !== 'proiectat' || cn._layer !== 'existent') { S.dragging = true; S.dragEl = null; }
+          S.dragging = true; S.dragEl = null;
         } else { S.multiSel.clear(); selectEl(cn.id); }
       }
     });
     if (isSel && S.mode === 'select') {
       cn.path.forEach((p, i) => {
         const h = mk('circle'); h.setAttribute('class', 'ph'); h.setAttribute('cx', p.x); h.setAttribute('cy', p.y); h.setAttribute('r', '6');
-        h.addEventListener('mousedown', ev => { ev.stopPropagation(); if (S.schemaMode === 'proiectat' && cn._layer === 'existent') return; if (ev.button === 2 && cn.path.length > 2) { saveState('rmv pt'); cn.path.splice(i, 1); render(); } else { S.vxDrag = true; S.vxConn = cn; S.vxIdx = i; } });
+        h.addEventListener('mousedown', ev => { ev.stopPropagation(); if (ev.button === 2 && cn.path.length > 2) { saveState('rmv pt'); cn.path.splice(i, 1); render(); } else { S.vxDrag = true; S.vxConn = cn; S.vxIdx = i; } });
         g.appendChild(h);
       });
     }
@@ -350,20 +352,25 @@ export function render() {
     }
     if (el.type === 'poly_arrow') { el.type = 'polyline'; el.arrowEnd = true; el.arrowStart = false; el.lineType = 'solid'; el.strokeWidth = 2.5; }
     const isSel = el.id === S.sel;
+    const _useEx = S.schemaMode === 'existent' && el._exPos;
+    const renderX = _useEx ? el._exPos.x : el.x;
+    const renderY = _useEx ? el._exPos.y : el.y;
+    const renderRot = _useEx ? (el._exPos.rotation || 0) : (el.rotation || 0);
+    const renderScale = _useEx ? (el._exPos.scale || 1) : (el.scale || 1);
     if (el.type === 'text') {
       const g = mk('g'); g.setAttribute('class', `el ${isSel ? 'sel' : ''}`); g.dataset.eid = el.id;
       if (_elFaded) g.setAttribute('opacity', '0.45');
       const hlStyle = el.fillColor && el.fillColor !== 'none' ? `stroke:${el.fillColor}; stroke-width:4px; paint-order:stroke fill;` : '';
-      const sc = el.scale || 1;
-      g.setAttribute('transform', `translate(${el.x},${el.y}) rotate(${el.rotation || 0}) scale(${sc})`);
+      g.setAttribute('transform', `translate(${renderX},${renderY}) rotate(${renderRot}) scale(${renderScale})`);
       g.innerHTML = `<text x="0" y="0" font-size="${el.fontSize || 10}" fill="${el.color || (S.lightMode ? '#1a2740' : '#dce8f5')}" font-family="Barlow Condensed,sans-serif" font-weight="700" style="${hlStyle}">${el.label || 'Text'}</text>`;
-      g.addEventListener('mousedown', ev => { if (S.mode === 'select') { ev.stopPropagation(); if (S.schemaMode !== 'proiectat' || el._layer !== 'existent') { S.dragging = true; S.dragEl = el; S.dragOff = { x: svgPt(ev).x - el.x, y: svgPt(ev).y - el.y }; } selectEl(el.id); } });
+      g.addEventListener('mousedown', ev => { if (S.mode === 'select') { ev.stopPropagation(); S.dragging = true; S.dragEl = el; S.dragOff = { x: svgPt(ev).x - el.x, y: svgPt(ev).y - el.y }; selectEl(el.id); } });
       _NL.appendChild(g); return;
     }
     if (el.type === 'polyline') {
       const g = mk('g'); g.setAttribute('class', `el ${isSel ? 'sel' : ''}`); g.dataset.eid = el.id;
       if (_elFaded) g.setAttribute('opacity', '0.45');
-      const pts = el.points.map(p => `${p.x},${p.y}`).join(' '), dash = el.lineType === 'dashed' ? 'stroke-dasharray="10,5"' : '', sw = el.strokeWidth || 2.5;
+      const renderPts = (_useEx && el._exPoints) ? el._exPoints : el.points;
+      const pts = renderPts.map(p => `${p.x},${p.y}`).join(' '), dash = el.lineType === 'dashed' ? 'stroke-dasharray="10,5"' : '', sw = el.strokeWidth || 2.5;
       let markersDef = '';
       if (el.arrowEnd) markersDef += `<marker id="arr-e-${el.id}" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="${el.color || '#00cfff'}"/></marker>`;
       if (el.arrowStart) markersDef += `<marker id="arr-s-${el.id}" markerWidth="8" markerHeight="6" refX="1" refY="3" orient="auto-start-reverse"><polygon points="0 0,8 3,0 6" fill="${el.color || '#00cfff'}"/></marker>`;
@@ -372,13 +379,13 @@ export function render() {
       if (el.arrowStart) markersAttr += ` marker-start="url(#arr-s-${el.id})"`;
       g.innerHTML = `<defs>${markersDef}</defs><polyline points="${pts}" fill="none" stroke="${el.color || '#00cfff'}" stroke-width="${sw}" ${dash} ${markersAttr}/>`;
       if (isSel) el.points.forEach((p, i) => { const h = mk('circle'); h.setAttribute('class', 'ph'); h.setAttribute('cx', p.x); h.setAttribute('cy', p.y); h.setAttribute('r', '6'); h.addEventListener('mousedown', ev => { ev.stopPropagation(); S.vxDrag = true; S.vxConn = el; S.vxIdx = i; }); g.appendChild(h); });
-      g.addEventListener('mousedown', ev => { if (S.mode === 'select') { ev.stopPropagation(); if (S.schemaMode !== 'proiectat' || el._layer !== 'existent') { S.dragging = true; S.dragEl = el; S.dragOff = { x: svgPt(ev).x - el.points[0].x, y: svgPt(ev).y - el.points[0].y }; } selectEl(el.id); } });
+      g.addEventListener('mousedown', ev => { if (S.mode === 'select') { ev.stopPropagation(); S.dragging = true; S.dragEl = el; S.dragOff = { x: svgPt(ev).x - el.points[0].x, y: svgPt(ev).y - el.points[0].y }; selectEl(el.id); } });
       _NL.appendChild(g); return;
     }
 
     const { inner } = sym(el); const g = mk('g'); g.setAttribute('class', `el ${isSel ? 'sel' : ''}`); g.dataset.eid = el.id;
     if (_elFaded) g.setAttribute('opacity', '0.45');
-    g.setAttribute('transform', `translate(${el.x},${el.y}) rotate(${el.rotation || 0}) scale(${el.scale || 1})`);
+    g.setAttribute('transform', `translate(${renderX},${renderY}) rotate(${renderRot}) scale(${renderScale})`);
     const isMSel = S.multiSel.has(el.id), wBox = symW(el), hBox = symH(el);
     let selBox = '';
     if (isSel) selBox = `<rect x="${-wBox/2-5}" y="${-hBox/2-5}" width="${wBox+10}" height="${hBox+10}" fill="none" stroke="rgba(0,207,255,.7)" stroke-width="2" stroke-dasharray="5,3" rx="3" pointer-events="none"/>`;
@@ -403,8 +410,8 @@ export function render() {
           S.multiDragStart = { mouseX: svgPt(ev).x, mouseY: svgPt(ev).y, origPositions: S.EL.filter(e => S.multiSel.has(e.id)).map(e => ({ id: e.id, x: e.x, y: e.y })), origConnPaths: S.CN.filter(c => S.multiSel.has(c.id)).map(c => ({ id: c.id, path: JSON.parse(JSON.stringify(c.path)) })) };
           const _selIds = new Set(S.multiDragStart.origPositions.map(o => o.id));
           S.CN.forEach(cn2 => { if (!S.multiSel.has(cn2.id) && (_selIds.has(cn2.fromElId) && _selIds.has(cn2.toElId))) cn2._origPath = JSON.parse(JSON.stringify(cn2.path)); });
-          if (S.schemaMode !== 'proiectat' || el._layer !== 'existent') { S.dragging = true; S.dragEl = null; }
-        } else { S.multiSel.clear(); if (S.schemaMode !== 'proiectat' || el._layer !== 'existent') { S.dragging = true; S.dragEl = el; S.dragOff = { x: svgPt(ev).x - el.x, y: svgPt(ev).y - el.y }; } selectEl(el.id); }
+          S.dragging = true; S.dragEl = null;
+        } else { S.multiSel.clear(); S.dragging = true; S.dragEl = el; S.dragOff = { x: svgPt(ev).x - el.x, y: svgPt(ev).y - el.y }; selectEl(el.id); }
         render();
       }
     });

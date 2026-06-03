@@ -295,10 +295,17 @@ export function finalConn() {
 
 export function fixeazaExistent() {
   saveState('fixează existent');
-  S.EL.forEach(el => { el._layer = 'existent'; });
-  S.CN.forEach(cn => { cn._layer = 'existent'; });
+  S.EL.forEach(el => {
+    el._layer = 'existent';
+    el._exPos = { x: el.x, y: el.y, rotation: el.rotation || 0, scale: el.scale || 1 };
+    if (el.points) el._exPoints = JSON.parse(JSON.stringify(el.points));
+  });
+  S.CN.forEach(cn => {
+    cn._layer = 'existent';
+    cn._exPath = JSON.parse(JSON.stringify(cn.path));
+  });
   render();
-  toast('Toate elementele marcate ca Existente', 'ok');
+  toast('Toate elementele marcate ca Existente — pozițiile sunt înghețate', 'ok');
 }
 
 export function setSchemaMode(mode) {
