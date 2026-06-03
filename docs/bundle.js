@@ -2937,10 +2937,21 @@ ${(r * 0.1).toFixed(4)}
   function onDn(e) {
     const pt = svgPt(e);
     if (S.schemaMode === "existent") {
-      if (e.button === 1 || e.button === 0) {
+      if (e.button === 1) {
+        e.preventDefault();
         S.panning = true;
         S.panS = { x: e.clientX, y: e.clientY };
+        return;
       }
+      if (e.button !== 0) return;
+      const tg2 = e.target.closest("g.el"), hb2 = e.target.closest(".hb");
+      if (tg2 || hb2) return;
+      S.multiSel.clear();
+      S.sel = null;
+      updateProps();
+      S.panning = true;
+      S.panS = { x: e.clientX, y: e.clientY };
+      render();
       return;
     }
     if (e.button === 2) {

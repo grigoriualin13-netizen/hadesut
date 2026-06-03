@@ -108,7 +108,13 @@ export function toggleMeasure() {
 export function onDn(e) {
   const pt = svgPt(e);
   if (S.schemaMode === 'existent') {
-    if (e.button === 1 || e.button === 0) { S.panning = true; S.panS = { x: e.clientX, y: e.clientY }; }
+    if (e.button === 1) { e.preventDefault(); S.panning = true; S.panS = { x: e.clientX, y: e.clientY }; return; }
+    if (e.button !== 0) return;
+    const tg = e.target.closest('g.el'), hb = e.target.closest('.hb');
+    if (tg || hb) return;
+    S.multiSel.clear(); S.sel = null; updateProps();
+    S.panning = true; S.panS = { x: e.clientX, y: e.clientY };
+    render();
     return;
   }
   if (e.button === 2) {
