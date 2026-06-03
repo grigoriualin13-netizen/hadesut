@@ -95,6 +95,8 @@
         dims: [],
         // IndexedDB
         ecDB: null,
+        // Straturi Existent / Proiectat
+        schemaMode: "proiectat",
         // UI
         lightMode: false,
         toastTimer: null
@@ -2934,6 +2936,13 @@ ${(r * 0.1).toFixed(4)}
   }
   function onDn(e) {
     const pt = svgPt(e);
+    if (S.schemaMode === "existent") {
+      if (e.button === 1) {
+        S.panning = true;
+        S.panS = { x: e.clientX, y: e.clientY };
+      }
+      return;
+    }
     if (e.button === 2) {
       if (S.mode === "dim") {
         if (_dimPts.length >= 1) {
@@ -3464,7 +3473,9 @@ ${(r * 0.1).toFixed(4)}
         }
       }
       if (!inp) {
-        if (e.key === "Delete" || e.key === "Backspace") delSel();
+        if (e.key === "Delete" || e.key === "Backspace") {
+          if (S.schemaMode !== "existent") delSel();
+        }
         if (e.key === "Escape") {
           S.multiSel.clear();
           S.sel = null;
@@ -5252,6 +5263,7 @@ ${(r * 0.1).toFixed(4)}
     copyEl: () => copyEl,
     delSel: () => delSel,
     finalConn: () => finalConn,
+    fixeazaExistent: () => fixeazaExistent,
     pasteEl: () => pasteEl,
     placeMTSpanAt: () => placeMTSpanAt,
     redo: () => redo,
@@ -5260,6 +5272,7 @@ ${(r * 0.1).toFixed(4)}
     selectEl: () => selectEl,
     setMTConnect: () => setMTConnect,
     setRotationAbs: () => setRotationAbs,
+    setSchemaMode: () => setSchemaMode,
     startMTSpan: () => startMTSpan,
     undo: () => undo,
     updSel: () => updSel,
@@ -5411,7 +5424,8 @@ ${(r * 0.1).toFixed(4)}
       color: CM[S.pendType] || "#555",
       fillColor: "none",
       rotation: 0,
-      scale: 1
+      scale: 1,
+      _layer: "proiectat"
     };
     if (S.pendType === "stalp_cs") el.cs_fuse = 100;
     if (S.pendType === "meter") el.bmptText = "";
@@ -5531,7 +5545,8 @@ ${(r * 0.1).toFixed(4)}
       label: nextLbl(_mtSpanType),
       color: "#555",
       fillColor: "none",
-      stare: "existent"
+      stare: "existent",
+      _layer: "proiectat"
     };
     S.EL.push(newEl);
     if (_mtSpanPrevId) {
@@ -5655,6 +5670,7 @@ ${(r * 0.1).toFixed(4)}
       sectiune: isMT ? _pendingSecMT : 16,
       tipRetea: "Trifazat",
       putereConc: 0,
+      _layer: "proiectat",
       ...isMT ? { faza: _pendingFaza } : {}
     });
     S.connStart = null;
@@ -5668,6 +5684,31 @@ ${(r * 0.1).toFixed(4)}
     setMode("select");
     render();
     updateStat();
+  }
+  function fixeazaExistent() {
+    saveState("fixeaz\u0103 existent");
+    S.EL.forEach((el) => {
+      el._layer = "existent";
+    });
+    S.CN.forEach((cn) => {
+      cn._layer = "existent";
+    });
+    render();
+    toast("Toate elementele marcate ca Existente", "ok");
+  }
+  function setSchemaMode(mode) {
+    S.schemaMode = mode;
+    const btnE = document.getElementById("btn-mode-existent");
+    const btnP = document.getElementById("btn-mode-proiectat");
+    if (btnE) btnE.classList.toggle("on", mode === "existent");
+    if (btnP) btnP.classList.toggle("on", mode === "proiectat");
+    if (mode === "existent") {
+      S.multiSel.clear();
+      S.sel = null;
+      setMode("select");
+    }
+    render();
+    toast(mode === "existent" ? "Mod Existent \u2014 re\u021Beaua actual\u0103 (read-only)" : "Mod Proiectat \u2014 toate elementele vizibile", "ok");
   }
   var _pendingFaza, _pendingSecMT, FAZA_COL, _mtSpanPrevId, _mtSpanType, _mtSpanSec;
   var init_element_manager = __esm({
@@ -6093,6 +6134,8 @@ ${(r * 0.1).toFixed(4)}
     _NL.innerHTML = "";
     _CL.innerHTML = "";
     S.CN.forEach((cn) => {
+      if (S.schemaMode === "existent" && cn._layer === "proiectat") return;
+      const _cnFaded = S.schemaMode === "proiectat" && cn._layer === "existent";
       const isSel = cn.id === S.sel || S.multiSel.has(cn.id), col = cn.color || "#ef4444", sw = cn.strokeWidth || 2, dash = cn.lineType === "dashed" ? 'stroke-dasharray="10,5"' : "";
       const rp = cn.faza ? _mtOffsetPath(cn.path, cn.faza, cn.fromElId, cn.toElId) : cn.path;
       let dStr = "", JUMP_R = 6;
@@ -6129,6 +6172,7 @@ ${(r * 0.1).toFixed(4)}
       }
       const g = mk("g");
       g.setAttribute("class", `conn ${isSel ? "sel" : ""}`);
+      if (_cnFaded) g.setAttribute("opacity", "0.45");
       const isDemontat = cn.stare === "demontat", demDash = isDemontat ? 'stroke-dasharray="8,6"' : "", finalDash = dash || demDash;
       let hlPath = "";
       if (cn.fillColor && cn.fillColor !== "none") hlPath = `<path d="${dStr}" fill="none" stroke="${cn.fillColor}" stroke-width="${sw + 8}" opacity="0.45" pointer-events="none"/>`;
@@ -6224,11 +6268,14 @@ ${(r * 0.1).toFixed(4)}
       _CL.appendChild(g);
     });
     S.EL.forEach((el) => {
+      if (S.schemaMode === "existent" && el._layer === "proiectat") return;
+      const _elFaded = S.schemaMode === "proiectat" && el._layer === "existent";
       if (el.type === "dim") {
         const isSel2 = el.id === S.sel || S.multiSel.has(el.id);
         const g2 = mk("g");
         g2.setAttribute("class", `el ${isSel2 ? "sel" : ""}`);
         g2.dataset.eid = el.id;
+        if (_elFaded) g2.setAttribute("opacity", "0.45");
         g2.innerHTML = _dimSVG(el, isSel2);
         g2.addEventListener("mousedown", (ev) => {
           if (S.mode === "select") {
@@ -6260,6 +6307,7 @@ ${(r * 0.1).toFixed(4)}
         const g2 = mk("g");
         g2.setAttribute("class", `el ${isSel ? "sel" : ""}`);
         g2.dataset.eid = el.id;
+        if (_elFaded) g2.setAttribute("opacity", "0.45");
         const hlStyle2 = el.fillColor && el.fillColor !== "none" ? `stroke:${el.fillColor}; stroke-width:4px; paint-order:stroke fill;` : "";
         const sc = el.scale || 1;
         g2.setAttribute("transform", `translate(${el.x},${el.y}) rotate(${el.rotation || 0}) scale(${sc})`);
@@ -6280,6 +6328,7 @@ ${(r * 0.1).toFixed(4)}
         const g2 = mk("g");
         g2.setAttribute("class", `el ${isSel ? "sel" : ""}`);
         g2.dataset.eid = el.id;
+        if (_elFaded) g2.setAttribute("opacity", "0.45");
         const pts = el.points.map((p) => `${p.x},${p.y}`).join(" "), dash = el.lineType === "dashed" ? 'stroke-dasharray="10,5"' : "", sw = el.strokeWidth || 2.5;
         let markersDef = "";
         if (el.arrowEnd) markersDef += `<marker id="arr-e-${el.id}" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="${el.color || "#00cfff"}"/></marker>`;
@@ -6318,6 +6367,7 @@ ${(r * 0.1).toFixed(4)}
       const g = mk("g");
       g.setAttribute("class", `el ${isSel ? "sel" : ""}`);
       g.dataset.eid = el.id;
+      if (_elFaded) g.setAttribute("opacity", "0.45");
       g.setAttribute("transform", `translate(${el.x},${el.y}) rotate(${el.rotation || 0}) scale(${el.scale || 1})`);
       const isMSel = S.multiSel.has(el.id), wBox = symW(el), hBox = symH(el);
       let selBox = "";
@@ -11517,6 +11567,8 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
   window.setMTConnect = setMTConnect;
   window.startMTSpan = startMTSpan;
   window.addMTSpanFrom = addMTSpanFrom;
+  window.fixeazaExistent = fixeazaExistent;
+  window.setSchemaMode = setSchemaMode;
   window.updateProps = updateProps;
   window.clearAll = clearAll;
   window.toggleLeg = toggleLeg;

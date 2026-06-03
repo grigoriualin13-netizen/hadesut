@@ -107,6 +107,10 @@ export function toggleMeasure() {
 
 export function onDn(e) {
   const pt = svgPt(e);
+  if (S.schemaMode === 'existent') {
+    if (e.button === 1) { S.panning = true; S.panS = { x: e.clientX, y: e.clientY }; }
+    return;
+  }
   if (e.button === 2) {
     if (S.mode === 'dim') {
       if (_dimPts.length >= 1) { _dimPts = []; toast('Cotă anulată.', 'w'); }
@@ -460,7 +464,7 @@ export function initKeyboard() {
       if (e.key === 's') { e.preventDefault(); save(); return; }
     }
     if (!inp) {
-      if (e.key === 'Delete' || e.key === 'Backspace') delSel();
+      if (e.key === 'Delete' || e.key === 'Backspace') { if (S.schemaMode !== 'existent') delSel(); }
       if (e.key === 'Escape') { S.multiSel.clear(); S.sel = null; setMode('select'); render(); updateProps(); _mpts = []; _renderMeasure(); _dimPts = []; renderDimLayer(); _dxfSnap = null; _renderDxfSnap(); const b = document.getElementById('btn-dim'); if (b) b.classList.remove('active'); }
       if (e.key === 's') setMode('select');
       if (e.key === 'c') setMode('connect');
