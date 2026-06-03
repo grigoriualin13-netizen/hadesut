@@ -1,7 +1,7 @@
-import { S } from './state.js';
+﻿import { S } from './state.js';
 import { applyView, termWorldPos, calcPathLen, getLineIntersection, setMode, toast, sn, svgPt, updateStat } from './utils.js';
 import { sym, symW, symH } from './elements.js';
-// Circular: element-manager and ui import render() from here — use export function (live binding)
+// Circular: element-manager and ui import render() from here â€” use export function (live binding)
 import { selectEl, saveState, finalConn } from './element-manager.js';
 import { updateProps } from './ui.js';
 
@@ -13,7 +13,7 @@ export function getSvgEl() { return _svgEl; }
 
 export function mk(t) { return document.createElementNS('http://www.w3.org/2000/svg', t); }
 
-// MT phase visual offset — perpendicular to span: R=+14px, S=0, T=−14px
+// MT phase visual offset â€” perpendicular to span: R=+14px, S=0, T=âˆ’14px
 export const MT_PHASE_PX = 14;
 const _MT_FAZA_DIR = { R: 1, S: 0, T: -1 };
 const _MT_POLE_R = 22;
@@ -27,8 +27,8 @@ function _mtOffsetPath(path, faza, fromElId, toElId) {
   const nx = -dy / len, ny = dx / len;
   const off = dir * MT_PHASE_PX;
   const result = path.map(p => ({ x: p.x + nx * off, y: p.y + ny * off }));
-  // Dacă offsetul mută endpoint-ul în AFARA cercului stâlpului, îl aduce pe granița cercului.
-  // Cercul cu fill acoperă tot ce e înăuntru — endpoint-urile pe/în cerc sunt invizibile.
+  // DacÄƒ offsetul mutÄƒ endpoint-ul Ã®n AFARA cercului stÃ¢lpului, Ã®l aduce pe graniÈ›a cercului.
+  // Cercul cu fill acoperÄƒ tot ce e Ã®nÄƒuntru â€” endpoint-urile pe/Ã®n cerc sunt invizibile.
   const _clip = (pt, elId) => {
     const el = elId ? S.EL.find(e => e.id === elId) : null;
     if (!el || !el.type?.startsWith('stalp_mt_')) return pt;
@@ -41,7 +41,7 @@ function _mtOffsetPath(path, faza, fromElId, toElId) {
   return result;
 }
 
-// ── Background ──
+// â”€â”€ Background â”€â”€
 export function renderBg() {
   const bgL = document.getElementById('bg-layer');
   if (!bgL) return;
@@ -61,7 +61,7 @@ export function loadBg(inp) {
     const img = new Image();
     img.onload = () => {
       S.bgData = { url: e.target.result, x: -img.width / 2, y: -img.height / 2, w: img.width, h: img.height, op: parseFloat(document.getElementById('bg-op').value), locked: document.getElementById('bg-lock').checked };
-      renderBg(); toast('Fundal încărcat! Îl poți calibra pentru o distanță exactă.', 'ok');
+      renderBg(); toast('Fundal Ã®ncÄƒrcat! ÃŽl poÈ›i calibra pentru o distanÈ›Äƒ exactÄƒ.', 'ok');
     };
     img.src = e.target.result;
   };
@@ -77,15 +77,15 @@ export function updateBgOp(val) {
 export function updateBgLock(val) { S.bgData.locked = val; }
 
 export function clearBg() {
-  if (confirm('Ștergi fundalul cadastral?')) {
+  if (confirm('È˜tergi fundalul cadastral?')) {
     S.bgData = { url: null, x: 0, y: 0, w: 0, h: 0, op: 0.5, locked: true };
     renderBg();
   }
 }
 
 export function startCalib() {
-  if (!S.bgData.url) { toast('Încărcați un fundal mai întâi!', 'ac'); return; }
-  setMode('calibrate'); toast('Click P1, apoi P2 pe hartă.', 'ac');
+  if (!S.bgData.url) { toast('ÃŽncÄƒrcaÈ›i un fundal mai Ã®ntÃ¢i!', 'ac'); return; }
+  setMode('calibrate'); toast('Click P1, apoi P2 pe hartÄƒ.', 'ac');
 }
 
 export function confirmCalib() {
@@ -97,9 +97,9 @@ export function confirmCalib() {
       S.bgData.w *= scale; S.bgData.h *= scale;
       S.bgData.x = S.calibPts[0].x - (S.calibPts[0].x - S.bgData.x) * scale;
       S.bgData.y = S.calibPts[0].y - (S.calibPts[0].y - S.bgData.y) * scale;
-      renderBg(); toast('Scară fundal calibrată cu succes!', 'ok');
+      renderBg(); toast('ScarÄƒ fundal calibratÄƒ cu succes!', 'ok');
     }
-  } else { toast('Calibrare anulată (valoare invalidă).', 'w'); }
+  } else { toast('Calibrare anulatÄƒ (valoare invalidÄƒ).', 'w'); }
   closeCalib();
 }
 
@@ -109,15 +109,15 @@ export function closeCalib() {
   document.getElementById('tpoly').style.display = 'none';
 }
 
-// ── Theme ──
+// â”€â”€ Theme â”€â”€
 export function toggleTheme() {
   S.lightMode = !S.lightMode;
   document.documentElement.setAttribute('data-theme', S.lightMode ? 'light' : '');
-  document.getElementById('btn-theme').textContent = S.lightMode ? '☀️' : '🌙';
-  render(); toast(S.lightMode ? '☀️ Temă luminoasă' : '🌙 Temă întunecată');
+  document.getElementById('btn-theme').textContent = S.lightMode ? 'â˜€ï¸' : 'ðŸŒ™';
+  render(); toast(S.lightMode ? 'â˜€ï¸ TemÄƒ luminoasÄƒ' : 'ðŸŒ™ TemÄƒ Ã®ntunecatÄƒ');
 }
 
-// ── VD Overlay ──
+// â”€â”€ VD Overlay â”€â”€
 export function toggleVDOverlay() {
   S.vdOverlayOn = document.getElementById('vd-overlay').checked;
   if (S.vdOverlayOn && S.vdResults) renderVDOverlay();
@@ -144,9 +144,9 @@ export function renderVDOverlay() {
       let col = data.duNod > 10 ? '#ff3d71' : data.duNod > 5 ? '#ff9f43' : data.duNod > 3 ? '#eab308' : '#00e5a0';
       let bgHex = col, bgOp = data.duNod > 10 ? '0.18' : data.duNod > 5 ? '0.15' : data.duNod > 3 ? '0.12' : '0.10';
       if (isIscLow) { col = '#ff3d71'; bgHex = '#ff3d71'; bgOp = '0.18'; }
-      const txtDU = `[${data.circKey}] ΔU=${data.duNod.toFixed(2)}%`;
+      const txtDU = `[${data.circKey}] Î”U=${data.duNod.toFixed(2)}%`;
       const hasIsc = showIsc && (data.isEnd || el.nod === 'capat' || isIscLow);
-      let txtIsc = hasIsc ? `Isc=${data.Isc.toFixed(3)}kA${isIscLow ? ' ⚠ CS!' : ''}` : '';
+      let txtIsc = hasIsc ? `Isc=${data.Isc.toFixed(3)}kA${isIscLow ? ' âš  CS!' : ''}` : '';
       const bwDU = txtDU.length * 5.5 + 10, bhLine = 14;
       const bw = Math.max(bwDU, hasIsc ? txtIsc.length * 5.5 + 10 : 0);
       const totalH = hasIsc ? bhLine * 2 + 2 : bhLine;
@@ -158,7 +158,7 @@ export function renderVDOverlay() {
   });
 }
 
-// ── Flow Animation ──
+// â”€â”€ Flow Animation â”€â”€
 export function toggleFlowAnim() {
   S.flowAnimOn = !S.flowAnimOn;
   const btn = document.getElementById('btn-flow');
@@ -167,7 +167,7 @@ export function toggleFlowAnim() {
   btn.style.color = S.flowAnimOn ? '#eab308' : '';
   btn.style.borderColor = S.flowAnimOn ? 'rgba(234,179,8,.45)' : '';
   renderFlowLayer();
-  toast(S.flowAnimOn ? '⚡ Animație flux activată' : 'Animație flux oprită', S.flowAnimOn ? 'ok' : '');
+  toast(S.flowAnimOn ? 'âš¡ AnimaÈ›ie flux activatÄƒ' : 'AnimaÈ›ie flux opritÄƒ', S.flowAnimOn ? 'ok' : '');
 }
 
 export function renderFlowLayer() {
@@ -197,7 +197,7 @@ export function renderFlowLayer() {
   });
 }
 
-// ── Dimension SVG helper (shared by render + preview) ────────────────────────
+// â”€â”€ Dimension SVG helper (shared by render + preview) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function _dimSVG(d, isSel = false) {
   const { p1, p2, offset } = d;
   const ddx = p2.x - p1.x, ddy = p2.y - p1.y;
@@ -234,14 +234,14 @@ function _dimSVG(d, isSel = false) {
   return h;
 }
 
-// ── Dimension placement preview (only during active placement) ────────────────
+// â”€â”€ Dimension placement preview (only during active placement) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function renderDimLayer(preview = null) {
   const el = document.getElementById('DIM');
   if (!el) return;
   el.innerHTML = preview ? _dimSVG(preview) : '';
 }
 
-// ── Main Render ──
+// â”€â”€ Main Render â”€â”€
 export function render() {
   _NL.innerHTML = ''; _CL.innerHTML = '';
 
@@ -278,7 +278,7 @@ export function render() {
       }
     }
     const g = mk('g'); g.setAttribute('class', `conn ${isSel ? 'sel' : ''}`);
-    if (_cnFaded) g.setAttribute('opacity', '0.45');
+    if (_cnFaded) g.setAttribute('opacity', '0.72');
     const isDemontat = cn.stare === 'demontat', demDash = isDemontat ? 'stroke-dasharray="8,6"' : '', finalDash = dash || demDash;
     let hlPath = ''; if (cn.fillColor && cn.fillColor !== 'none') hlPath = `<path d="${dStr}" fill="none" stroke="${cn.fillColor}" stroke-width="${sw + 8}" opacity="0.45" pointer-events="none"/>`;
     let demXmarks = '';
@@ -339,7 +339,7 @@ export function render() {
     if (el.type === 'dim') {
       const isSel = el.id === S.sel || S.multiSel.has(el.id);
       const g = mk('g'); g.setAttribute('class', `el ${isSel ? 'sel' : ''}`); g.dataset.eid = el.id;
-      if (_elFaded) g.setAttribute('opacity', '0.45');
+      if (_elFaded) g.setAttribute('opacity', '0.72');
       g.innerHTML = _dimSVG(el, isSel);
       g.addEventListener('mousedown', ev => {
         if (S.mode === 'select') {
@@ -359,7 +359,7 @@ export function render() {
     const renderScale = _useEx ? (el._exPos.scale || 1) : (el.scale || 1);
     if (el.type === 'text') {
       const g = mk('g'); g.setAttribute('class', `el ${isSel ? 'sel' : ''}`); g.dataset.eid = el.id;
-      if (_elFaded) g.setAttribute('opacity', '0.45');
+      if (_elFaded) g.setAttribute('opacity', '0.72');
       const hlStyle = el.fillColor && el.fillColor !== 'none' ? `stroke:${el.fillColor}; stroke-width:4px; paint-order:stroke fill;` : '';
       g.setAttribute('transform', `translate(${renderX},${renderY}) rotate(${renderRot}) scale(${renderScale})`);
       g.innerHTML = `<text x="0" y="0" font-size="${el.fontSize || 10}" fill="${el.color || (S.lightMode ? '#1a2740' : '#dce8f5')}" font-family="Barlow Condensed,sans-serif" font-weight="700" style="${hlStyle}">${el.label || 'Text'}</text>`;
@@ -368,7 +368,7 @@ export function render() {
     }
     if (el.type === 'polyline') {
       const g = mk('g'); g.setAttribute('class', `el ${isSel ? 'sel' : ''}`); g.dataset.eid = el.id;
-      if (_elFaded) g.setAttribute('opacity', '0.45');
+      if (_elFaded) g.setAttribute('opacity', '0.72');
       const renderPts = (_useEx && el._exPoints) ? el._exPoints : el.points;
       const pts = renderPts.map(p => `${p.x},${p.y}`).join(' '), dash = el.lineType === 'dashed' ? 'stroke-dasharray="10,5"' : '', sw = el.strokeWidth || 2.5;
       let markersDef = '';
@@ -384,7 +384,7 @@ export function render() {
     }
 
     const { inner } = sym(el); const g = mk('g'); g.setAttribute('class', `el ${isSel ? 'sel' : ''}`); g.dataset.eid = el.id;
-    if (_elFaded) g.setAttribute('opacity', '0.45');
+    if (_elFaded) g.setAttribute('opacity', '0.72');
     g.setAttribute('transform', `translate(${renderX},${renderY}) rotate(${renderRot}) scale(${renderScale})`);
     const isMSel = S.multiSel.has(el.id), wBox = symW(el), hBox = symH(el);
     let selBox = '';
@@ -420,14 +420,14 @@ export function render() {
       tdEl.addEventListener('mousedown', ev => {
         if (S.mode !== 'connect') return; ev.stopPropagation();
         const lcx = parseFloat(tdEl.dataset.lcx), lcy = parseFloat(tdEl.dataset.lcy), circuit = tdEl.dataset.circuit ? parseInt(tdEl.dataset.circuit) : null, wp = termWorldPos(el, lcx, lcy);
-        if (!S.connStart) { S.connStart = el.id; S.connPts = [{ x: wp.x, y: wp.y }]; S.connFromEl = el.id; S.connFromTerm = { cx: lcx, cy: lcy }; S.connFromCircuit = circuit; S.connToEl = null; S.connToTerm = null; S.connToCircuit = null; toast('Terminal START — click pe planșă sau alt terminal', 'ac'); }
+        if (!S.connStart) { S.connStart = el.id; S.connPts = [{ x: wp.x, y: wp.y }]; S.connFromEl = el.id; S.connFromTerm = { cx: lcx, cy: lcy }; S.connFromCircuit = circuit; S.connToEl = null; S.connToTerm = null; S.connToCircuit = null; toast('Terminal START â€” click pe planÈ™Äƒ sau alt terminal', 'ac'); }
         else { S.connToEl = el.id; S.connToTerm = { cx: lcx, cy: lcy }; S.connToCircuit = circuit; S.connPts.push({ x: wp.x, y: wp.y }); finalConn(); }
       });
     });
 
     if (el.type === 'meter') {
       const tn = g.querySelector('.bmpt-txt');
-      if (tn) tn.addEventListener('dblclick', ev => { ev.stopPropagation(); const nv = prompt('Editează BMPT:', el.bmptText || ''); if (nv !== null) { saveState('edit bmpt'); el.bmptText = nv; render(); } });
+      if (tn) tn.addEventListener('dblclick', ev => { ev.stopPropagation(); const nv = prompt('EditeazÄƒ BMPT:', el.bmptText || ''); if (nv !== null) { saveState('edit bmpt'); el.bmptText = nv; render(); } });
     }
     _NL.appendChild(g);
   });

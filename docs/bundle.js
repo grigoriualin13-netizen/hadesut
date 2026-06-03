@@ -5929,7 +5929,7 @@ ${(r * 0.1).toFixed(4)}
       img.onload = () => {
         S.bgData = { url: e.target.result, x: -img.width / 2, y: -img.height / 2, w: img.width, h: img.height, op: parseFloat(document.getElementById("bg-op").value), locked: document.getElementById("bg-lock").checked };
         renderBg();
-        toast("Fundal \xEEnc\u0103rcat! \xCEl po\u021Bi calibra pentru o distan\u021B\u0103 exact\u0103.", "ok");
+        toast("Fundal \xC3\xAEnc\xC4\u0192rcat! \xC3\u017Dl po\xC8\u203Ai calibra pentru o distan\xC8\u203A\xC4\u0192 exact\xC4\u0192.", "ok");
       };
       img.src = e.target.result;
     };
@@ -5945,18 +5945,18 @@ ${(r * 0.1).toFixed(4)}
     S.bgData.locked = val;
   }
   function clearBg() {
-    if (confirm("\u0218tergi fundalul cadastral?")) {
+    if (confirm("\xC8\u02DCtergi fundalul cadastral?")) {
       S.bgData = { url: null, x: 0, y: 0, w: 0, h: 0, op: 0.5, locked: true };
       renderBg();
     }
   }
   function startCalib() {
     if (!S.bgData.url) {
-      toast("\xCEnc\u0103rca\u021Bi un fundal mai \xEEnt\xE2i!", "ac");
+      toast("\xC3\u017Dnc\xC4\u0192rca\xC8\u203Ai un fundal mai \xC3\xAEnt\xC3\xA2i!", "ac");
       return;
     }
     setMode("calibrate");
-    toast("Click P1, apoi P2 pe hart\u0103.", "ac");
+    toast("Click P1, apoi P2 pe hart\xC4\u0192.", "ac");
   }
   function confirmCalib() {
     const d_m = document.getElementById("calib-input").value;
@@ -5969,10 +5969,10 @@ ${(r * 0.1).toFixed(4)}
         S.bgData.x = S.calibPts[0].x - (S.calibPts[0].x - S.bgData.x) * scale;
         S.bgData.y = S.calibPts[0].y - (S.calibPts[0].y - S.bgData.y) * scale;
         renderBg();
-        toast("Scar\u0103 fundal calibrat\u0103 cu succes!", "ok");
+        toast("Scar\xC4\u0192 fundal calibrat\xC4\u0192 cu succes!", "ok");
       }
     } else {
-      toast("Calibrare anulat\u0103 (valoare invalid\u0103).", "w");
+      toast("Calibrare anulat\xC4\u0192 (valoare invalid\xC4\u0192).", "w");
     }
     closeCalib();
   }
@@ -5986,9 +5986,9 @@ ${(r * 0.1).toFixed(4)}
   function toggleTheme() {
     S.lightMode = !S.lightMode;
     document.documentElement.setAttribute("data-theme", S.lightMode ? "light" : "");
-    document.getElementById("btn-theme").textContent = S.lightMode ? "\u2600\uFE0F" : "\u{1F319}";
+    document.getElementById("btn-theme").textContent = S.lightMode ? "\xE2\u02DC\u20AC\xEF\xB8\x8F" : "\xF0\u0178\u0152\u2122";
     render();
-    toast(S.lightMode ? "\u2600\uFE0F Tem\u0103 luminoas\u0103" : "\u{1F319} Tem\u0103 \xEEntunecat\u0103");
+    toast(S.lightMode ? "\xE2\u02DC\u20AC\xEF\xB8\x8F Tem\xC4\u0192 luminoas\xC4\u0192" : "\xF0\u0178\u0152\u2122 Tem\xC4\u0192 \xC3\xAEntunecat\xC4\u0192");
   }
   function toggleVDOverlay() {
     S.vdOverlayOn = document.getElementById("vd-overlay").checked;
@@ -6027,9 +6027,9 @@ ${(r * 0.1).toFixed(4)}
           bgHex = "#ff3d71";
           bgOp = "0.18";
         }
-        const txtDU = `[${data.circKey}] \u0394U=${data.duNod.toFixed(2)}%`;
+        const txtDU = `[${data.circKey}] \xCE\u201DU=${data.duNod.toFixed(2)}%`;
         const hasIsc = showIsc && (data.isEnd || el.nod === "capat" || isIscLow);
-        let txtIsc = hasIsc ? `Isc=${data.Isc.toFixed(3)}kA${isIscLow ? " \u26A0 CS!" : ""}` : "";
+        let txtIsc = hasIsc ? `Isc=${data.Isc.toFixed(3)}kA${isIscLow ? " \xE2\u0161\xA0 CS!" : ""}` : "";
         const bwDU = txtDU.length * 5.5 + 10, bhLine = 14;
         const bw = Math.max(bwDU, hasIsc ? txtIsc.length * 5.5 + 10 : 0);
         const totalH = hasIsc ? bhLine * 2 + 2 : bhLine;
@@ -6048,7 +6048,7 @@ ${(r * 0.1).toFixed(4)}
     btn.style.color = S.flowAnimOn ? "#eab308" : "";
     btn.style.borderColor = S.flowAnimOn ? "rgba(234,179,8,.45)" : "";
     renderFlowLayer();
-    toast(S.flowAnimOn ? "\u26A1 Anima\u021Bie flux activat\u0103" : "Anima\u021Bie flux oprit\u0103", S.flowAnimOn ? "ok" : "");
+    toast(S.flowAnimOn ? "\xE2\u0161\xA1 Anima\xC8\u203Aie flux activat\xC4\u0192" : "Anima\xC8\u203Aie flux oprit\xC4\u0192", S.flowAnimOn ? "ok" : "");
   }
   function renderFlowLayer() {
     const gl = document.getElementById("GL");
@@ -6177,7 +6177,7 @@ ${(r * 0.1).toFixed(4)}
       }
       const g = mk("g");
       g.setAttribute("class", `conn ${isSel ? "sel" : ""}`);
-      if (_cnFaded) g.setAttribute("opacity", "0.45");
+      if (_cnFaded) g.setAttribute("opacity", "0.72");
       const isDemontat = cn.stare === "demontat", demDash = isDemontat ? 'stroke-dasharray="8,6"' : "", finalDash = dash || demDash;
       let hlPath = "";
       if (cn.fillColor && cn.fillColor !== "none") hlPath = `<path d="${dStr}" fill="none" stroke="${cn.fillColor}" stroke-width="${sw + 8}" opacity="0.45" pointer-events="none"/>`;
@@ -6280,7 +6280,7 @@ ${(r * 0.1).toFixed(4)}
         const g2 = mk("g");
         g2.setAttribute("class", `el ${isSel2 ? "sel" : ""}`);
         g2.dataset.eid = el.id;
-        if (_elFaded) g2.setAttribute("opacity", "0.45");
+        if (_elFaded) g2.setAttribute("opacity", "0.72");
         g2.innerHTML = _dimSVG(el, isSel2);
         g2.addEventListener("mousedown", (ev) => {
           if (S.mode === "select") {
@@ -6317,7 +6317,7 @@ ${(r * 0.1).toFixed(4)}
         const g2 = mk("g");
         g2.setAttribute("class", `el ${isSel ? "sel" : ""}`);
         g2.dataset.eid = el.id;
-        if (_elFaded) g2.setAttribute("opacity", "0.45");
+        if (_elFaded) g2.setAttribute("opacity", "0.72");
         const hlStyle2 = el.fillColor && el.fillColor !== "none" ? `stroke:${el.fillColor}; stroke-width:4px; paint-order:stroke fill;` : "";
         g2.setAttribute("transform", `translate(${renderX},${renderY}) rotate(${renderRot}) scale(${renderScale})`);
         g2.innerHTML = `<text x="0" y="0" font-size="${el.fontSize || 10}" fill="${el.color || (S.lightMode ? "#1a2740" : "#dce8f5")}" font-family="Barlow Condensed,sans-serif" font-weight="700" style="${hlStyle2}">${el.label || "Text"}</text>`;
@@ -6337,7 +6337,7 @@ ${(r * 0.1).toFixed(4)}
         const g2 = mk("g");
         g2.setAttribute("class", `el ${isSel ? "sel" : ""}`);
         g2.dataset.eid = el.id;
-        if (_elFaded) g2.setAttribute("opacity", "0.45");
+        if (_elFaded) g2.setAttribute("opacity", "0.72");
         const renderPts = _useEx && el._exPoints ? el._exPoints : el.points;
         const pts = renderPts.map((p) => `${p.x},${p.y}`).join(" "), dash = el.lineType === "dashed" ? 'stroke-dasharray="10,5"' : "", sw = el.strokeWidth || 2.5;
         let markersDef = "";
@@ -6377,7 +6377,7 @@ ${(r * 0.1).toFixed(4)}
       const g = mk("g");
       g.setAttribute("class", `el ${isSel ? "sel" : ""}`);
       g.dataset.eid = el.id;
-      if (_elFaded) g.setAttribute("opacity", "0.45");
+      if (_elFaded) g.setAttribute("opacity", "0.72");
       g.setAttribute("transform", `translate(${renderX},${renderY}) rotate(${renderRot}) scale(${renderScale})`);
       const isMSel = S.multiSel.has(el.id), wBox = symW(el), hBox = symH(el);
       let selBox = "";
@@ -6437,7 +6437,7 @@ ${(r * 0.1).toFixed(4)}
             S.connToEl = null;
             S.connToTerm = null;
             S.connToCircuit = null;
-            toast("Terminal START \u2014 click pe plan\u0219\u0103 sau alt terminal", "ac");
+            toast("Terminal START \xE2\u20AC\u201D click pe plan\xC8\u2122\xC4\u0192 sau alt terminal", "ac");
           } else {
             S.connToEl = el.id;
             S.connToTerm = { cx: lcx, cy: lcy };
@@ -6451,7 +6451,7 @@ ${(r * 0.1).toFixed(4)}
         const tn = g.querySelector(".bmpt-txt");
         if (tn) tn.addEventListener("dblclick", (ev) => {
           ev.stopPropagation();
-          const nv = prompt("Editeaz\u0103 BMPT:", el.bmptText || "");
+          const nv = prompt("Editeaz\xC4\u0192 BMPT:", el.bmptText || "");
           if (nv !== null) {
             saveState("edit bmpt");
             el.bmptText = nv;
