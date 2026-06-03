@@ -108,7 +108,7 @@ export function toggleMeasure() {
 export function onDn(e) {
   const pt = svgPt(e);
   if (S.schemaMode === 'existent') {
-    if (e.button === 1) { S.panning = true; S.panS = { x: e.clientX, y: e.clientY }; }
+    if (e.button === 1 || e.button === 0) { S.panning = true; S.panS = { x: e.clientX, y: e.clientY }; }
     return;
   }
   if (e.button === 2) {

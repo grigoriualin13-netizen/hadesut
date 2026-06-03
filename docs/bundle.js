@@ -2937,7 +2937,7 @@ ${(r * 0.1).toFixed(4)}
   function onDn(e) {
     const pt = svgPt(e);
     if (S.schemaMode === "existent") {
-      if (e.button === 1) {
+      if (e.button === 1 || e.button === 0) {
         S.panning = true;
         S.panS = { x: e.clientX, y: e.clientY };
       }
