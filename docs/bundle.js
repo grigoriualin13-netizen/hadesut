@@ -5425,7 +5425,8 @@ ${(r * 0.1).toFixed(4)}
       fillColor: "none",
       rotation: 0,
       scale: 1,
-      _layer: "proiectat"
+      _layer: "proiectat",
+      stare: S.schemaMode === "proiectat" ? "proiectat_racordare" : "existent"
     };
     if (S.pendType === "stalp_cs") el.cs_fuse = 100;
     if (S.pendType === "meter") el.bmptText = "";
@@ -5545,7 +5546,7 @@ ${(r * 0.1).toFixed(4)}
       label: nextLbl(_mtSpanType),
       color: "#555",
       fillColor: "none",
-      stare: "existent",
+      stare: S.schemaMode === "proiectat" ? "proiectat_racordare" : "existent",
       _layer: "proiectat"
     };
     S.EL.push(newEl);
@@ -5671,6 +5672,7 @@ ${(r * 0.1).toFixed(4)}
       tipRetea: "Trifazat",
       putereConc: 0,
       _layer: "proiectat",
+      stare: S.schemaMode === "proiectat" ? "proiectat_racordare" : "existent",
       ...isMT ? { faza: _pendingFaza } : {}
     });
     S.connStart = null;
