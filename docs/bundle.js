@@ -5591,7 +5591,8 @@ ${(r * 0.1).toFixed(4)}
         sectiune: sec,
         tipRetea: "Trifazat",
         putereConc: 0,
-        faza
+        faza,
+        _layer: S.schemaMode === "existent" ? "existent" : "proiectat"
       });
     });
   }

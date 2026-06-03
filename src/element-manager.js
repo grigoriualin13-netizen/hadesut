@@ -236,6 +236,7 @@ function _connectMTPoles(fromEl, toEl, sec) {
       lineType: 'solid', strokeWidth: 2.5,
       tipConductor: 'OL-AL', sectiune: sec,
       tipRetea: 'Trifazat', putereConc: 0, faza,
+      _layer: S.schemaMode === 'existent' ? 'existent' : 'proiectat',
     });
   });
 }
