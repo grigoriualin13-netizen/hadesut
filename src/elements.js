@@ -77,32 +77,52 @@ export function sym(el) {
   case 'firida_e3_4': { const BW=180,BH=180,BX=-90,BY=-90, FW=14,FH=32, fuses = el.fuses || new Array(7).fill(true); function tdinv2(lcx,lcy){ terms.push({cx:lcx,cy:lcy}); return `<circle class="td" data-lcx="${lcx}" data-lcy="${lcy}" cx="${lcx}" cy="${lcy}" r="8" stroke="transparent" fill="transparent"/>`; } inner=`<rect class="sel-r" x="${BX}" y="${BY}" width="${BW}" height="${BH}" fill="${bg}" stroke="${c}" stroke-width="2"/><line x1="${BX}" y1="18" x2="${BX+BW}" y2="18" stroke="${c}" stroke-width="3"/>`; [-50, 0, 50].forEach((tx, i)=>{ const fuseTop=BY+10, fuseBot=fuseTop+FH; inner+=`<line x1="${tx}" y1="${BY}" x2="${tx}" y2="${fuseTop}" stroke="${c}" stroke-width="2"/>` + fuse(tx-FW/2, fuseTop+FH/2, FW, FH, fuses[i]) + `<line x1="${tx}" y1="${fuseBot}" x2="${tx}" y2="18" stroke="${c}" stroke-width="2"/>` + tdinv2(tx,BY); }); [-65,-22,22,65].forEach((tx, i)=>{ const fuseTop=28, fuseBot=fuseTop+FH; inner+=`<line x1="${tx}" y1="18" x2="${tx}" y2="${fuseTop}" stroke="${c}" stroke-width="2"/>` + fuse(tx-FW/2, fuseTop+FH/2, FW, FH, fuses[i+3]) + `<line x1="${tx}" y1="${fuseBot}" x2="${tx}" y2="${BY+BH}" stroke="${c}" stroke-width="2"/>` + tdinv2(tx,BY+BH); }); break; }
   case 'firida_e3_0': { const BW=180,BH=95,BX=-90,BY=-47.5, FW=14,FH=32, fuses = el.fuses || new Array(3).fill(true); function tdinv3(lcx,lcy){ terms.push({cx:lcx,cy:lcy}); return `<circle class="td" data-lcx="${lcx}" data-lcy="${lcy}" cx="${lcx}" cy="${lcy}" r="8" stroke="transparent" fill="transparent"/>`; } inner=`<rect class="sel-r" x="${BX}" y="${BY}" width="${BW}" height="${BH}" fill="${bg}" stroke="${c}" stroke-width="2"/><line x1="${BX}" y1="${BY+BH-10}" x2="${BX+BW}" y2="${BY+BH-10}" stroke="${c}" stroke-width="3"/>`; [-50, 0, 50].forEach((tx, i)=>{ const fuseTop=BY+10, fuseBot=fuseTop+FH; inner+=`<line x1="${tx}" y1="${BY}" x2="${tx}" y2="${fuseTop}" stroke="${c}" stroke-width="2"/>` + fuse(tx-FW/2, fuseTop+FH/2, FW, FH, fuses[i]) + `<line x1="${tx}" y1="${fuseBot}" x2="${tx}" y2="${BY+BH-10}" stroke="${c}" stroke-width="2"/>` + tdinv3(tx,BY); }); break; }
   case 'firida_e2_4_det': {
-    const BW=200,BH=280,BX=-100,BY=-140;
+    const BW=220,BH=280,BX=-110,BY=-140;
     const f = el.fuses || new Array(6).fill(true);
     function tdF(lcx,lcy){ terms.push({cx:lcx,cy:lcy}); return `<circle class="td" data-lcx="${lcx}" data-lcy="${lcy}" cx="${lcx}" cy="${lcy}" r="8" stroke="transparent" fill="transparent"/>`; }
-    inner = `<rect class="sel-r" x="${BX}" y="${BY}" width="${BW}" height="${BH}" fill="${bg}" stroke="${c}" stroke-width="2"/>`;
-    [[-50,0],[50,1]].forEach(([tx,i]) => {
+    // IEC separator symbol: rect + 3 parallel "/" diagonal lines, X when open
+    function nhSep(tx,cy,fw,fh,state) {
+      const rx=tx-fw/2, ry=cy-fh/2;
+      let h=`<rect x="${rx}" y="${ry}" width="${fw}" height="${fh}" fill="${bg}" stroke="${c}" stroke-width="1.5"/>`;
+      if (state!==false) {
+        h+=`<line x1="${rx+2}" y1="${ry+fh*0.39}" x2="${rx+fw*0.69}" y2="${ry+2}" stroke="${c}" stroke-width="1"/>`;
+        h+=`<line x1="${rx+2}" y1="${ry+fh*0.71}" x2="${rx+fw-2}" y2="${ry+fh*0.29}" stroke="${c}" stroke-width="1"/>`;
+        h+=`<line x1="${rx+fw*0.31}" y1="${ry+fh-2}" x2="${rx+fw-2}" y2="${ry+fh*0.61}" stroke="${c}" stroke-width="1"/>`;
+      } else {
+        h+=`<line x1="${rx+2}" y1="${ry+2}" x2="${rx+fw-2}" y2="${ry+fh-2}" stroke="#ff3d71" stroke-width="1.5"/>`;
+        h+=`<line x1="${rx+fw-2}" y1="${ry+2}" x2="${rx+2}" y2="${ry+fh-2}" stroke="#ff3d71" stroke-width="1.5"/>`;
+      }
+      return h;
+    }
+    inner=`<rect class="sel-r" x="${BX}" y="${BY}" width="${BW}" height="${BH}" fill="${bg}" stroke="${c}" stroke-width="2"/>`;
+    // ─── 2 NH1-50A input separators ───
+    const nhFW=16,nhFH=28;
+    [[-55,0],[55,1]].forEach(([tx,i]) => {
       const nhCY=BY+44;
-      inner += `<line x1="${tx}" y1="${BY}" x2="${tx}" y2="${BY+30}" stroke="${c}" stroke-width="2"/>`;
-      inner += fuse(tx-7, nhCY, 14, 28, f[i]);
-      inner += `<line x1="${tx}" y1="${BY+58}" x2="${tx}" y2="${BY+83}" stroke="${c}" stroke-width="2"/>`;
-      inner += `<text x="${tx+(i===0?9:-9)}" y="${nhCY+3}" text-anchor="${i===0?'start':'end'}" font-size="7" fill="${c}" font-family="JetBrains Mono,monospace">NH1-50A</text>`;
-      inner += tdF(tx, BY);
+      inner+=`<line x1="${tx}" y1="${BY}" x2="${tx}" y2="${BY+30}" stroke="${c}" stroke-width="2"/>`;
+      inner+=nhSep(tx,nhCY,nhFW,nhFH,f[i]);
+      inner+=`<line x1="${tx}" y1="${BY+58}" x2="${tx}" y2="${BY+75}" stroke="${c}" stroke-width="2"/>`;
+      inner+=`<text x="${tx+(i===0?nhFW/2+2:-nhFW/2-2)}" y="${nhCY+3}" text-anchor="${i===0?'start':'end'}" font-size="7" fill="${c}" font-family="JetBrains Mono,monospace">NH1-50A</text>`;
+      inner+=tdF(tx,BY);
     });
-    inner += `<line x1="-80" y1="${BY+83}" x2="-20" y2="${BY+83}" stroke="${c}" stroke-width="2"/>`;
-    inner += `<line x1="20" y1="${BY+83}" x2="80" y2="${BY+83}" stroke="${c}" stroke-width="2"/>`;
-    const kwTop=BY+99,kwH=12,mcbTop=kwTop+kwH+20,mcbSz=14;
-    [-80,-20,20,80].forEach((tx,i) => {
-      const ms = f[i+2] !== false ? c : '#ff3d71';
-      inner += `<line x1="${tx}" y1="${BY+83}" x2="${tx}" y2="${kwTop}" stroke="${c}" stroke-width="2"/>`;
-      inner += `<rect x="${tx-9}" y="${kwTop}" width="18" height="${kwH}" fill="${bg}" stroke="${c}" stroke-width="1"/>`;
-      inner += `<text x="${tx}" y="${kwTop+9}" text-anchor="middle" font-size="6" fill="${c}" font-family="JetBrains Mono,monospace">kWh</text>`;
-      inner += `<line x1="${tx}" y1="${kwTop+kwH}" x2="${tx}" y2="${mcbTop}" stroke="${c}" stroke-width="2"/>`;
-      inner += `<rect x="${tx-mcbSz/2}" y="${mcbTop}" width="${mcbSz}" height="${mcbSz}" fill="none" stroke="${ms}" stroke-width="1.5"/>`;
-      inner += `<line x1="${tx-mcbSz/2+2}" y1="${mcbTop+mcbSz-2}" x2="${tx+mcbSz/2-2}" y2="${mcbTop+2}" stroke="${ms}" stroke-width="1.2"/>`;
-      inner += `<line x1="${tx}" y1="${mcbTop+mcbSz}" x2="${tx}" y2="${BY+BH}" stroke="${c}" stroke-width="2"/>`;
-      inner += `<text x="${tx-4}" y="${BY+BH-14}" transform="rotate(-90 ${tx-4} ${BY+BH-14})" font-size="8" fill="${c}">C${i+1}</text>`;
-      inner += tdF(tx, BY+BH);
+    // ─── Main horizontal busbar ───
+    const busY=BY+75;
+    inner+=`<line x1="${BX+6}" y1="${busY}" x2="${BX+BW-6}" y2="${busY}" stroke="${c}" stroke-width="4"/>`;
+    inner+=`<circle cx="-55" cy="${busY}" r="4" fill="${c}"/>`;
+    inner+=`<circle cx="55" cy="${busY}" r="4" fill="${c}"/>`;
+    // ─── 4 circuit columns: kWh meter + MCB ───
+    const busBot=busY+4, circX=[-75,-25,25,75];
+    const kwTop=busBot+16,kwH=12,mcbTop=kwTop+kwH+20,mcbSz=14;
+    circX.forEach((tx,i) => {
+      const ms=f[i+2]!==false?c:'#ff3d71';
+      inner+=`<line x1="${tx}" y1="${busY}" x2="${tx}" y2="${kwTop}" stroke="${c}" stroke-width="2"/>`;
+      inner+=`<rect x="${tx-9}" y="${kwTop}" width="18" height="${kwH}" fill="${bg}" stroke="${c}" stroke-width="1"/>`;
+      inner+=`<text x="${tx}" y="${kwTop+9}" text-anchor="middle" font-size="6" fill="${c}" font-family="JetBrains Mono,monospace">kWh</text>`;
+      inner+=`<line x1="${tx}" y1="${kwTop+kwH}" x2="${tx}" y2="${mcbTop}" stroke="${c}" stroke-width="2"/>`;
+      inner+=nhSep(tx,mcbTop+mcbSz/2,mcbSz,mcbSz,f[i+2]);
+      inner+=`<line x1="${tx}" y1="${mcbTop+mcbSz}" x2="${tx}" y2="${BY+BH}" stroke="${c}" stroke-width="2"/>`;
+      inner+=`<text x="${tx-4}" y="${BY+BH-12}" transform="rotate(-90 ${tx-4} ${BY+BH-12})" font-size="8" fill="${ms}">C${i+1}</text>`;
+      inner+=tdF(tx,BY+BH);
     });
     break;
   }
@@ -230,7 +250,7 @@ export function symW(el) {
   if (t === 'rect') return (typeof el !== 'string' && el.width) ? el.width : 100;
   if (t === 'circle') return (typeof el !== 'string' && el.r) ? el.r * 2 : 100;
   if (t === 'ptab_mono') { const n = (typeof el !== 'string' && el.celule) ? el.celule.length : 4; return n * 72 + 40; }
-  if (t === 'trafo') return 110; if (t === 'firida_e2_4') return 140; if (t === 'firida_e3_4') return 180; if (t === 'firida_e3_0') return 180; if (t === 'firida_e2_4_det') return 200;
+  if (t === 'trafo') return 110; if (t === 'firida_e2_4') return 140; if (t === 'firida_e3_4') return 180; if (t === 'firida_e3_0') return 180; if (t === 'firida_e2_4_det') return 220;
   if (t.startsWith('cd')) return 130; if (t === 'meter') return 70; if (t === 'stalp_cs') return 64; if (t.startsWith('stalp_')) return 48;
   if (t === 'separator') return 104; if (t === 'separator_mt') return 108; if (t === 'manson') return 76; if (t === 'priza_pamant') return 50;
   if (t === 'bara_mt') return 220; if (t === 'celula_linie_mt') return 70; if (t === 'celula_trafo_mt') return 80;
