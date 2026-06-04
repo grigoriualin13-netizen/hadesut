@@ -135,7 +135,14 @@ export function sym(el) {
     const peY=14, peX1=-95, peX2=108;
     inner+=`<line x1="${peX1}" y1="${peY}" x2="${peX2}" y2="${peY}" stroke="${c}" stroke-width="1.5"/>`;
     inner+=`<text x="${peX1-2}" y="${peY+3}" text-anchor="end" font-size="7" fill="${c}" font-family="JetBrains Mono,monospace">PE</text>`;
-    [-90,-30,30,90].forEach(tx => { inner+=`<circle cx="${tx}" cy="${peY}" r="3.5" fill="${c}"/>`; });
+    [-90,-30,30,90].forEach(tx => {
+      inner+=`<circle cx="${tx}" cy="${peY}" r="3.5" fill="${c}"/>`;
+      // bypass PE: ocolește separatorul pe stânga și coboară la borna de ieșire
+      const bx=tx-12;
+      inner+=`<line x1="${tx}" y1="${peY}" x2="${bx}" y2="${peY+9}" stroke="${c}" stroke-width="1.5"/>`;
+      inner+=`<line x1="${bx}" y1="${peY+9}" x2="${bx}" y2="${BY+BH}" stroke="${c}" stroke-width="1.5"/>`;
+      inner+=`<line x1="${bx}" y1="${BY+BH}" x2="${tx}" y2="${BY+BH}" stroke="${c}" stroke-width="1.5"/>`;
+    });
     // simbol IEC împământare (⏚): linie verticală + 3 bare orizontale descrescătoare
     inner+=`<line x1="${peX2}" y1="${peY}" x2="${peX2}" y2="${peY+7}" stroke="${c}" stroke-width="1.5"/>`;
     inner+=`<line x1="${peX2-8}" y1="${peY+7}" x2="${peX2+8}" y2="${peY+7}" stroke="${c}" stroke-width="1.5"/>`;
