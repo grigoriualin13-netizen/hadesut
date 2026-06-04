@@ -131,6 +131,16 @@ export function sym(el) {
       inner+=sepLabel(tx,outCY,'NH1-50A');
       inner+=tdF(tx,BY+BH);
     });
+    // ─── Bară PE + simbol împământare IEC ───
+    const peY=100, peX1=-95, peX2=108;
+    inner+=`<line x1="${peX1}" y1="${peY}" x2="${peX2}" y2="${peY}" stroke="${c}" stroke-width="1.5"/>`;
+    inner+=`<text x="${peX1-2}" y="${peY+3}" text-anchor="end" font-size="7" fill="${c}" font-family="JetBrains Mono,monospace">PE</text>`;
+    [-90,-30,30,90].forEach(tx => { inner+=`<circle cx="${tx}" cy="${peY}" r="3.5" fill="${c}"/>`; });
+    // simbol IEC împământare (⏚): linie verticală + 3 bare orizontale descrescătoare
+    inner+=`<line x1="${peX2}" y1="${peY}" x2="${peX2}" y2="${peY+7}" stroke="${c}" stroke-width="1.5"/>`;
+    inner+=`<line x1="${peX2-8}" y1="${peY+7}" x2="${peX2+8}" y2="${peY+7}" stroke="${c}" stroke-width="1.5"/>`;
+    inner+=`<line x1="${peX2-5}" y1="${peY+11}" x2="${peX2+5}" y2="${peY+11}" stroke="${c}" stroke-width="1.5"/>`;
+    inner+=`<line x1="${peX2-2}" y1="${peY+15}" x2="${peX2+2}" y2="${peY+15}" stroke="${c}" stroke-width="1.5"/>`;
     break;
   }
   case 'cd4': case 'cd5': case 'cd8': { const np=parseInt(el.type.replace('cd','')), ROW_H=36, BH=np*ROW_H+28, BW=140, LX=-BW/2, BAR_X=LX+30, BY2=-BH/2, FW=24, FH=16; const f = el.fuses || new Array(np+1).fill(true); inner=`<rect class="sel-r" x="${LX}" y="${BY2}" width="${BW}" height="${BH}" fill="${bg}" stroke="${c}" stroke-width="2"/>\n<line x1="${BAR_X}" y1="${BY2}" x2="${BAR_X}" y2="${BY2+BH}" stroke="${c}" stroke-width="2.5"/>`; const inputY=0; inner+=`<line x1="${LX}" y1="${inputY}" x2="${BAR_X-FW}" y2="${inputY}" stroke="${c}" stroke-width="2"/>` + fuse(BAR_X-FW, inputY, FW, FH, f[0]!==false) + `<circle class="td" data-lcx="${LX}" data-lcy="${inputY}" data-circuit="0" cx="${LX}" cy="${inputY}" r="7" stroke="transparent" fill="transparent"/>`; terms.push({cx:LX,cy:inputY}); for(let i=0;i<np;i++){ const yp=BY2+16+ROW_H*i+ROW_H/2, cn2=i+1; const fuseOn = f[cn2]!==false; const fuseColor = fuseOn ? c : '#ef4444'; inner+=`<line x1="${BAR_X}" y1="${yp}" x2="${BAR_X+18}" y2="${yp}" stroke="${c}" stroke-width="2"/>` + fuse(BAR_X+18, yp, FW, FH, fuseOn) + `<line x1="${BAR_X+18+FW}" y1="${yp}" x2="${LX+BW}" y2="${yp}" stroke="${fuseColor}" stroke-width="2" stroke-dasharray="${fuseOn?'none':'6,3'}"/>` + `<text x="${LX+BW-6}" y="${yp+11}" text-anchor="end" font-size="8" fill="${fuseColor}" font-family="Barlow Condensed,sans-serif" font-weight="700" pointer-events="none">C${cn2}</text>` + `<circle class="td" data-lcx="${LX+BW}" data-lcy="${yp}" data-circuit="${cn2}" cx="${LX+BW}" cy="${yp}" r="7" stroke="transparent" fill="transparent"/>`; terms.push({cx:LX+BW, cy:yp, circuit:cn2}); } break; }

@@ -563,6 +563,16 @@
           inner += sepLabel(tx, outCY, "NH1-50A");
           inner += tdF(tx, BY + BH);
         });
+        const peY = 100, peX1 = -95, peX2 = 108;
+        inner += `<line x1="${peX1}" y1="${peY}" x2="${peX2}" y2="${peY}" stroke="${c}" stroke-width="1.5"/>`;
+        inner += `<text x="${peX1 - 2}" y="${peY + 3}" text-anchor="end" font-size="7" fill="${c}" font-family="JetBrains Mono,monospace">PE</text>`;
+        [-90, -30, 30, 90].forEach((tx) => {
+          inner += `<circle cx="${tx}" cy="${peY}" r="3.5" fill="${c}"/>`;
+        });
+        inner += `<line x1="${peX2}" y1="${peY}" x2="${peX2}" y2="${peY + 7}" stroke="${c}" stroke-width="1.5"/>`;
+        inner += `<line x1="${peX2 - 8}" y1="${peY + 7}" x2="${peX2 + 8}" y2="${peY + 7}" stroke="${c}" stroke-width="1.5"/>`;
+        inner += `<line x1="${peX2 - 5}" y1="${peY + 11}" x2="${peX2 + 5}" y2="${peY + 11}" stroke="${c}" stroke-width="1.5"/>`;
+        inner += `<line x1="${peX2 - 2}" y1="${peY + 15}" x2="${peX2 + 2}" y2="${peY + 15}" stroke="${c}" stroke-width="1.5"/>`;
         break;
       }
       case "cd4":
