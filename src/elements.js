@@ -142,7 +142,7 @@ export function sym(el) {
       const vertEndY = sepBotY + 40;           // 112, sub separator (mai jos)
       const horiz = tx - sepLX;               // 12
       const rise = horiz * Math.tan(30 * Math.PI / 180); // ~7
-      const joinY = Math.round(vertEndY - rise); // ~85, punct pe linia plecarii
+      const joinY = Math.round(vertEndY + rise); // punct pe linia plecarii (jos-dreapta)
       inner+=`<circle cx="${sepLX}" cy="${peY}" r="3" fill="${c}"/>`;
       // vertical în jos, pe lângă separator
       inner+=`<line x1="${sepLX}" y1="${peY}" x2="${sepLX}" y2="${vertEndY}" stroke="${c}" stroke-width="1.5"/>`;

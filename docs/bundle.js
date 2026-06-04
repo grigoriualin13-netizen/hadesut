@@ -572,7 +572,7 @@
           const vertEndY = sepBotY + 40;
           const horiz = tx - sepLX;
           const rise = horiz * Math.tan(30 * Math.PI / 180);
-          const joinY = Math.round(vertEndY - rise);
+          const joinY = Math.round(vertEndY + rise);
           inner += `<circle cx="${sepLX}" cy="${peY}" r="3" fill="${c}"/>`;
           inner += `<line x1="${sepLX}" y1="${peY}" x2="${sepLX}" y2="${vertEndY}" stroke="${c}" stroke-width="1.5"/>`;
           inner += `<line x1="${sepLX}" y1="${vertEndY}" x2="${tx}" y2="${joinY}" stroke="${c}" stroke-width="1.5"/>`;
