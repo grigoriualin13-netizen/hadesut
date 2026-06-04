@@ -137,12 +137,12 @@ export function sym(el) {
     inner+=`<text x="${peX1-2}" y="${peY+3}" text-anchor="end" font-size="7" fill="${c}" font-family="JetBrains Mono,monospace">PE</text>`;
     [-90,-30,30,90].forEach(tx => {
       // cerculet pe bara PE, la marginea stanga a separatorului
-      const sepLX = tx - outFW/2;              // tx-7, marginea stânga separator
+      const sepLX = tx - outFW/2 - 5;          // tx-12, marginea stânga separator + 5px
       const sepBotY = outCY + outFH/2;         // 72, baza separator
-      const vertEndY = sepBotY + 10;           // 82, sub separator
-      const horiz = tx - sepLX;               // 7
-      const rise = horiz * Math.tan(30 * Math.PI / 180); // ~4
-      const joinY = Math.round(vertEndY - rise); // ~78, punct pe linia plecarii
+      const vertEndY = sepBotY + 20;           // 92, sub separator (mai jos)
+      const horiz = tx - sepLX;               // 12
+      const rise = horiz * Math.tan(30 * Math.PI / 180); // ~7
+      const joinY = Math.round(vertEndY - rise); // ~85, punct pe linia plecarii
       inner+=`<circle cx="${sepLX}" cy="${peY}" r="3" fill="${c}"/>`;
       // vertical în jos, pe lângă separator
       inner+=`<line x1="${sepLX}" y1="${peY}" x2="${sepLX}" y2="${vertEndY}" stroke="${c}" stroke-width="1.5"/>`;

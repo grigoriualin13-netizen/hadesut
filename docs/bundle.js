@@ -567,9 +567,9 @@
         inner += `<line x1="${peX1}" y1="${peY}" x2="${peX2}" y2="${peY}" stroke="${c}" stroke-width="1.5"/>`;
         inner += `<text x="${peX1 - 2}" y="${peY + 3}" text-anchor="end" font-size="7" fill="${c}" font-family="JetBrains Mono,monospace">PE</text>`;
         [-90, -30, 30, 90].forEach((tx) => {
-          const sepLX = tx - outFW / 2;
+          const sepLX = tx - outFW / 2 - 5;
           const sepBotY = outCY + outFH / 2;
-          const vertEndY = sepBotY + 10;
+          const vertEndY = sepBotY + 20;
           const horiz = tx - sepLX;
           const rise = horiz * Math.tan(30 * Math.PI / 180);
           const joinY = Math.round(vertEndY - rise);
