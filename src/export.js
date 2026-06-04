@@ -129,10 +129,36 @@ function inlineStyles(svgNode) {
   svgNode.querySelectorAll('[data-circuit]').forEach(el => el.removeAttribute('data-circuit'));
 }
 
+function _getDxfBounds() {
+  const dd = S.dxfData;
+  if (!dd || !dd.allEntities || !dd.allEntities.length) return null;
+  const { allEntities, bcx, bcy, bscale } = dd;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const e of allEntities) {
+    const pts = e.t === 'L' ? [[e.x0, e.y0], [e.x1, e.y1]]
+              : e.t === 'P' ? (e.verts || []).map(v => [v.x, v.y])
+              : (e.t === 'C' || e.t === 'A') ? [[e.cx - e.r, e.cy], [e.cx + e.r, e.cy], [e.cx, e.cy - e.r], [e.cx, e.cy + e.r]]
+              : [];
+    for (const [dx, dy] of pts) {
+      const cx = (dx - bcx) * bscale, cy = (bcy - dy) * bscale;
+      if (cx < minX) minX = cx; if (cx > maxX) maxX = cx;
+      if (cy < minY) minY = cy; if (cy > maxY) maxY = cy;
+    }
+  }
+  return minX === Infinity ? null : { minX, minY, maxX, maxY };
+}
+
 export function buildExportSVG(forSVGExport = false, customBounds = null) {
-  let bounds = customBounds || getProjectBounds();
   const prevSel = S.sel; S.sel = null;
   const prevMulti = new Set(S.multiSel); S.multiSel.clear(); render();
+  let bounds = customBounds || getProjectBounds();
+  if (!customBounds) {
+    const dxfB = _getDxfBounds();
+    if (dxfB) {
+      if (!bounds) bounds = dxfB;
+      else { bounds = { minX: Math.min(bounds.minX, dxfB.minX), minY: Math.min(bounds.minY, dxfB.minY), maxX: Math.max(bounds.maxX, dxfB.maxX), maxY: Math.max(bounds.maxY, dxfB.maxY), isBg: bounds.isBg }; }
+    }
+  }
   const cbExportTable = document.getElementById('vd-export-table');
   const includeTable = cbExportTable && cbExportTable.checked && S.vdResults;
   let tableData = { svg: '', w: 0, h: 0 };
@@ -169,11 +195,12 @@ export function buildExportSVG(forSVGExport = false, customBounds = null) {
   if (S.bgData.url) {
     const bgImg = document.createElementNS('http://www.w3.org/2000/svg','image');
     bgImg.setAttribute('href', S.bgData.url);
+    bgImg.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', S.bgData.url);
     bgImg.setAttribute('x', S.bgData.x); bgImg.setAttribute('y', S.bgData.y);
     bgImg.setAttribute('width', S.bgData.w); bgImg.setAttribute('height', S.bgData.h);
     bgImg.setAttribute('opacity', S.bgData.op);
-    const bgGroup = clone.querySelector('#BG');
-    if (bgGroup) bgGroup.appendChild(bgImg);
+    const bgGroup = clone.querySelector('#BG') || (vpClone || clone);
+    bgGroup.insertBefore(bgImg, bgGroup.firstChild);
   }
 
   if (tableData.svg && vpClone) vpClone.innerHTML += tableData.svg;
