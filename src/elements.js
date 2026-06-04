@@ -132,7 +132,7 @@ export function sym(el) {
       inner+=tdF(tx,BY+BH);
     });
     // ─── Bară PE + simbol împământare IEC ───
-    const peY=100, peX1=-95, peX2=108;
+    const peY=14, peX1=-95, peX2=108;
     inner+=`<line x1="${peX1}" y1="${peY}" x2="${peX2}" y2="${peY}" stroke="${c}" stroke-width="1.5"/>`;
     inner+=`<text x="${peX1-2}" y="${peY+3}" text-anchor="end" font-size="7" fill="${c}" font-family="JetBrains Mono,monospace">PE</text>`;
     [-90,-30,30,90].forEach(tx => { inner+=`<circle cx="${tx}" cy="${peY}" r="3.5" fill="${c}"/>`; });
