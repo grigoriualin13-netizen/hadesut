@@ -567,14 +567,16 @@
         inner += `<line x1="${peX1}" y1="${peY}" x2="${peX2}" y2="${peY}" stroke="${c}" stroke-width="1.5"/>`;
         inner += `<text x="${peX1 - 2}" y="${peY + 3}" text-anchor="end" font-size="7" fill="${c}" font-family="JetBrains Mono,monospace">PE</text>`;
         [-90, -30, 30, 90].forEach((tx) => {
-          inner += `<circle cx="${tx}" cy="${peY}" r="3.5" fill="${c}"/>`;
           const sepLX = tx - outFW / 2;
-          const sepTopY = outCY - outFH / 2;
           const sepBotY = outCY + outFH / 2;
-          inner += `<line x1="${tx}" y1="${peY}" x2="${sepLX}" y2="${sepTopY}" stroke="${c}" stroke-width="1.5"/>`;
-          inner += `<circle cx="${sepLX}" cy="${sepTopY}" r="3.5" fill="${c}"/>`;
-          inner += `<line x1="${sepLX}" y1="${sepTopY}" x2="${sepLX}" y2="${sepBotY}" stroke="${c}" stroke-width="1.5"/>`;
-          inner += `<circle cx="${sepLX}" cy="${sepBotY}" r="3.5" fill="${c}"/>`;
+          const vertEndY = sepBotY + 10;
+          const horiz = tx - sepLX;
+          const rise = horiz * Math.tan(30 * Math.PI / 180);
+          const joinY = Math.round(vertEndY - rise);
+          inner += `<circle cx="${sepLX}" cy="${peY}" r="3" fill="${c}"/>`;
+          inner += `<line x1="${sepLX}" y1="${peY}" x2="${sepLX}" y2="${vertEndY}" stroke="${c}" stroke-width="1.5"/>`;
+          inner += `<line x1="${sepLX}" y1="${vertEndY}" x2="${tx}" y2="${joinY}" stroke="${c}" stroke-width="1.5"/>`;
+          inner += `<circle cx="${tx}" cy="${joinY}" r="3" fill="${c}"/>`;
         });
         inner += `<line x1="${peX2}" y1="${peY}" x2="${peX2}" y2="${peY + 7}" stroke="${c}" stroke-width="1.5"/>`;
         inner += `<line x1="${peX2 - 8}" y1="${peY + 7}" x2="${peX2 + 8}" y2="${peY + 7}" stroke="${c}" stroke-width="1.5"/>`;
