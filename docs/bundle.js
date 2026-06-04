@@ -630,7 +630,7 @@
           inner += _sep(tx, inCY, inFW, inFH, f[i]);
           inner += `<line x1="${tx}" y1="${inCY + inFH / 2}" x2="${tx}" y2="${busY}" stroke="${c}" stroke-width="2"/>`;
           inner += `<circle cx="${tx}" cy="${busY}" r="5" fill="${c}"/>`;
-          inner += _lbl(tx, inCY, "NH1-50A");
+          inner += _lbl(tx, inCY, (el.ratings || [])[i] || "NH1-50A");
           inner += _td(tx, BY);
         }
         const outFW = 14, outFH = 32, outCY = 56;
@@ -643,7 +643,7 @@
           inner += `<line x1="${tx}" y1="${outCY + outFH / 2}" x2="${tx}" y2="${BY + BH}" stroke="${c}" stroke-width="2"/>`;
           inner += `<circle cx="${tx}" cy="${BY + BH}" r="4" fill="${c}"/>`;
           inner += `<text x="${tx - 4}" y="${BY + BH - 14}" transform="rotate(-90 ${tx - 4} ${BY + BH - 14})" font-size="8" fill="${ms}">C${i + 1}</text>`;
-          inner += _lbl(tx, outCY, "NH1-50A");
+          inner += _lbl(tx, outCY, (el.ratings || [])[nIn + i] || "NH1-50A");
           inner += _td(tx, BY + BH);
         }
         if (nOut > 0) {
@@ -3968,6 +3968,15 @@ ${(r * 0.1).toFixed(4)}
             </div>
           </div>
         </div>`;
+          const ratings = el.ratings || [];
+          const common = ["16A", "25A", "35A", "50A", "63A", "80A", "100A", "125A", "160A", "200A", "250A", "315A", "400A"];
+          const dlId = `dl-rat-${el.id}`;
+          const inSel = `<datalist id="${dlId}">${common.map((v) => `<option value="${v}">`).join("")}</datalist>`;
+          let ratingRows = `${inSel}<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:6px 6px 2px">`;
+          for (let i = 0; i < numIn; i++) ratingRows += `<div style="display:flex;flex-direction:column;gap:2px"><div style="font-size:8px;color:var(--text3)">Intr. ${i + 1}</div><input list="${dlId}" style="background:var(--bg2);border:1px solid var(--border2);border-radius:3px;padding:3px 5px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:9px;width:100%" value="${ratings[i] || "NH1-50A"}" onchange="setFiridaRating(${el.id},${i},this.value)"></div>`;
+          for (let i = 0; i < numOut; i++) ratingRows += `<div style="display:flex;flex-direction:column;gap:2px"><div style="font-size:8px;color:var(--text3)">Plecare ${i + 1}</div><input list="${dlId}" style="background:var(--bg2);border:1px solid var(--border2);border-radius:3px;padding:3px 5px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:9px;width:100%" value="${ratings[numIn + i] || "NH1-50A"}" onchange="setFiridaRating(${el.id},${numIn + i},this.value)"></div>`;
+          ratingRows += `</div>`;
+          counterHtml += `<div style="padding:0 6px 4px"><div style="font-size:8px;font-weight:700;color:var(--text3);padding:4px 2px 2px">CUREN\u021AI NOMINALI</div>${ratingRows}</div>`;
         }
         let inpHtml = "", outpHtml = "";
         for (let i = 0; i < numIn; i++) inpHtml += `<label style="display:flex;justify-content:space-between;align-items:center;background:var(--bg2);padding:4px 6px;border-radius:4px;border:1px solid var(--border2);cursor:pointer"><span style="font-size:9px;color:var(--text2)">${numIn === 2 ? i === 0 ? "Intrare St" : "Intrare Dr" : `Intrare ${i + 1}`}</span><input type="checkbox" onchange="toggleFuse(${el.id}, ${i}, this.checked)" ${f[i] !== false ? "checked" : ""}></label>`;
@@ -5456,6 +5465,14 @@ ${(r * 0.1).toFixed(4)}
     });
     svg += `</g>`;
     return { svg, w: tableW, h: totalH > 0 ? totalH - 15 : 0 };
+  }
+  function setFiridaRating(elId, idx, value) {
+    const el = S.EL.find((e) => e.id === elId);
+    if (!el || el.type !== "firida_gen") return;
+    if (!el.ratings) el.ratings = [];
+    el.ratings[idx] = value.trim() || "NH1-50A";
+    saveState("rating separator");
+    render();
   }
   function adjustFiridaCircuits(elId, type, delta) {
     const el = S.EL.find((e) => e.id === elId);
@@ -11789,6 +11806,7 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
   window.runGenerator = runGenerator;
   window.generateVDTableSVG = generateVDTableSVG;
   window.adjustFiridaCircuits = adjustFiridaCircuits;
+  window.setFiridaRating = setFiridaRating;
   window.save = save;
   window.saveAsNew = saveAsNew;
   window.exportJSON = exportJSON;

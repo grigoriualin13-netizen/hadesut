@@ -15,7 +15,7 @@ import {
   updateProps, clearAll, toggleLeg, buildLeg,
   toggleVD, runVD, populateVDCircuits, copyVDTable,
   updateGenSrcUI, toggleAutoDraw, addDerivRow, runGenerator,
-  generateVDTableSVG, adjustFiridaCircuits
+  generateVDTableSVG, adjustFiridaCircuits, setFiridaRating
 } from './ui.js';
 import {
   saveState, undo, redo, copyEl, pasteEl,
@@ -291,6 +291,7 @@ window.addDerivRow       = addDerivRow;
 window.runGenerator      = runGenerator;
 window.generateVDTableSVG = generateVDTableSVG;
 window.adjustFiridaCircuits = adjustFiridaCircuits;
+window.setFiridaRating      = setFiridaRating;
 
 // Project
 window.save                    = save;
