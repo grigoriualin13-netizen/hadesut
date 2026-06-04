@@ -512,45 +512,55 @@
           terms.push({ cx: lcx, cy: lcy });
           return `<circle class="td" data-lcx="${lcx}" data-lcy="${lcy}" cx="${lcx}" cy="${lcy}" r="8" stroke="transparent" fill="transparent"/>`;
         }, nhSep = function(tx, cy, fw, fh, state) {
-          const rx = tx - fw / 2, ry = cy - fh / 2;
+          const rx = tx - fw / 2, ry = cy - fh / 2, sp = fw + fh - 8;
+          const ks = [rx + ry + 4 + sp / 4, rx + ry + 4 + sp / 2, rx + ry + 4 + 3 * sp / 4];
           let h = `<rect x="${rx}" y="${ry}" width="${fw}" height="${fh}" fill="${bg}" stroke="${c}" stroke-width="1.5"/>`;
           if (state !== false) {
-            h += `<line x1="${rx + 2}" y1="${ry + fh * 0.39}" x2="${rx + fw * 0.69}" y2="${ry + 2}" stroke="${c}" stroke-width="1"/>`;
-            h += `<line x1="${rx + 2}" y1="${ry + fh * 0.71}" x2="${rx + fw - 2}" y2="${ry + fh * 0.29}" stroke="${c}" stroke-width="1"/>`;
-            h += `<line x1="${rx + fw * 0.31}" y1="${ry + fh - 2}" x2="${rx + fw - 2}" y2="${ry + fh * 0.61}" stroke="${c}" stroke-width="1"/>`;
+            ks.forEach((k) => {
+              let x1 = Math.max(rx + 2, k - (ry + fh - 2)), y1 = k - x1;
+              if (y1 > ry + fh - 2) {
+                y1 = ry + fh - 2;
+                x1 = k - y1;
+              }
+              let x2 = Math.min(rx + fw - 2, k - (ry + 2)), y2 = k - x2;
+              if (y2 < ry + 2) {
+                y2 = ry + 2;
+                x2 = k - y2;
+              }
+              h += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${c}" stroke-width="1.1"/>`;
+            });
           } else {
             h += `<line x1="${rx + 2}" y1="${ry + 2}" x2="${rx + fw - 2}" y2="${ry + fh - 2}" stroke="#ff3d71" stroke-width="1.5"/>`;
             h += `<line x1="${rx + fw - 2}" y1="${ry + 2}" x2="${rx + 2}" y2="${ry + fh - 2}" stroke="#ff3d71" stroke-width="1.5"/>`;
           }
           return h;
+        }, sepLabel = function(tx, cy, rating) {
+          return `<text x="${tx}" y="${cy + 23}" transform="rotate(-90,${tx},${cy})" text-anchor="middle" font-size="7" fill="${c}" font-family="JetBrains Mono,monospace">Sep_JT_F[V]</text><text x="${tx}" y="${cy + 33}" transform="rotate(-90,${tx},${cy})" text-anchor="middle" font-size="7" fill="${c}" font-family="JetBrains Mono,monospace">[${rating}]</text>`;
         };
-        const BW = 220, BH = 280, BX = -110, BY = -140;
+        const BW = 250, BH = 280, BX = -125, BY = -140;
         const f = el.fuses || new Array(6).fill(true);
         inner = `<rect class="sel-r" x="${BX}" y="${BY}" width="${BW}" height="${BH}" fill="${bg}" stroke="${c}" stroke-width="2"/>`;
-        const nhFW = 16, nhFH = 28;
-        [[-55, 0], [55, 1]].forEach(([tx, i]) => {
-          const nhCY = BY + 44;
-          inner += `<line x1="${tx}" y1="${BY}" x2="${tx}" y2="${BY + 30}" stroke="${c}" stroke-width="2"/>`;
-          inner += nhSep(tx, nhCY, nhFW, nhFH, f[i]);
-          inner += `<line x1="${tx}" y1="${BY + 58}" x2="${tx}" y2="${BY + 75}" stroke="${c}" stroke-width="2"/>`;
-          inner += `<text x="${tx + (i === 0 ? nhFW / 2 + 2 : -nhFW / 2 - 2)}" y="${nhCY + 3}" text-anchor="${i === 0 ? "start" : "end"}" font-size="7" fill="${c}" font-family="JetBrains Mono,monospace">NH1-50A</text>`;
+        const busY = 0;
+        inner += `<line x1="${BX + 5}" y1="${busY}" x2="${BX + BW - 5}" y2="${busY}" stroke="${c}" stroke-width="4"/>`;
+        const inFW = 16, inFH = 32, inCY = -94;
+        [-60, 60].forEach((tx, i) => {
+          inner += `<line x1="${tx}" y1="${BY}" x2="${tx}" y2="${inCY - inFH / 2}" stroke="${c}" stroke-width="2"/>`;
+          inner += nhSep(tx, inCY, inFW, inFH, f[i]);
+          inner += `<line x1="${tx}" y1="${inCY + inFH / 2}" x2="${tx}" y2="${busY}" stroke="${c}" stroke-width="2"/>`;
+          inner += `<circle cx="${tx}" cy="${busY}" r="5" fill="${c}"/>`;
+          inner += sepLabel(tx, inCY, "NH1-50A");
           inner += tdF(tx, BY);
         });
-        const busY = BY + 75;
-        inner += `<line x1="${BX + 6}" y1="${busY}" x2="${BX + BW - 6}" y2="${busY}" stroke="${c}" stroke-width="4"/>`;
-        inner += `<circle cx="-55" cy="${busY}" r="4" fill="${c}"/>`;
-        inner += `<circle cx="55" cy="${busY}" r="4" fill="${c}"/>`;
-        const busBot = busY + 4, circX = [-75, -25, 25, 75];
-        const kwTop = busBot + 16, kwH = 12, mcbTop = kwTop + kwH + 20, mcbSz = 14;
-        circX.forEach((tx, i) => {
+        const outFW = 14, outFH = 32, outCY = 56;
+        [-90, -30, 30, 90].forEach((tx, i) => {
           const ms = f[i + 2] !== false ? c : "#ff3d71";
-          inner += `<line x1="${tx}" y1="${busY}" x2="${tx}" y2="${kwTop}" stroke="${c}" stroke-width="2"/>`;
-          inner += `<rect x="${tx - 9}" y="${kwTop}" width="18" height="${kwH}" fill="${bg}" stroke="${c}" stroke-width="1"/>`;
-          inner += `<text x="${tx}" y="${kwTop + 9}" text-anchor="middle" font-size="6" fill="${c}" font-family="JetBrains Mono,monospace">kWh</text>`;
-          inner += `<line x1="${tx}" y1="${kwTop + kwH}" x2="${tx}" y2="${mcbTop}" stroke="${c}" stroke-width="2"/>`;
-          inner += nhSep(tx, mcbTop + mcbSz / 2, mcbSz, mcbSz, f[i + 2]);
-          inner += `<line x1="${tx}" y1="${mcbTop + mcbSz}" x2="${tx}" y2="${BY + BH}" stroke="${c}" stroke-width="2"/>`;
-          inner += `<text x="${tx - 4}" y="${BY + BH - 12}" transform="rotate(-90 ${tx - 4} ${BY + BH - 12})" font-size="8" fill="${ms}">C${i + 1}</text>`;
+          inner += `<circle cx="${tx}" cy="${busY}" r="5" fill="${c}"/>`;
+          inner += `<line x1="${tx}" y1="${busY}" x2="${tx}" y2="${outCY - outFH / 2}" stroke="${c}" stroke-width="2"/>`;
+          inner += nhSep(tx, outCY, outFW, outFH, f[i + 2]);
+          inner += `<line x1="${tx}" y1="${outCY + outFH / 2}" x2="${tx}" y2="${BY + BH}" stroke="${c}" stroke-width="2"/>`;
+          inner += `<circle cx="${tx}" cy="${BY + BH}" r="4" fill="${c}"/>`;
+          inner += `<text x="${tx - 4}" y="${BY + BH - 14}" transform="rotate(-90 ${tx - 4} ${BY + BH - 14})" font-size="8" fill="${ms}">C${i + 1}</text>`;
+          inner += sepLabel(tx, outCY, "NH1-50A");
           inner += tdF(tx, BY + BH);
         });
         break;
@@ -786,7 +796,7 @@
     if (t === "firida_e2_4") return 140;
     if (t === "firida_e3_4") return 180;
     if (t === "firida_e3_0") return 180;
-    if (t === "firida_e2_4_det") return 220;
+    if (t === "firida_e2_4_det") return 250;
     if (t.startsWith("cd")) return 130;
     if (t === "meter") return 70;
     if (t === "stalp_cs") return 64;
