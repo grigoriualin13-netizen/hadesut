@@ -201,10 +201,34 @@ export function updateProps() {
     } else if (el.type.startsWith('firida_')) {
       const f = el.fuses || []; let numIn = 0, numOut = 0;
       if (el.type === 'firida_e2_4') { numIn = 2; numOut = 4; } else if (el.type === 'firida_e3_4') { numIn = 3; numOut = 4; } else if (el.type === 'firida_e3_0') { numIn = 3; numOut = 0; }
+      else if (el.type === 'firida_e2_4_det') { numIn = 2; numOut = 4; }
+      else if (el.type === 'firida_gen') { numIn = el.inputs || 2; numOut = el.outputs || 4; }
+      const btnS = 'padding:2px 10px;border-radius:4px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;font-size:13px;font-weight:700;line-height:1';
+      let counterHtml = '';
+      if (el.type === 'firida_gen') {
+        counterHtml = `<div style="display:flex;flex-direction:column;gap:6px;padding:8px 6px 4px">
+          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg2);padding:5px 8px;border-radius:5px;border:1px solid var(--border2)">
+            <span style="font-size:9px;font-weight:700;color:var(--text2)">Intrări</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <button style="${btnS}" onclick="adjustFiridaCircuits(${el.id},'in',-1)">−</button>
+              <span style="font-size:12px;font-weight:800;color:var(--accent);min-width:16px;text-align:center">${numIn}</span>
+              <button style="${btnS}" onclick="adjustFiridaCircuits(${el.id},'in',1)">+</button>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg2);padding:5px 8px;border-radius:5px;border:1px solid var(--border2)">
+            <span style="font-size:9px;font-weight:700;color:var(--text2)">Ieșiri</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <button style="${btnS}" onclick="adjustFiridaCircuits(${el.id},'out',-1)">−</button>
+              <span style="font-size:12px;font-weight:800;color:var(--accent);min-width:16px;text-align:center">${numOut}</span>
+              <button style="${btnS}" onclick="adjustFiridaCircuits(${el.id},'out',1)">+</button>
+            </div>
+          </div>
+        </div>`;
+      }
       let inpHtml = '', outpHtml = '';
       for (let i = 0; i < numIn; i++) inpHtml += `<label style="display:flex;justify-content:space-between;align-items:center;background:var(--bg2);padding:4px 6px;border-radius:4px;border:1px solid var(--border2);cursor:pointer"><span style="font-size:9px;color:var(--text2)">${numIn === 2 ? (i === 0 ? 'Intrare St' : 'Intrare Dr') : `Intrare ${i + 1}`}</span><input type="checkbox" onchange="toggleFuse(${el.id}, ${i}, this.checked)" ${f[i] !== false ? 'checked' : ''}></label>`;
       for (let i = 0; i < numOut; i++) outpHtml += `<label style="display:flex;justify-content:space-between;align-items:center;background:var(--bg2);padding:4px 6px;border-radius:4px;border:1px solid var(--border2);cursor:pointer"><span style="font-size:9px;color:var(--text2)">Plecare ${i + 1}</span><input type="checkbox" onchange="toggleFuse(${el.id}, ${numIn + i}, this.checked)" ${f[numIn + i] !== false ? 'checked' : ''}></label>`;
-      firidaHtml = `<div class="psec"><div class="psh">🔌 Siguranțe Firidă</div><div style="padding:6px;display:flex;flex-direction:column;gap:4px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${inpHtml}</div>${numOut > 0 ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${outpHtml}</div>` : ''}</div></div>`;
+      firidaHtml = `<div class="psec"><div class="psh">🔌 Siguranțe Firidă</div>${counterHtml}<div style="padding:6px;display:flex;flex-direction:column;gap:4px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${inpHtml}</div>${numOut > 0 ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${outpHtml}</div>` : ''}</div></div>`;
     } else if (el.type === 'ptab_1t') {
       const f = el.fuses || new Array(10).fill(true);
       let inpHtml = `<label class="flbl">MT Trafo <input type="checkbox" onchange="toggleFuse(${el.id}, 0, this.checked)" ${f[0] !== false ? 'checked' : ''}></label><label class="flbl">JT General <input type="checkbox" onchange="toggleFuse(${el.id}, 1, this.checked)" ${f[1] !== false ? 'checked' : ''}></label>`;
@@ -1479,4 +1503,28 @@ export function generateVDTableSVG(startX, startY) {
     svg += `</g>`; totalH += tableH + 15;
   });
   svg += `</g>`; return { svg, w: tableW, h: totalH > 0 ? totalH - 15 : 0 };
+}
+
+export function adjustFiridaCircuits(elId, type, delta) {
+  const el = S.EL.find(e => e.id === elId);
+  if (!el || el.type !== 'firida_gen') return;
+  const nIn = el.inputs || 2;
+  const nOut = el.outputs || 4;
+  if (!el.fuses) el.fuses = new Array(nIn + nOut).fill(true);
+  if (type === 'in' && delta > 0 && nIn < 6) {
+    el.fuses.splice(nIn, 0, true);
+    el.inputs = nIn + 1;
+  } else if (type === 'in' && delta < 0 && nIn > 1) {
+    el.fuses.splice(nIn - 1, 1);
+    el.inputs = nIn - 1;
+  } else if (type === 'out' && delta > 0 && nOut < 8) {
+    el.fuses.push(true);
+    el.outputs = nOut + 1;
+  } else if (type === 'out' && delta < 0 && nOut > 0) {
+    el.fuses.splice(nIn + nOut - 1, 1);
+    el.outputs = nOut - 1;
+  } else return;
+  saveState('ajustare circuite firidă');
+  render();
+  updateProps();
 }

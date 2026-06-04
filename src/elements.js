@@ -2,7 +2,7 @@ import { S } from './state.js';
 
 export function nextLbl(t) {
   const prefix = {
-    ptab_1t:'PTAB', ptab_2t:'PTAB', trafo:'PT', firida_e2_4:'FG', firida_e3_4:'FG', firida_e3_0:'FG', firida_e2_4_det:'FG',
+    ptab_1t:'PTAB', ptab_2t:'PTAB', trafo:'PT', firida_e2_4:'FG', firida_e3_4:'FG', firida_e3_0:'FG', firida_e2_4_det:'FG', firida_gen:'FG',
     cd4:'CD', cd5:'CD', cd8:'CD', meter:'BMPT',
     stalp_se4:'SE4', stalp_se10:'SE10', stalp_cs:'SCS', stalp_sc10002:'SC10002', stalp_sc10005:'SC10005',
     stalp_rotund:'SR', stalp_rotund_special:'SRS',
@@ -158,6 +158,72 @@ export function sym(el) {
     inner+=`<line x1="${peX2-2}" y1="${peY+15}" x2="${peX2+2}" y2="${peY+15}" stroke="${c}" stroke-width="1.5"/>`;
     break;
   }
+  case 'firida_gen': {
+    const nIn = el.inputs || 2;
+    const nOut = el.outputs || 4;
+    const BW = Math.max(nIn, nOut) * 60 + 40;
+    const BH = 280, BX = -BW/2, BY = -BH/2;
+    const f = el.fuses || new Array(nIn + nOut).fill(true);
+    const _td = (lcx,lcy) => { terms.push({cx:lcx,cy:lcy}); return `<circle class="td" data-lcx="${lcx}" data-lcy="${lcy}" cx="${lcx}" cy="${lcy}" r="8" stroke="transparent" fill="transparent"/>`; };
+    const _sep = (tx,cy,fw,fh,state) => {
+      const rx=tx-fw/2, ry=cy-fh/2, sp=fw+fh-8;
+      const ks=[rx+ry+4+sp/4, rx+ry+4+sp/2, rx+ry+4+3*sp/4];
+      let h=`<rect x="${rx}" y="${ry}" width="${fw}" height="${fh}" fill="${bg}" stroke="${c}" stroke-width="1.5"/>`;
+      if (state!==false) { ks.forEach(k => { let x1=Math.max(rx+2,k-(ry+fh-2)),y1=k-x1; if(y1>ry+fh-2){y1=ry+fh-2;x1=k-y1;} let x2=Math.min(rx+fw-2,k-(ry+2)),y2=k-x2; if(y2<ry+2){y2=ry+2;x2=k-y2;} h+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${c}" stroke-width="1.1"/>`; }); }
+      else { h+=`<line x1="${rx+2}" y1="${ry+2}" x2="${rx+fw-2}" y2="${ry+fh-2}" stroke="#ff3d71" stroke-width="1.5"/>`; h+=`<line x1="${rx+fw-2}" y1="${ry+2}" x2="${rx+2}" y2="${ry+fh-2}" stroke="#ff3d71" stroke-width="1.5"/>`; }
+      return h;
+    };
+    const _lbl = (tx,cy,r) => `<text x="${tx}" y="${cy+23}" transform="rotate(-90,${tx},${cy})" text-anchor="middle" font-size="7" fill="${c}" font-family="JetBrains Mono,monospace">Sep_JT_F[V]</text><text x="${tx}" y="${cy+33}" transform="rotate(-90,${tx},${cy})" text-anchor="middle" font-size="7" fill="${c}" font-family="JetBrains Mono,monospace">[${r}]</text>`;
+    inner=`<rect class="sel-r" x="${BX}" y="${BY}" width="${BW}" height="${BH}" fill="${bg}" stroke="${c}" stroke-width="2"/>`;
+    const busY=0;
+    inner+=`<line x1="${BX+5}" y1="${busY}" x2="${BX+BW-5}" y2="${busY}" stroke="${c}" stroke-width="4"/>`;
+    // intrări
+    const inFW=16,inFH=32,inCY=-94;
+    for (let i=0;i<nIn;i++) {
+      const tx = BX + (BW/(nIn+1))*(i+1);
+      inner+=`<line x1="${tx}" y1="${BY}" x2="${tx}" y2="${inCY-inFH/2}" stroke="${c}" stroke-width="2"/>`;
+      inner+=_sep(tx,inCY,inFW,inFH,f[i]);
+      inner+=`<line x1="${tx}" y1="${inCY+inFH/2}" x2="${tx}" y2="${busY}" stroke="${c}" stroke-width="2"/>`;
+      inner+=`<circle cx="${tx}" cy="${busY}" r="5" fill="${c}"/>`;
+      inner+=_lbl(tx,inCY,'NH1-50A');
+      inner+=_td(tx,BY);
+    }
+    // ieșiri
+    const outFW=14,outFH=32,outCY=56;
+    for (let i=0;i<nOut;i++) {
+      const tx = BX + (BW/(nOut+1))*(i+1);
+      const ms = f[nIn+i]!==false ? c : '#ff3d71';
+      inner+=`<circle cx="${tx}" cy="${busY}" r="5" fill="${c}"/>`;
+      inner+=`<line x1="${tx}" y1="${busY}" x2="${tx}" y2="${outCY-outFH/2}" stroke="${c}" stroke-width="2"/>`;
+      inner+=_sep(tx,outCY,outFW,outFH,f[nIn+i]);
+      inner+=`<line x1="${tx}" y1="${outCY+outFH/2}" x2="${tx}" y2="${BY+BH}" stroke="${c}" stroke-width="2"/>`;
+      inner+=`<circle cx="${tx}" cy="${BY+BH}" r="4" fill="${c}"/>`;
+      inner+=`<text x="${tx-4}" y="${BY+BH-14}" transform="rotate(-90 ${tx-4} ${BY+BH-14})" font-size="8" fill="${ms}">C${i+1}</text>`;
+      inner+=_lbl(tx,outCY,'NH1-50A');
+      inner+=_td(tx,BY+BH);
+    }
+    // bară PE + bypass + simbol IEC
+    if (nOut>0) {
+      const peY=14;
+      const outXs = Array.from({length:nOut},(_,i)=>BX+(BW/(nOut+1))*(i+1));
+      const peX1 = outXs[0]-outFW/2-13, peX2 = BX+BW-10;
+      inner+=`<line x1="${peX1}" y1="${peY}" x2="${peX2}" y2="${peY}" stroke="${c}" stroke-width="1.5"/>`;
+      inner+=`<text x="${peX1-2}" y="${peY+3}" text-anchor="end" font-size="7" fill="${c}" font-family="JetBrains Mono,monospace">PE</text>`;
+      outXs.forEach(tx => {
+        const sepLX=tx-outFW/2-5, sepBotY=outCY+outFH/2, vertEndY=sepBotY+40;
+        const rise=Math.round((tx-sepLX)*Math.tan(30*Math.PI/180));
+        inner+=`<circle cx="${sepLX}" cy="${peY}" r="3" fill="${c}"/>`;
+        inner+=`<line x1="${sepLX}" y1="${peY}" x2="${sepLX}" y2="${vertEndY}" stroke="${c}" stroke-width="1.5"/>`;
+        inner+=`<line x1="${sepLX}" y1="${vertEndY}" x2="${tx}" y2="${vertEndY+rise}" stroke="${c}" stroke-width="1.5"/>`;
+        inner+=`<circle cx="${tx}" cy="${vertEndY+rise}" r="3" fill="${c}"/>`;
+      });
+      inner+=`<line x1="${peX2}" y1="${peY}" x2="${peX2}" y2="${peY+7}" stroke="${c}" stroke-width="1.5"/>`;
+      inner+=`<line x1="${peX2-8}" y1="${peY+7}" x2="${peX2+8}" y2="${peY+7}" stroke="${c}" stroke-width="1.5"/>`;
+      inner+=`<line x1="${peX2-5}" y1="${peY+11}" x2="${peX2+5}" y2="${peY+11}" stroke="${c}" stroke-width="1.5"/>`;
+      inner+=`<line x1="${peX2-2}" y1="${peY+15}" x2="${peX2+2}" y2="${peY+15}" stroke="${c}" stroke-width="1.5"/>`;
+    }
+    break;
+  }
   case 'cd4': case 'cd5': case 'cd8': { const np=parseInt(el.type.replace('cd','')), ROW_H=36, BH=np*ROW_H+28, BW=140, LX=-BW/2, BAR_X=LX+30, BY2=-BH/2, FW=24, FH=16; const f = el.fuses || new Array(np+1).fill(true); inner=`<rect class="sel-r" x="${LX}" y="${BY2}" width="${BW}" height="${BH}" fill="${bg}" stroke="${c}" stroke-width="2"/>\n<line x1="${BAR_X}" y1="${BY2}" x2="${BAR_X}" y2="${BY2+BH}" stroke="${c}" stroke-width="2.5"/>`; const inputY=0; inner+=`<line x1="${LX}" y1="${inputY}" x2="${BAR_X-FW}" y2="${inputY}" stroke="${c}" stroke-width="2"/>` + fuse(BAR_X-FW, inputY, FW, FH, f[0]!==false) + `<circle class="td" data-lcx="${LX}" data-lcy="${inputY}" data-circuit="0" cx="${LX}" cy="${inputY}" r="7" stroke="transparent" fill="transparent"/>`; terms.push({cx:LX,cy:inputY}); for(let i=0;i<np;i++){ const yp=BY2+16+ROW_H*i+ROW_H/2, cn2=i+1; const fuseOn = f[cn2]!==false; const fuseColor = fuseOn ? c : '#ef4444'; inner+=`<line x1="${BAR_X}" y1="${yp}" x2="${BAR_X+18}" y2="${yp}" stroke="${c}" stroke-width="2"/>` + fuse(BAR_X+18, yp, FW, FH, fuseOn) + `<line x1="${BAR_X+18+FW}" y1="${yp}" x2="${LX+BW}" y2="${yp}" stroke="${fuseColor}" stroke-width="2" stroke-dasharray="${fuseOn?'none':'6,3'}"/>` + `<text x="${LX+BW-6}" y="${yp+11}" text-anchor="end" font-size="8" fill="${fuseColor}" font-family="Barlow Condensed,sans-serif" font-weight="700" pointer-events="none">C${cn2}</text>` + `<circle class="td" data-lcx="${LX+BW}" data-lcy="${yp}" data-circuit="${cn2}" cx="${LX+BW}" cy="${yp}" r="7" stroke="transparent" fill="transparent"/>`; terms.push({cx:LX+BW, cy:yp, circuit:cn2}); } break; }
   case 'meter': inner=`<rect class="sel-r" x="-35" y="-48" width="70" height="96" fill="${bg}" stroke="${c}" stroke-width="2" rx="1"/><text x="0" y="5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="${c}" font-family="Barlow Condensed,sans-serif" font-weight="700" class="bmpt-txt">${el.bmptText||''}</text>` + td(0,-48) + td(0,48); break;
   case 'stalp_se4': inner=`<rect class="sel-r" x="-22" y="-22" width="44" height="44" fill="${bg}" stroke="${c}" stroke-width="2.5"/>` + td(-22,-13) + td(-22,0) + td(-22,13) + td(22,-13) + td(22,0) + td(22,13) + td(-13,-22) + td(0,-22) + td(13,-22) + td(-13,22) + td(0,22) + td(13,22); break;
@@ -283,6 +349,7 @@ export function symW(el) {
   if (t === 'circle') return (typeof el !== 'string' && el.r) ? el.r * 2 : 100;
   if (t === 'ptab_mono') { const n = (typeof el !== 'string' && el.celule) ? el.celule.length : 4; return n * 72 + 40; }
   if (t === 'trafo') return 110; if (t === 'firida_e2_4') return 140; if (t === 'firida_e3_4') return 180; if (t === 'firida_e3_0') return 180; if (t === 'firida_e2_4_det') return 250;
+  if (t === 'firida_gen') { const n = typeof el !== 'string' ? Math.max(el.inputs||2, el.outputs||4) : 4; return n * 60 + 40; }
   if (t.startsWith('cd')) return 130; if (t === 'meter') return 70; if (t === 'stalp_cs') return 64; if (t.startsWith('stalp_')) return 48;
   if (t === 'separator') return 104; if (t === 'separator_mt') return 108; if (t === 'manson') return 76; if (t === 'priza_pamant') return 50;
   if (t === 'bara_mt') return 220; if (t === 'celula_linie_mt') return 70; if (t === 'celula_trafo_mt') return 80;
@@ -296,7 +363,7 @@ export function symH(el) {
   if (t === 'rect') return (typeof el !== 'string' && el.height) ? el.height : 100;
   if (t === 'circle') return (typeof el !== 'string' && el.r) ? el.r * 2 : 100;
   if (t === 'ptab_mono') return 262;
-  if (t === 'trafo') return 100; if (t === 'firida_e2_4') return 180; if (t === 'firida_e3_4') return 180; if (t === 'firida_e3_0') return 95; if (t === 'firida_e2_4_det') return 280;
+  if (t === 'trafo') return 100; if (t === 'firida_e2_4') return 180; if (t === 'firida_e3_4') return 180; if (t === 'firida_e3_0') return 95; if (t === 'firida_e2_4_det') return 280; if (t === 'firida_gen') return 280;
   if (t.startsWith('cd')) { const n = parseInt(t.replace('cd', '')); return n * 34 + 24; }
   if (t === 'meter') return 96; if (t.startsWith('stalp_')) return 48;
   if (t === 'separator') return 48; if (t === 'separator_mt') return 52; if (t === 'manson') return 44; if (t === 'priza_pamant') return 64;

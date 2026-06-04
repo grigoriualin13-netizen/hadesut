@@ -328,6 +328,7 @@
       firida_e3_4: "FG",
       firida_e3_0: "FG",
       firida_e2_4_det: "FG",
+      firida_gen: "FG",
       cd4: "CD",
       cd5: "CD",
       cd8: "CD",
@@ -584,6 +585,88 @@
         inner += `<line x1="${peX2 - 2}" y1="${peY + 15}" x2="${peX2 + 2}" y2="${peY + 15}" stroke="${c}" stroke-width="1.5"/>`;
         break;
       }
+      case "firida_gen": {
+        const nIn = el.inputs || 2;
+        const nOut = el.outputs || 4;
+        const BW = Math.max(nIn, nOut) * 60 + 40;
+        const BH = 280, BX = -BW / 2, BY = -BH / 2;
+        const f = el.fuses || new Array(nIn + nOut).fill(true);
+        const _td = (lcx, lcy) => {
+          terms.push({ cx: lcx, cy: lcy });
+          return `<circle class="td" data-lcx="${lcx}" data-lcy="${lcy}" cx="${lcx}" cy="${lcy}" r="8" stroke="transparent" fill="transparent"/>`;
+        };
+        const _sep = (tx, cy, fw, fh, state) => {
+          const rx = tx - fw / 2, ry = cy - fh / 2, sp = fw + fh - 8;
+          const ks = [rx + ry + 4 + sp / 4, rx + ry + 4 + sp / 2, rx + ry + 4 + 3 * sp / 4];
+          let h = `<rect x="${rx}" y="${ry}" width="${fw}" height="${fh}" fill="${bg}" stroke="${c}" stroke-width="1.5"/>`;
+          if (state !== false) {
+            ks.forEach((k) => {
+              let x1 = Math.max(rx + 2, k - (ry + fh - 2)), y1 = k - x1;
+              if (y1 > ry + fh - 2) {
+                y1 = ry + fh - 2;
+                x1 = k - y1;
+              }
+              let x2 = Math.min(rx + fw - 2, k - (ry + 2)), y2 = k - x2;
+              if (y2 < ry + 2) {
+                y2 = ry + 2;
+                x2 = k - y2;
+              }
+              h += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${c}" stroke-width="1.1"/>`;
+            });
+          } else {
+            h += `<line x1="${rx + 2}" y1="${ry + 2}" x2="${rx + fw - 2}" y2="${ry + fh - 2}" stroke="#ff3d71" stroke-width="1.5"/>`;
+            h += `<line x1="${rx + fw - 2}" y1="${ry + 2}" x2="${rx + 2}" y2="${ry + fh - 2}" stroke="#ff3d71" stroke-width="1.5"/>`;
+          }
+          return h;
+        };
+        const _lbl = (tx, cy, r) => `<text x="${tx}" y="${cy + 23}" transform="rotate(-90,${tx},${cy})" text-anchor="middle" font-size="7" fill="${c}" font-family="JetBrains Mono,monospace">Sep_JT_F[V]</text><text x="${tx}" y="${cy + 33}" transform="rotate(-90,${tx},${cy})" text-anchor="middle" font-size="7" fill="${c}" font-family="JetBrains Mono,monospace">[${r}]</text>`;
+        inner = `<rect class="sel-r" x="${BX}" y="${BY}" width="${BW}" height="${BH}" fill="${bg}" stroke="${c}" stroke-width="2"/>`;
+        const busY = 0;
+        inner += `<line x1="${BX + 5}" y1="${busY}" x2="${BX + BW - 5}" y2="${busY}" stroke="${c}" stroke-width="4"/>`;
+        const inFW = 16, inFH = 32, inCY = -94;
+        for (let i = 0; i < nIn; i++) {
+          const tx = BX + BW / (nIn + 1) * (i + 1);
+          inner += `<line x1="${tx}" y1="${BY}" x2="${tx}" y2="${inCY - inFH / 2}" stroke="${c}" stroke-width="2"/>`;
+          inner += _sep(tx, inCY, inFW, inFH, f[i]);
+          inner += `<line x1="${tx}" y1="${inCY + inFH / 2}" x2="${tx}" y2="${busY}" stroke="${c}" stroke-width="2"/>`;
+          inner += `<circle cx="${tx}" cy="${busY}" r="5" fill="${c}"/>`;
+          inner += _lbl(tx, inCY, "NH1-50A");
+          inner += _td(tx, BY);
+        }
+        const outFW = 14, outFH = 32, outCY = 56;
+        for (let i = 0; i < nOut; i++) {
+          const tx = BX + BW / (nOut + 1) * (i + 1);
+          const ms = f[nIn + i] !== false ? c : "#ff3d71";
+          inner += `<circle cx="${tx}" cy="${busY}" r="5" fill="${c}"/>`;
+          inner += `<line x1="${tx}" y1="${busY}" x2="${tx}" y2="${outCY - outFH / 2}" stroke="${c}" stroke-width="2"/>`;
+          inner += _sep(tx, outCY, outFW, outFH, f[nIn + i]);
+          inner += `<line x1="${tx}" y1="${outCY + outFH / 2}" x2="${tx}" y2="${BY + BH}" stroke="${c}" stroke-width="2"/>`;
+          inner += `<circle cx="${tx}" cy="${BY + BH}" r="4" fill="${c}"/>`;
+          inner += `<text x="${tx - 4}" y="${BY + BH - 14}" transform="rotate(-90 ${tx - 4} ${BY + BH - 14})" font-size="8" fill="${ms}">C${i + 1}</text>`;
+          inner += _lbl(tx, outCY, "NH1-50A");
+          inner += _td(tx, BY + BH);
+        }
+        if (nOut > 0) {
+          const peY = 14;
+          const outXs = Array.from({ length: nOut }, (_, i) => BX + BW / (nOut + 1) * (i + 1));
+          const peX1 = outXs[0] - outFW / 2 - 13, peX2 = BX + BW - 10;
+          inner += `<line x1="${peX1}" y1="${peY}" x2="${peX2}" y2="${peY}" stroke="${c}" stroke-width="1.5"/>`;
+          inner += `<text x="${peX1 - 2}" y="${peY + 3}" text-anchor="end" font-size="7" fill="${c}" font-family="JetBrains Mono,monospace">PE</text>`;
+          outXs.forEach((tx) => {
+            const sepLX = tx - outFW / 2 - 5, sepBotY = outCY + outFH / 2, vertEndY = sepBotY + 40;
+            const rise = Math.round((tx - sepLX) * Math.tan(30 * Math.PI / 180));
+            inner += `<circle cx="${sepLX}" cy="${peY}" r="3" fill="${c}"/>`;
+            inner += `<line x1="${sepLX}" y1="${peY}" x2="${sepLX}" y2="${vertEndY}" stroke="${c}" stroke-width="1.5"/>`;
+            inner += `<line x1="${sepLX}" y1="${vertEndY}" x2="${tx}" y2="${vertEndY + rise}" stroke="${c}" stroke-width="1.5"/>`;
+            inner += `<circle cx="${tx}" cy="${vertEndY + rise}" r="3" fill="${c}"/>`;
+          });
+          inner += `<line x1="${peX2}" y1="${peY}" x2="${peX2}" y2="${peY + 7}" stroke="${c}" stroke-width="1.5"/>`;
+          inner += `<line x1="${peX2 - 8}" y1="${peY + 7}" x2="${peX2 + 8}" y2="${peY + 7}" stroke="${c}" stroke-width="1.5"/>`;
+          inner += `<line x1="${peX2 - 5}" y1="${peY + 11}" x2="${peX2 + 5}" y2="${peY + 11}" stroke="${c}" stroke-width="1.5"/>`;
+          inner += `<line x1="${peX2 - 2}" y1="${peY + 15}" x2="${peX2 + 2}" y2="${peY + 15}" stroke="${c}" stroke-width="1.5"/>`;
+        }
+        break;
+      }
       case "cd4":
       case "cd5":
       case "cd8": {
@@ -816,6 +899,10 @@
     if (t === "firida_e3_4") return 180;
     if (t === "firida_e3_0") return 180;
     if (t === "firida_e2_4_det") return 250;
+    if (t === "firida_gen") {
+      const n = typeof el !== "string" ? Math.max(el.inputs || 2, el.outputs || 4) : 4;
+      return n * 60 + 40;
+    }
     if (t.startsWith("cd")) return 130;
     if (t === "meter") return 70;
     if (t === "stalp_cs") return 64;
@@ -842,6 +929,7 @@
     if (t === "firida_e3_4") return 180;
     if (t === "firida_e3_0") return 95;
     if (t === "firida_e2_4_det") return 280;
+    if (t === "firida_gen") return 280;
     if (t.startsWith("cd")) {
       const n = parseInt(t.replace("cd", ""));
       return n * 34 + 24;
@@ -3852,11 +3940,39 @@ ${(r * 0.1).toFixed(4)}
         } else if (el.type === "firida_e3_0") {
           numIn = 3;
           numOut = 0;
+        } else if (el.type === "firida_e2_4_det") {
+          numIn = 2;
+          numOut = 4;
+        } else if (el.type === "firida_gen") {
+          numIn = el.inputs || 2;
+          numOut = el.outputs || 4;
+        }
+        const btnS = "padding:2px 10px;border-radius:4px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;font-size:13px;font-weight:700;line-height:1";
+        let counterHtml = "";
+        if (el.type === "firida_gen") {
+          counterHtml = `<div style="display:flex;flex-direction:column;gap:6px;padding:8px 6px 4px">
+          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg2);padding:5px 8px;border-radius:5px;border:1px solid var(--border2)">
+            <span style="font-size:9px;font-weight:700;color:var(--text2)">Intr\u0103ri</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <button style="${btnS}" onclick="adjustFiridaCircuits(${el.id},'in',-1)">\u2212</button>
+              <span style="font-size:12px;font-weight:800;color:var(--accent);min-width:16px;text-align:center">${numIn}</span>
+              <button style="${btnS}" onclick="adjustFiridaCircuits(${el.id},'in',1)">+</button>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg2);padding:5px 8px;border-radius:5px;border:1px solid var(--border2)">
+            <span style="font-size:9px;font-weight:700;color:var(--text2)">Ie\u0219iri</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <button style="${btnS}" onclick="adjustFiridaCircuits(${el.id},'out',-1)">\u2212</button>
+              <span style="font-size:12px;font-weight:800;color:var(--accent);min-width:16px;text-align:center">${numOut}</span>
+              <button style="${btnS}" onclick="adjustFiridaCircuits(${el.id},'out',1)">+</button>
+            </div>
+          </div>
+        </div>`;
         }
         let inpHtml = "", outpHtml = "";
         for (let i = 0; i < numIn; i++) inpHtml += `<label style="display:flex;justify-content:space-between;align-items:center;background:var(--bg2);padding:4px 6px;border-radius:4px;border:1px solid var(--border2);cursor:pointer"><span style="font-size:9px;color:var(--text2)">${numIn === 2 ? i === 0 ? "Intrare St" : "Intrare Dr" : `Intrare ${i + 1}`}</span><input type="checkbox" onchange="toggleFuse(${el.id}, ${i}, this.checked)" ${f[i] !== false ? "checked" : ""}></label>`;
         for (let i = 0; i < numOut; i++) outpHtml += `<label style="display:flex;justify-content:space-between;align-items:center;background:var(--bg2);padding:4px 6px;border-radius:4px;border:1px solid var(--border2);cursor:pointer"><span style="font-size:9px;color:var(--text2)">Plecare ${i + 1}</span><input type="checkbox" onchange="toggleFuse(${el.id}, ${numIn + i}, this.checked)" ${f[numIn + i] !== false ? "checked" : ""}></label>`;
-        firidaHtml = `<div class="psec"><div class="psh">\u{1F50C} Siguran\u021Be Firid\u0103</div><div style="padding:6px;display:flex;flex-direction:column;gap:4px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${inpHtml}</div>${numOut > 0 ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${outpHtml}</div>` : ""}</div></div>`;
+        firidaHtml = `<div class="psec"><div class="psh">\u{1F50C} Siguran\u021Be Firid\u0103</div>${counterHtml}<div style="padding:6px;display:flex;flex-direction:column;gap:4px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${inpHtml}</div>${numOut > 0 ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${outpHtml}</div>` : ""}</div></div>`;
       } else if (el.type === "ptab_1t") {
         const f = el.fuses || new Array(10).fill(true);
         let inpHtml = `<label class="flbl">MT Trafo <input type="checkbox" onchange="toggleFuse(${el.id}, 0, this.checked)" ${f[0] !== false ? "checked" : ""}></label><label class="flbl">JT General <input type="checkbox" onchange="toggleFuse(${el.id}, 1, this.checked)" ${f[1] !== false ? "checked" : ""}></label>`;
@@ -5340,6 +5456,29 @@ ${(r * 0.1).toFixed(4)}
     });
     svg += `</g>`;
     return { svg, w: tableW, h: totalH > 0 ? totalH - 15 : 0 };
+  }
+  function adjustFiridaCircuits(elId, type, delta) {
+    const el = S.EL.find((e) => e.id === elId);
+    if (!el || el.type !== "firida_gen") return;
+    const nIn = el.inputs || 2;
+    const nOut = el.outputs || 4;
+    if (!el.fuses) el.fuses = new Array(nIn + nOut).fill(true);
+    if (type === "in" && delta > 0 && nIn < 6) {
+      el.fuses.splice(nIn, 0, true);
+      el.inputs = nIn + 1;
+    } else if (type === "in" && delta < 0 && nIn > 1) {
+      el.fuses.splice(nIn - 1, 1);
+      el.inputs = nIn - 1;
+    } else if (type === "out" && delta > 0 && nOut < 8) {
+      el.fuses.push(true);
+      el.outputs = nOut + 1;
+    } else if (type === "out" && delta < 0 && nOut > 0) {
+      el.fuses.splice(nIn + nOut - 1, 1);
+      el.outputs = nOut - 1;
+    } else return;
+    saveState("ajustare circuite firid\u0103");
+    render();
+    updateProps();
   }
   var init_ui = __esm({
     "src/ui.js"() {
@@ -11649,6 +11788,7 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
   window.addDerivRow = addDerivRow;
   window.runGenerator = runGenerator;
   window.generateVDTableSVG = generateVDTableSVG;
+  window.adjustFiridaCircuits = adjustFiridaCircuits;
   window.save = save;
   window.saveAsNew = saveAsNew;
   window.exportJSON = exportJSON;
