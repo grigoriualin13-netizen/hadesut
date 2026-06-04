@@ -139,7 +139,7 @@ export function sym(el) {
       // cerculet pe bara PE, la marginea stanga a separatorului
       const sepLX = tx - outFW/2 - 5;          // tx-12, marginea stânga separator + 5px
       const sepBotY = outCY + outFH/2;         // 72, baza separator
-      const vertEndY = sepBotY + 20;           // 92, sub separator (mai jos)
+      const vertEndY = sepBotY + 40;           // 112, sub separator (mai jos)
       const horiz = tx - sepLX;               // 12
       const rise = horiz * Math.tan(30 * Math.PI / 180); // ~7
       const joinY = Math.round(vertEndY - rise); // ~85, punct pe linia plecarii

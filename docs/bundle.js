@@ -569,7 +569,7 @@
         [-90, -30, 30, 90].forEach((tx) => {
           const sepLX = tx - outFW / 2 - 5;
           const sepBotY = outCY + outFH / 2;
-          const vertEndY = sepBotY + 20;
+          const vertEndY = sepBotY + 40;
           const horiz = tx - sepLX;
           const rise = horiz * Math.tan(30 * Math.PI / 180);
           const joinY = Math.round(vertEndY - rise);
