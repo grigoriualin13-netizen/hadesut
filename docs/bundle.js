@@ -3795,6 +3795,18 @@ ${(r * 0.1).toFixed(4)}
         });
         html += `</div></div>`;
       }
+      if (S.multiSel.size >= 2) {
+        html += `<div class="psec"><div class="psh">\u{1F4D0} Distribuie Egal</div><div style="padding:6px;display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="font-size:9px;color:var(--text2);white-space:nowrap">Distan\u021B\u0103 px:</span>
+          <input type="number" id="dist-spacing" class="pi" style="width:70px" placeholder="auto" min="10">
+        </div>
+        <div style="display:flex;gap:4px">
+          <button onclick="distributeElements('x',+document.getElementById('dist-spacing').value||0)" style="flex:1;padding:5px;border-radius:5px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;font-size:10px;font-weight:700;font-family:'Barlow Condensed',sans-serif">\u2194 Orizontal</button>
+          <button onclick="distributeElements('y',+document.getElementById('dist-spacing').value||0)" style="flex:1;padding:5px;border-radius:5px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;font-size:10px;font-weight:700;font-family:'Barlow Condensed',sans-serif">\u2195 Vertical</button>
+        </div>
+      </div></div>`;
+      }
       html += `<div style="display:flex;gap:5px"><button class="bprop bdup" onclick="copyEl();pasteEl()">\u29C9 Duplic\u0103 Toate</button><button class="bprop bdel" onclick="delSel()">\u{1F5D1} \u0218terge Toate</button></div>`;
       pb.innerHTML = html;
       if (selCns.length > 0) {
@@ -5465,6 +5477,35 @@ ${(r * 0.1).toFixed(4)}
     });
     svg += `</g>`;
     return { svg, w: tableW, h: totalH > 0 ? totalH - 15 : 0 };
+  }
+  function distributeElements(axis, spacing) {
+    const els = S.EL.filter((e) => S.multiSel.has(e.id));
+    if (els.length < 2) {
+      toast("Selecteaz\u0103 cel pu\u021Bin 2 elemente.");
+      return;
+    }
+    saveState("distribuire egal\u0103");
+    els.sort((a, b) => axis === "x" ? a.x - b.x : a.y - b.y);
+    if (spacing > 0) {
+      els.forEach((el, i) => {
+        if (axis === "x") el.x = Math.round(els[0].x + spacing * i);
+        else el.y = Math.round(els[0].y + spacing * i);
+      });
+    } else {
+      if (els.length < 3) {
+        toast("F\u0103r\u0103 distan\u021B\u0103 fix\u0103, selecteaz\u0103 cel pu\u021Bin 3 elemente.");
+        return;
+      }
+      const first = axis === "x" ? els[0].x : els[0].y;
+      const last = axis === "x" ? els[els.length - 1].x : els[els.length - 1].y;
+      const step = (last - first) / (els.length - 1);
+      els.forEach((el, i) => {
+        if (axis === "x") el.x = Math.round(first + step * i);
+        else el.y = Math.round(first + step * i);
+      });
+    }
+    els.forEach((el) => updateConnectedCables(el));
+    render();
   }
   function setFiridaRating(elId, idx, value) {
     const el = S.EL.find((e) => e.id === elId);
@@ -11807,6 +11848,7 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
   window.generateVDTableSVG = generateVDTableSVG;
   window.adjustFiridaCircuits = adjustFiridaCircuits;
   window.setFiridaRating = setFiridaRating;
+  window.distributeElements = distributeElements;
   window.save = save;
   window.saveAsNew = saveAsNew;
   window.exportJSON = exportJSON;

@@ -75,6 +75,18 @@ export function updateProps() {
       html += `</div></div>`;
     }
 
+    if (S.multiSel.size >= 2) {
+      html += `<div class="psec"><div class="psh">📐 Distribuie Egal</div><div style="padding:6px;display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="font-size:9px;color:var(--text2);white-space:nowrap">Distanță px:</span>
+          <input type="number" id="dist-spacing" class="pi" style="width:70px" placeholder="auto" min="10">
+        </div>
+        <div style="display:flex;gap:4px">
+          <button onclick="distributeElements('x',+document.getElementById('dist-spacing').value||0)" style="flex:1;padding:5px;border-radius:5px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;font-size:10px;font-weight:700;font-family:'Barlow Condensed',sans-serif">↔ Orizontal</button>
+          <button onclick="distributeElements('y',+document.getElementById('dist-spacing').value||0)" style="flex:1;padding:5px;border-radius:5px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;font-size:10px;font-weight:700;font-family:'Barlow Condensed',sans-serif">↕ Vertical</button>
+        </div>
+      </div></div>`;
+    }
     html += `<div style="display:flex;gap:5px"><button class="bprop bdup" onclick="copyEl();pasteEl()">⧉ Duplică Toate</button><button class="bprop bdel" onclick="delSel()">🗑 Șterge Toate</button></div>`;
     pb.innerHTML = html;
 
@@ -1512,6 +1524,24 @@ export function generateVDTableSVG(startX, startY) {
     svg += `</g>`; totalH += tableH + 15;
   });
   svg += `</g>`; return { svg, w: tableW, h: totalH > 0 ? totalH - 15 : 0 };
+}
+
+export function distributeElements(axis, spacing) {
+  const els = S.EL.filter(e => S.multiSel.has(e.id));
+  if (els.length < 2) { toast('Selectează cel puțin 2 elemente.'); return; }
+  saveState('distribuire egală');
+  els.sort((a, b) => axis === 'x' ? a.x - b.x : a.y - b.y);
+  if (spacing > 0) {
+    els.forEach((el, i) => { if (axis === 'x') el.x = Math.round(els[0].x + spacing * i); else el.y = Math.round(els[0].y + spacing * i); });
+  } else {
+    if (els.length < 3) { toast('Fără distanță fixă, selectează cel puțin 3 elemente.'); return; }
+    const first = axis === 'x' ? els[0].x : els[0].y;
+    const last  = axis === 'x' ? els[els.length-1].x : els[els.length-1].y;
+    const step  = (last - first) / (els.length - 1);
+    els.forEach((el, i) => { if (axis === 'x') el.x = Math.round(first + step * i); else el.y = Math.round(first + step * i); });
+  }
+  els.forEach(el => updateConnectedCables(el));
+  render();
 }
 
 export function setFiridaRating(elId, idx, value) {
