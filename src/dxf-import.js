@@ -101,7 +101,7 @@ function parseDxf(text) {
         section = (sp?.code === 2) ? sp.val : null;
       } else if (val === 'ENDSEC') {
         section = null;
-      } else if (section === 'ENTITIES' || section === 'BLOCKS') {
+      } else if (section === 'ENTITIES') {
         if      (val === 'LINE')       etype = 'LINE';
         else if (val === 'LWPOLYLINE') etype = 'POLY';
         else if (val === 'CIRCLE')     etype = 'CIRCLE';
@@ -267,7 +267,7 @@ export function loadDxf(inp) {
       // Collect unique layer names for the tooltip/info
       const layerSet = new Set(allEntities.map(e => e.layer));
 
-      S.dxfData = { allEntities, layerFilter: '', selectedLayers: new Set(), bcx: 0, bcy: 0, bscale, extW, extH, opacity: 0.65 };
+      S.dxfData = { allEntities, layerFilter: '', selectedLayers: new Set(), bcx: 0, bcy: 0, bscale, bscaleBase: bscale, extW, extH, opacity: 0.65 };
 
       renderDxfLayer();
 
@@ -457,7 +457,8 @@ export function setDxfOpacity(val) {
 // factorPct: percentage relative to nominal (100 = default S.pxPerMeter/1000)
 export function setDxfScale(factorPct) {
   if (!S.dxfData) return;
-  S.dxfData.bscale = (S.pxPerMeter / 1000) * (parseFloat(factorPct) / 100);
+  const base = S.dxfData.bscaleBase ?? (S.pxPerMeter / 1000);
+  S.dxfData.bscale = base * (parseFloat(factorPct) / 100);
   renderDxfLayer();
 }
 
