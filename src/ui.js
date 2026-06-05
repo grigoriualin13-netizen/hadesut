@@ -135,7 +135,7 @@ export function updateProps() {
             cn.oldTipRetea = cn.tipRetea || 'Trifazat';
           }
           cn.stare = v; if (colorMap[v]) cn.color = colorMap[v];
-          if (v === 'existent' || v === 'intarire_nou') { if (v === 'existent') cn.color = '#ef4444'; delete cn.oldTipConductor; delete cn.oldSectiune; delete cn.oldTipRetea; }
+          if (v === 'existent' || v === 'intarire_nou') { if (v === 'existent') cn.color = null; delete cn.oldTipConductor; delete cn.oldSectiune; delete cn.oldTipRetea; }
         }
       });
       render(); updateProps();
@@ -520,6 +520,7 @@ export function updateProps() {
       else if (v === 'intarire_nou') el.color = '#3b82f6';
       else if (v === 'coexistenta') el.color = '#eab308';
       else if (v === 'demontat') el.color = '#6b7280';
+      else if (v === 'existent') el.color = null;
       if (v !== 'coexistenta') {
         S.CN.forEach(cn => {
           if (cn.fromElId === el.id || cn.toElId === el.id) {
@@ -718,7 +719,7 @@ export function updateProps() {
       else if (v === 'intarire_inlocuire') cn.color = '#a855f7';
       else if (v === 'intarire_nou') cn.color = '#3b82f6';
       else if (v === 'demontat') cn.color = '#6b7280';
-      else if (v === 'existent') { cn.color = '#ef4444'; delete cn.oldTipConductor; delete cn.oldSectiune; delete cn.oldTipRetea; }
+      else if (v === 'existent') { cn.color = null; delete cn.oldTipConductor; delete cn.oldSectiune; delete cn.oldTipRetea; }
       render(); updateProps();
     });
     document.getElementById('p-cgroup')?.addEventListener('input', ev => updSel('circuitGroup', ev.target.value));

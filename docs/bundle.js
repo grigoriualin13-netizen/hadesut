@@ -3917,7 +3917,7 @@ ${(r * 0.1).toFixed(4)}
             cn2.stare = v;
             if (colorMap[v]) cn2.color = colorMap[v];
             if (v === "existent" || v === "intarire_nou") {
-              if (v === "existent") cn2.color = "#ef4444";
+              if (v === "existent") cn2.color = null;
               delete cn2.oldTipConductor;
               delete cn2.oldSectiune;
               delete cn2.oldTipRetea;
@@ -4313,6 +4313,7 @@ ${(r * 0.1).toFixed(4)}
         else if (v === "intarire_nou") el.color = "#3b82f6";
         else if (v === "coexistenta") el.color = "#eab308";
         else if (v === "demontat") el.color = "#6b7280";
+        else if (v === "existent") el.color = null;
         if (v !== "coexistenta") {
           S.CN.forEach((cn2) => {
             if (cn2.fromElId === el.id || cn2.toElId === el.id) {
@@ -4555,7 +4556,7 @@ ${(r * 0.1).toFixed(4)}
         else if (v === "intarire_nou") cn.color = "#3b82f6";
         else if (v === "demontat") cn.color = "#6b7280";
         else if (v === "existent") {
-          cn.color = "#ef4444";
+          cn.color = null;
           delete cn.oldTipConductor;
           delete cn.oldSectiune;
           delete cn.oldTipRetea;
@@ -6462,7 +6463,7 @@ ${(r * 0.1).toFixed(4)}
     S.CN.forEach((cn) => {
       const reCN = cn;
       const renderPath = cn.path;
-      const isSel = cn.id === S.sel || S.multiSel.has(cn.id), col = reCN.color || "#ef4444", sw = reCN.strokeWidth || 2, dash = reCN.lineType === "dashed" ? 'stroke-dasharray="10,5"' : "";
+      const isSel = cn.id === S.sel || S.multiSel.has(cn.id), col = reCN.color || "#555", sw = reCN.strokeWidth || 2, dash = reCN.lineType === "dashed" ? 'stroke-dasharray="10,5"' : "";
       const rp = reCN.faza ? _mtOffsetPath(renderPath, reCN.faza, reCN.fromElId, reCN.toElId) : renderPath;
       let dStr = "", JUMP_R = 6;
       if (rp.length > 0) {

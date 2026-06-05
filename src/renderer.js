@@ -248,7 +248,7 @@ export function render() {
   S.CN.forEach(cn => {
     const reCN = cn;
     const renderPath = cn.path;
-    const isSel = cn.id === S.sel || S.multiSel.has(cn.id), col = reCN.color || '#ef4444', sw = reCN.strokeWidth || 2, dash = reCN.lineType === 'dashed' ? 'stroke-dasharray="10,5"' : '';
+    const isSel = cn.id === S.sel || S.multiSel.has(cn.id), col = reCN.color || '#555', sw = reCN.strokeWidth || 2, dash = reCN.lineType === 'dashed' ? 'stroke-dasharray="10,5"' : '';
     const rp = reCN.faza ? _mtOffsetPath(renderPath, reCN.faza, reCN.fromElId, reCN.toElId) : renderPath;
     let dStr = '', JUMP_R = 6;
     if (rp.length > 0) {
