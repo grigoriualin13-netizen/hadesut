@@ -115,7 +115,7 @@ export function sym(el) {
       inner+=nhSep(tx,inCY,inFW,inFH,f[i]);
       inner+=`<line x1="${tx}" y1="${inCY+inFH/2}" x2="${tx}" y2="${busY}" stroke="${c}" stroke-width="2"/>`;
       inner+=`<circle cx="${tx}" cy="${busY}" r="5" fill="${c}"/>`;
-      inner+=sepLabel(tx,inCY,'NH1-50A');
+      inner+=sepLabel(tx,inCY,'NH4-50A');
       inner+=tdF(tx,BY);
     });
     // ─── 4 output separators (bottom) ───
@@ -128,7 +128,7 @@ export function sym(el) {
       inner+=`<line x1="${tx}" y1="${outCY+outFH/2}" x2="${tx}" y2="${BY+BH}" stroke="${c}" stroke-width="2"/>`;
       inner+=`<circle cx="${tx}" cy="${BY+BH}" r="4" fill="${c}"/>`;
       inner+=`<text x="${tx-4}" y="${BY+BH-14}" transform="rotate(-90 ${tx-4} ${BY+BH-14})" font-size="8" fill="${ms}">C${i+1}</text>`;
-      inner+=sepLabel(tx,outCY,'NH1-50A');
+      inner+=sepLabel(tx,outCY,'NH4-50A');
       inner+=tdF(tx,BY+BH);
     });
     // ─── Bară PE + simbol împământare IEC ───
@@ -185,7 +185,7 @@ export function sym(el) {
       inner+=_sep(tx,inCY,inFW,inFH,f[i]);
       inner+=`<line x1="${tx}" y1="${inCY+inFH/2}" x2="${tx}" y2="${busY}" stroke="${c}" stroke-width="2"/>`;
       inner+=`<circle cx="${tx}" cy="${busY}" r="5" fill="${c}"/>`;
-      inner+=_lbl(tx,inCY,(el.ratings||[])[i]||'NH1-50A');
+      inner+=_lbl(tx,inCY,(el.ratings||[])[i]||'NH4-50A');
       inner+=_td(tx,BY);
     }
     // ieșiri
@@ -199,7 +199,7 @@ export function sym(el) {
       inner+=`<line x1="${tx}" y1="${outCY+outFH/2}" x2="${tx}" y2="${BY+BH}" stroke="${c}" stroke-width="2"/>`;
       inner+=`<circle cx="${tx}" cy="${BY+BH}" r="4" fill="${c}"/>`;
       inner+=`<text x="${tx-4}" y="${BY+BH-14}" transform="rotate(-90 ${tx-4} ${BY+BH-14})" font-size="8" fill="${ms}">C${i+1}</text>`;
-      inner+=_lbl(tx,outCY,(el.ratings||[])[nIn+i]||'NH1-50A');
+      inner+=_lbl(tx,outCY,(el.ratings||[])[nIn+i]||'NH4-50A');
       inner+=_td(tx,BY+BH);
     }
     // bară PE + bypass + simbol IEC
