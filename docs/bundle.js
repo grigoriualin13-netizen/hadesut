@@ -6012,7 +6012,7 @@ ${(r * 0.1).toFixed(4)}
       path: [...S.connPts],
       label: cableName,
       length: autoLenM,
-      color: isMT ? FAZA_COL[_pendingFaza] : "#ef4444",
+      color: isMT ? FAZA_COL[_pendingFaza] : null,
       fillColor: "none",
       lineType: "solid",
       strokeWidth: isMT ? 2.5 : 2,

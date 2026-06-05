@@ -279,7 +279,7 @@ export function finalConn() {
   S.CN.push({
     id: uid(), fromElId: S.connFromEl, fromTerm: S.connFromTerm, toElId: S.connToEl, toTerm: S.connToTerm,
     path: [...S.connPts], label: cableName, length: autoLenM,
-    color: isMT ? FAZA_COL[_pendingFaza] : '#ef4444', fillColor: 'none',
+    color: isMT ? FAZA_COL[_pendingFaza] : null, fillColor: 'none',
     lineType: 'solid', strokeWidth: isMT ? 2.5 : 2,
     fromCircuit: S.connFromCircuit, toCircuit: S.connToCircuit,
     tipConductor: isMT ? 'OL-AL'    : 'Clasic Al',
