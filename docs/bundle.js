@@ -1121,6 +1121,17 @@
     let x0, y0, x1, y1, cx, cy, r, sa, ea;
     let verts = [];
     let closed = false;
+    let collPoly = null;
+    let cvx, cvy;
+    function flushCollPoly() {
+      if (!collPoly) return;
+      if (cvx != null) {
+        collPoly.verts.push({ x: cvx, y: cvy ?? 0 });
+        cvx = cvy = void 0;
+      }
+      if (collPoly.verts.length >= 2) entities.push({ t: "P", layer: collPoly.layer, verts: collPoly.verts, closed: collPoly.closed });
+      collPoly = null;
+    }
     function commit() {
       if (!etype) return;
       if (etype === "LINE" && x0 != null && x1 != null) {
@@ -1143,6 +1154,16 @@
       if (!p) break;
       const { code, val } = p;
       if (code === 0) {
+        if (collPoly !== null) {
+          if (cvx != null) {
+            collPoly.verts.push({ x: cvx, y: cvy ?? 0 });
+            cvx = cvy = void 0;
+          }
+          if (val === "VERTEX") continue;
+          if (collPoly.verts.length >= 2) entities.push({ t: "P", layer: collPoly.layer, verts: collPoly.verts, closed: collPoly.closed });
+          collPoly = null;
+          if (val === "SEQEND") continue;
+        }
         commit();
         if (val === "SECTION") {
           const sp = next();
@@ -1154,8 +1175,17 @@
           else if (val === "LWPOLYLINE") etype = "POLY";
           else if (val === "CIRCLE") etype = "CIRCLE";
           else if (val === "ARC") etype = "ARC";
-          else etype = null;
+          else if (val === "POLYLINE") {
+            etype = null;
+            collPoly = { layer: "", verts: [], closed: false };
+            cvx = cvy = void 0;
+          } else etype = null;
         }
+      } else if (collPoly !== null) {
+        if (code === 8) collPoly.layer = val;
+        else if (code === 70) collPoly.closed = (parseInt(val, 10) & 1) !== 0;
+        else if (code === 10) cvx = +val;
+        else if (code === 20) cvy = +val;
       } else if (etype) {
         if (code === 8) {
           layer = val;
@@ -1178,6 +1208,7 @@
       }
     }
     commit();
+    flushCollPoly();
     return entities;
   }
   function pct(arr, p) {

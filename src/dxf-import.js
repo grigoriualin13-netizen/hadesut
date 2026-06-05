@@ -1,4 +1,4 @@
-// DXF vectorial background layer — lightweight parser for LINE/LWPOLYLINE/CIRCLE/ARC
+// DXF vectorial background layer — lightweight parser for LINE/LWPOLYLINE/POLYLINE/CIRCLE/ARC
 // Units: DXF file is in millimetres ($INSUNITS=4), canvas is in px (S.pxPerMeter px/m)
 // Coordinate mapping: svg_x = (dxf_x − cx) * s,  svg_y = −(dxf_y − cy) * s
 // where cx/cy = bbox center of visible entities, s = S.pxPerMeter / 1000
@@ -53,6 +53,17 @@ function parseDxf(text) {
   let verts   = [];
   let closed  = false;
 
+  // Old-style POLYLINE: collects VERTEX sub-entities until SEQEND
+  let collPoly = null; // { layer, verts, closed } while collecting
+  let cvx, cvy;       // current VERTEX coords
+
+  function flushCollPoly() {
+    if (!collPoly) return;
+    if (cvx != null) { collPoly.verts.push({ x: cvx, y: cvy ?? 0 }); cvx = cvy = undefined; }
+    if (collPoly.verts.length >= 2) entities.push({ t: 'P', layer: collPoly.layer, verts: collPoly.verts, closed: collPoly.closed });
+    collPoly = null;
+  }
+
   function commit() {
     if (!etype) return;
     if (etype === 'LINE' && x0 != null && x1 != null) {
@@ -74,6 +85,16 @@ function parseDxf(text) {
     const { code, val } = p;
 
     if (code === 0) {
+      // ── Old-style POLYLINE: flush pending vertex on each new entity ──
+      if (collPoly !== null) {
+        if (cvx != null) { collPoly.verts.push({ x: cvx, y: cvy ?? 0 }); cvx = cvy = undefined; }
+        if (val === 'VERTEX') continue;   // stay in vertex-collecting mode
+        // SEQEND or any other entity terminates the polyline
+        if (collPoly.verts.length >= 2) entities.push({ t: 'P', layer: collPoly.layer, verts: collPoly.verts, closed: collPoly.closed });
+        collPoly = null;
+        if (val === 'SEQEND') continue;   // SEQEND has no useful data
+      }
+
       commit();
       if (val === 'SECTION') {
         const sp = next();
@@ -85,8 +106,15 @@ function parseDxf(text) {
         else if (val === 'LWPOLYLINE') etype = 'POLY';
         else if (val === 'CIRCLE')     etype = 'CIRCLE';
         else if (val === 'ARC')        etype = 'ARC';
+        else if (val === 'POLYLINE')   { etype = null; collPoly = { layer: '', verts: [], closed: false }; cvx = cvy = undefined; }
         else                            etype = null;
       }
+    } else if (collPoly !== null) {
+      // Group codes for POLYLINE header or VERTEX sub-entities
+      if      (code === 8)  collPoly.layer = val;
+      else if (code === 70) collPoly.closed = (parseInt(val, 10) & 1) !== 0;
+      else if (code === 10) cvx = +val;
+      else if (code === 20) cvy = +val;
     } else if (etype) {
       if      (code === 8)  { layer = val; }
       else if (etype === 'LINE') {
@@ -108,6 +136,7 @@ function parseDxf(text) {
     }
   }
   commit();
+  flushCollPoly(); // safety: file ends without SEQEND
 
   return entities;
 }
