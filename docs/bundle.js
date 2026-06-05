@@ -5235,7 +5235,7 @@ ${(r * 0.1).toFixed(4)}
       const tTerms = sym(srcEl).terms, cdTerms = sym(cdEl).terms;
       const tOut = tTerms.reduce((prev, curr) => prev.cx > curr.cx ? prev : curr);
       const cdIn = cdTerms.reduce((prev, curr) => prev.cx < curr.cx ? prev : curr);
-      S.CN.push({ id: uid() + 2, fromElId: srcId, fromTerm: { cx: tOut.cx, cy: tOut.cy }, toElId: distId, toTerm: { cx: cdIn.cx, cy: cdIn.cy }, path: [{ x: -100 + tOut.cx, y: tOut.cy }, { x: currentX + cdIn.cx, y: cdIn.cy }], label: "Racord", length: 15, color: "#ef4444", strokeWidth: 3, lineType: "solid", tipConductor: "Clasic Al", sectiune: 50, tipRetea: "Trifazat" });
+      S.CN.push({ id: uid() + 2, fromElId: srcId, fromTerm: { cx: tOut.cx, cy: tOut.cy }, toElId: distId, toTerm: { cx: cdIn.cx, cy: cdIn.cy }, path: [{ x: -100 + tOut.cx, y: tOut.cy }, { x: currentX + cdIn.cx, y: cdIn.cy }], label: "Racord", length: 15, color: "#555", strokeWidth: 3, lineType: "solid", tipConductor: "Clasic Al", sectiune: 50, tipRetea: "Trifazat" });
       currentX += 100;
     } else if (srcType === "trafo") {
       currentX += 50;
@@ -5327,7 +5327,7 @@ ${(r * 0.1).toFixed(4)}
         const useTipCond = branchTipCond || mainTipCond;
         const useSectiune = branchSectiune || mainSectiune;
         const isCableLES = useTipCond.startsWith("Cablu");
-        S.CN.push({ id: uid() + Math.floor(Math.random() * 1e5), fromElId: prevId, fromTerm: { cx: prevTermOut.cx, cy: prevTermOut.cy }, toElId: stId, toTerm: { cx: stIn.cx, cy: stIn.cy }, path: cPath, label: dLabel, length: isDeriv ? 30 : 40, color: "#ef4444", strokeWidth: isCableLES ? 3 : 2, lineType: isCableLES ? "dashed" : "solid", circuitGroup: `C${circNum}`, fromCircuit: prevId === distId ? circNum : null, tipConductor: useTipCond, sectiune: useSectiune, tipRetea: "Trifazat", putereConc: 0 });
+        S.CN.push({ id: uid() + Math.floor(Math.random() * 1e5), fromElId: prevId, fromTerm: { cx: prevTermOut.cx, cy: prevTermOut.cy }, toElId: stId, toTerm: { cx: stIn.cx, cy: stIn.cy }, path: cPath, label: dLabel, length: isDeriv ? 30 : 40, color: "#555", strokeWidth: isCableLES ? 3 : 2, lineType: isCableLES ? "dashed" : "solid", circuitGroup: `C${circNum}`, fromCircuit: prevId === distId ? circNum : null, tipConductor: useTipCond, sectiune: useSectiune, tipRetea: "Trifazat", putereConc: 0 });
         prevId = stId;
         prevTermOut = stOut;
         if (derivHere.length > 0) {
