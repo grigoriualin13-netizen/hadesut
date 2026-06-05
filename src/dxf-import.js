@@ -3,8 +3,8 @@
 // Coordinate mapping: svg_x = (dxf_x − cx) * s,  svg_y = −(dxf_y − cy) * s
 // where cx/cy = bbox center of visible entities, s = S.pxPerMeter / 1000
 
-import { S }     from './state.js';
-import { toast } from './utils.js';
+import { S }          from './state.js';
+import { toast, applyView } from './utils.js';
 
 // ── Layer style table ─────────────────────────────────────────────────────────
 const LAYER_STYLES = [
@@ -156,10 +156,10 @@ function computeBbox(ents) {
     else if (e.t === 'P') { for (const v of e.verts) { xArr.push(v.x); yArr.push(v.y); } }
     else if (e.t === 'C' || e.t === 'A') { xArr.push(e.cx - e.r, e.cx + e.r); yArr.push(e.cy - e.r, e.cy + e.r); }
   }
-  if (!xArr.length) return { cx: 0, cy: 0 };
+  if (!xArr.length) return { cx: 0, cy: 0, w: 0, h: 0 };
   const xLo = pct(xArr, 0.02), xHi = pct(xArr, 0.98);
   const yLo = pct(yArr, 0.02), yHi = pct(yArr, 0.98);
-  return { cx: (xLo + xHi) / 2, cy: (yLo + yHi) / 2 };
+  return { cx: (xLo + xHi) / 2, cy: (yLo + yHi) / 2, w: xHi - xLo, h: yHi - yLo };
 }
 
 // ── SVG path data for one entity ──────────────────────────────────────────────
@@ -255,13 +255,19 @@ export function loadDxf(inp) {
         return;
       }
 
-      // Scale: DXF in mm, canvas px (S.pxPerMeter px = 1 m = 1000 mm)
-      const bscale = S.pxPerMeter / 1000;
+      // Auto-scale: if DXF extent is huge (e.g. cadastral plan in mm at >5000m span),
+      // the standard scale (1px per mm * S.pxPerMeter/1000) renders sub-pixel — use auto-fit instead.
+      const stdScale = S.pxPerMeter / 1000;
+      const { w: extW, h: extH } = computeBbox(allEntities);
+      const TARGET_PX = 800;
+      const bscale = extW > 0 && Math.max(extW, extH) * stdScale < 50
+        ? TARGET_PX / Math.max(extW, extH)
+        : stdScale;
 
       // Collect unique layer names for the tooltip/info
       const layerSet = new Set(allEntities.map(e => e.layer));
 
-      S.dxfData = { allEntities, layerFilter: '', selectedLayers: new Set(), bcx: 0, bcy: 0, bscale, opacity: 0.65 };
+      S.dxfData = { allEntities, layerFilter: '', selectedLayers: new Set(), bcx: 0, bcy: 0, bscale, extW, extH, opacity: 0.65 };
 
       renderDxfLayer();
 
@@ -352,6 +358,22 @@ function _updateLayerInfo() {
   const n = S.dxfData.selectedLayers.size;
   const total = new Set(S.dxfData.allEntities.map(e => e.layer)).size;
   info.textContent = n > 0 ? `${n}/${total} selectate` : `${total} straturi`;
+}
+
+// ── Fit viewport to DXF extent ────────────────────────────────────────────────
+export function fitDxfToView() {
+  if (!S.dxfData) return;
+  const { bscale, extW, extH } = S.dxfData;
+  if (!extW || !extH) return;
+  const cw = document.getElementById('cw');
+  if (!cw) return;
+  const W = cw.clientWidth, H = cw.clientHeight;
+  const fitS = Math.min((W * 0.85) / (extW * bscale), (H * 0.85) / (extH * bscale));
+  S.view.s = Math.max(0.06, Math.min(14, fitS));
+  S.view.x = W / 2;
+  S.view.y = H / 2;
+  applyView();
+  if (typeof window.render === 'function') window.render();
 }
 
 // ── Clear DXF layer ───────────────────────────────────────────────────────────

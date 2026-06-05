@@ -1232,10 +1232,10 @@
         yArr.push(e.cy - e.r, e.cy + e.r);
       }
     }
-    if (!xArr.length) return { cx: 0, cy: 0 };
+    if (!xArr.length) return { cx: 0, cy: 0, w: 0, h: 0 };
     const xLo = pct(xArr, 0.02), xHi = pct(xArr, 0.98);
     const yLo = pct(yArr, 0.02), yHi = pct(yArr, 0.98);
-    return { cx: (xLo + xHi) / 2, cy: (yLo + yHi) / 2 };
+    return { cx: (xLo + xHi) / 2, cy: (yLo + yHi) / 2, w: xHi - xLo, h: yHi - yLo };
   }
   function entityPath(e, cx, cy, s) {
     const px = (x) => ((x - cx) * s).toFixed(2);
@@ -1319,9 +1319,12 @@
           toast("DXF: nu s-au g\u0103sit entit\u0103\u021Bi geometrice.", "err");
           return;
         }
-        const bscale = S.pxPerMeter / 1e3;
+        const stdScale = S.pxPerMeter / 1e3;
+        const { w: extW, h: extH } = computeBbox(allEntities);
+        const TARGET_PX = 800;
+        const bscale = extW > 0 && Math.max(extW, extH) * stdScale < 50 ? TARGET_PX / Math.max(extW, extH) : stdScale;
         const layerSet = new Set(allEntities.map((e) => e.layer));
-        S.dxfData = { allEntities, layerFilter: "", selectedLayers: /* @__PURE__ */ new Set(), bcx: 0, bcy: 0, bscale, opacity: 0.65 };
+        S.dxfData = { allEntities, layerFilter: "", selectedLayers: /* @__PURE__ */ new Set(), bcx: 0, bcy: 0, bscale, extW, extH, opacity: 0.65 };
         renderDxfLayer();
         toast(`DXF: ${allEntities.length} entit\u0103\u021Bi, ${layerSet.size} straturi.`, "ok");
         const ctrl = document.getElementById("dxf-controls");
@@ -1399,6 +1402,20 @@
     const n = S.dxfData.selectedLayers.size;
     const total = new Set(S.dxfData.allEntities.map((e) => e.layer)).size;
     info.textContent = n > 0 ? `${n}/${total} selectate` : `${total} straturi`;
+  }
+  function fitDxfToView() {
+    if (!S.dxfData) return;
+    const { bscale, extW, extH } = S.dxfData;
+    if (!extW || !extH) return;
+    const cw = document.getElementById("cw");
+    if (!cw) return;
+    const W = cw.clientWidth, H = cw.clientHeight;
+    const fitS = Math.min(W * 0.85 / (extW * bscale), H * 0.85 / (extH * bscale));
+    S.view.s = Math.max(0.06, Math.min(14, fitS));
+    S.view.x = W / 2;
+    S.view.y = H / 2;
+    applyView();
+    if (typeof window.render === "function") window.render();
   }
   function resetDxfSilent() {
     S.dxfData = null;
@@ -11939,6 +11956,7 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
   window.exportProfilSVG = exportProfilSVG;
   window.loadDxf = loadDxf;
   window.clearDxf = clearDxf;
+  window.fitDxfToView = fitDxfToView;
   window.setDxfOpacity = setDxfOpacity;
   window.setDxfScale = setDxfScale;
   window.setDxfFilter = setDxfFilter;

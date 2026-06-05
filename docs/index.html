@@ -895,6 +895,7 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
           <span style="font-size:9px;color:var(--text2);font-weight:700;text-transform:uppercase">Scară %</span>
           <input type="number" id="dxf-scale" min="10" max="1000" step="10" value="100" onchange="setDxfScale(this.value)" style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:3px 6px;color:var(--text);font-size:11px" title="100% = 1mm DXF = 1mm pe schema (scara implicită)">
         </div>
+        <button class="bprop" style="background:rgba(68,153,200,.08);color:#44aacc;border-color:rgba(68,153,200,.25)" onclick="fitDxfToView()" title="Centrează și ajustează zoom-ul pe DXF">⊕ CENTREAZĂ PE DXF</button>
         <button class="bprop bdel" style="background:rgba(68,153,200,.08);color:#44aacc;border-color:rgba(68,153,200,.25)" onclick="clearDxf()">🗑 ȘTERGE STRAT DXF</button>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg2);padding:6px 10px;border-radius:6px;border:1px solid var(--border2)">
