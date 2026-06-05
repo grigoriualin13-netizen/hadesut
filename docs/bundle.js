@@ -1103,6 +1103,15 @@
     }
     return STYLE_DEFAULT;
   }
+  function detectBscale(text) {
+    const m = text.match(/\$INSUNITS[\s\S]{0,30}?\n[ \t]*70[ \t]*\r?\n[ \t]*(\d+)/);
+    const insunits = m ? parseInt(m[1], 10) : 0;
+    const UNIT_TO_M = { 1: 0.0254, 2: 0.3048, 4: 1e-3, 6: 1, 3: 1e-3 * 25.4 };
+    if (UNIT_TO_M[insunits]) return S.pxPerMeter * UNIT_TO_M[insunits];
+    const em = text.match(/\$EXTMAX[\s\S]{0,60}?\n[ \t]*10[ \t]*\r?\n[ \t]*([-\d.e+]+)/);
+    const extX = em ? Math.abs(parseFloat(em[1])) : 0;
+    return extX > 5e4 ? S.pxPerMeter : S.pxPerMeter / 1e3;
+  }
   function parseDxf(text) {
     const lines = text.split(/\r?\n/);
     const N = lines.length;
@@ -1319,13 +1328,12 @@
           toast("DXF: nu s-au g\u0103sit entit\u0103\u021Bi geometrice.", "err");
           return;
         }
-        const stdScale = S.pxPerMeter / 1e3;
+        const bscale = detectBscale(ev.target.result);
         const { w: extW, h: extH } = computeBbox(allEntities);
-        const TARGET_PX = 800;
-        const bscale = extW > 0 && Math.max(extW, extH) * stdScale < 50 ? TARGET_PX / Math.max(extW, extH) : stdScale;
         const layerSet = new Set(allEntities.map((e) => e.layer));
         S.dxfData = { allEntities, layerFilter: "", selectedLayers: /* @__PURE__ */ new Set(), bcx: 0, bcy: 0, bscale, bscaleBase: bscale, extW, extH, opacity: 0.65 };
         renderDxfLayer();
+        fitDxfToView();
         toast(`DXF: ${allEntities.length} entit\u0103\u021Bi, ${layerSet.size} straturi.`, "ok");
         const ctrl = document.getElementById("dxf-controls");
         if (ctrl) ctrl.style.display = "flex";

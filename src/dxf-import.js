@@ -28,6 +28,25 @@ function layerStyle(name) {
   return STYLE_DEFAULT;
 }
 
+// ── DXF header scan (fast regex pass before full parse) ──────────────────────
+// Returns bscale in SVG-px per DXF-unit based on $INSUNITS and coordinate range.
+function detectBscale(text) {
+  // Extract $INSUNITS (group code 70 after the $INSUNITS variable name)
+  const m = text.match(/\$INSUNITS[\s\S]{0,30}?\n[ \t]*70[ \t]*\r?\n[ \t]*(\d+)/);
+  const insunits = m ? parseInt(m[1], 10) : 0;
+
+  // INSUNITS → scale factor relative to metres
+  const UNIT_TO_M = { 1: 0.0254, 2: 0.3048, 4: 0.001, 6: 1, 3: 0.001 * 25.4 };
+  // 1=inch, 2=ft, 3=mil(thousandths), 4=mm, 6=m
+  if (UNIT_TO_M[insunits]) return S.pxPerMeter * UNIT_TO_M[insunits];
+
+  // Unitless (0) or unrecognised: use $EXTMAX to guess unit magnitude
+  const em = text.match(/\$EXTMAX[\s\S]{0,60}?\n[ \t]*10[ \t]*\r?\n[ \t]*([-\d.e+]+)/);
+  const extX = em ? Math.abs(parseFloat(em[1])) : 0;
+  // Stereo 70 / UTM metre coords typically > 100 000; mm/local typically < 100 000
+  return extX > 50000 ? S.pxPerMeter : S.pxPerMeter / 1000;
+}
+
 // ── DXF parser ────────────────────────────────────────────────────────────────
 // Returns { entities } where entity types are: L (line), P (polyline), C (circle), A (arc)
 function parseDxf(text) {
@@ -255,14 +274,9 @@ export function loadDxf(inp) {
         return;
       }
 
-      // Auto-scale: if DXF extent is huge (e.g. cadastral plan in mm at >5000m span),
-      // the standard scale (1px per mm * S.pxPerMeter/1000) renders sub-pixel — use auto-fit instead.
-      const stdScale = S.pxPerMeter / 1000;
+      // Determine bscale from $INSUNITS header; fall back to coordinate-range heuristic
+      const bscale = detectBscale(ev.target.result);
       const { w: extW, h: extH } = computeBbox(allEntities);
-      const TARGET_PX = 800;
-      const bscale = extW > 0 && Math.max(extW, extH) * stdScale < 50
-        ? TARGET_PX / Math.max(extW, extH)
-        : stdScale;
 
       // Collect unique layer names for the tooltip/info
       const layerSet = new Set(allEntities.map(e => e.layer));
@@ -270,6 +284,7 @@ export function loadDxf(inp) {
       S.dxfData = { allEntities, layerFilter: '', selectedLayers: new Set(), bcx: 0, bcy: 0, bscale, bscaleBase: bscale, extW, extH, opacity: 0.65 };
 
       renderDxfLayer();
+      fitDxfToView(); // auto-center viewport on the DXF after loading
 
       toast(`DXF: ${allEntities.length} entități, ${layerSet.size} straturi.`, 'ok');
 
