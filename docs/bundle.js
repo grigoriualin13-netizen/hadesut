@@ -5679,7 +5679,7 @@ ${(r * 0.1).toFixed(4)}
       fillColor: "none",
       rotation: 0,
       scale: 1,
-      stare: "proiectat_racordare"
+      stare: "existent"
     };
     if (S.pendType === "stalp_cs") el.cs_fuse = 100;
     if (S.pendType === "meter") el.bmptText = "";
@@ -5799,7 +5799,7 @@ ${(r * 0.1).toFixed(4)}
       label: nextLbl(_mtSpanType),
       color: "#555",
       fillColor: "none",
-      stare: "proiectat_racordare"
+      stare: "existent"
     };
     S.EL.push(newEl);
     if (_mtSpanPrevId) {
@@ -5923,7 +5923,7 @@ ${(r * 0.1).toFixed(4)}
       sectiune: isMT ? _pendingSecMT : 16,
       tipRetea: "Trifazat",
       putereConc: 0,
-      stare: "proiectat_racordare",
+      stare: "existent",
       ...isMT ? { faza: _pendingFaza } : {}
     });
     S.connStart = null;

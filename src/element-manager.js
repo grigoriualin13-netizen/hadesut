@@ -99,7 +99,7 @@ export function addElem(x, y) {
     id: uid(), type: S.pendType, x: sn(x), y: sn(y),
     label: nextLbl(S.pendType), color: CM[S.pendType] || '#555',
     fillColor: 'none', rotation: 0, scale: 1,
-    stare: 'proiectat_racordare'
+    stare: 'existent'
   };
   if (S.pendType === 'stalp_cs') el.cs_fuse = 100;
   if (S.pendType === 'meter') el.bmptText = '';
@@ -195,7 +195,7 @@ export function placeMTSpanAt(x, y) {
     id: uid(), type: _mtSpanType,
     x: sn(x), y: sn(y), rotation: 0, scale: 1,
     label: nextLbl(_mtSpanType),
-    color: '#555', fillColor: 'none', stare: 'proiectat_racordare',
+    color: '#555', fillColor: 'none', stare: 'existent',
   };
   S.EL.push(newEl);
 
@@ -285,7 +285,7 @@ export function finalConn() {
     tipConductor: isMT ? 'OL-AL'    : 'Clasic Al',
     sectiune:     isMT ? _pendingSecMT : 16,
     tipRetea: 'Trifazat', putereConc: 0,
-    stare: 'proiectat_racordare',
+    stare: 'existent',
     ...(isMT ? { faza: _pendingFaza } : {}),
   });
   S.connStart = null; S.connPts = []; S.connFromEl = null; S.connFromTerm = null;
