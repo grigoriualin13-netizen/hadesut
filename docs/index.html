@@ -426,37 +426,21 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
   .tb   { width:44px; height:44px; }
   .tb svg { width:18px; height:18px; }
   .tb-lbl { font-size:7px; }
-  .sub .tb { height:36px; }
+  .sub .tb { height:36px; width:44px; }
 
-  /* Sub-meniuri → popup la dreapta toolbar-ului */
-  .sub {
-    position:fixed; top:0; bottom:0; left:52px;
-    flex-direction:column; flex-wrap:nowrap;
-    background:var(--panel); border-right:1px solid var(--border2);
-    border-radius:0; padding:6px 4px; gap:2px;
-    width:auto; height:100%; overflow-y:auto;
-    z-index:56; box-shadow:4px 0 24px var(--shadow);
-  }
-  .sub .tb { width:44px; }
-
-  /* PROPS PANEL → slide-up overlay din jos */
+  /* PROPS PANEL → ascuns complet (display:none garantează că nu blochează touch-uri) */
+  #props.hidden { display:none !important; }
   #props {
     position:fixed; bottom:0; left:52px; right:0;
     width:auto !important; height:55vh;
-    border-left:1px solid var(--border); border-top:1px solid var(--border);
-    z-index:55; transform:translateY(0);
-    transition:transform 0.25s ease !important;
-  }
-  #props.hidden {
-    width:auto !important; opacity:1 !important;
-    pointer-events:none !important;
-    transform:translateY(100%);
+    border-left:none; border-top:1px solid var(--border);
+    z-index:55; transition:none !important;
   }
 
-  /* MT panel → overlay lângă toolbar */
-  #mt-panel { left:52px; top:0; bottom:0; height:100vh; width:70vw; max-width:240px; }
+  /* MT panel */
+  #mt-panel { left:52px; width:70vw; max-width:240px; }
 
-  /* Topbar → scrollabil */
+  /* Topbar → scrollabil, aliniat lângă toolbar */
   #topbar { left:60px; right:8px; transform:none; overflow-x:auto; flex-wrap:nowrap; }
   #topbar::-webkit-scrollbar { display:none; }
 
