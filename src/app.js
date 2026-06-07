@@ -49,6 +49,7 @@ import {
   openFSModal, closeFSModal, resetFSForm, previewFS,
   copyPreviewField, copyAllPreview, generateFS
 } from './fs-module.js';
+import { toggleAIPanel, generateFSWithAI, fsAiProviderChange } from './fs-ai.js';
 import './prosumator.js'; // side-effect: sets window.runProsumator etc.
 import { openImportXLS } from './import-xls.js';
 import { openSagMT, closeSagMT, runSagMT, copySagMT, exportSagCalcDetails, toggleSagOverlay, renderSagLayer } from './sag-mt.js';
@@ -385,3 +386,8 @@ window.previewFS        = previewFS;
 window.copyPreviewField = copyPreviewField;
 window.copyAllPreview   = copyAllPreview;
 window.generateFS       = generateFS;
+
+// Fișa de Soluție — AI (Groq / Gemini, complet separat)
+window.toggleAIPanel     = toggleAIPanel;
+window.generateFSWithAI  = generateFSWithAI;
+window.fsAiProviderChange = fsAiProviderChange;
