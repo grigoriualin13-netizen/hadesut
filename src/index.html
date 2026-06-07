@@ -418,60 +418,50 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
 
 /* ── RESPONSIVE MOBILE (≤768px) ─────────────────────────────────────────── */
 @media (max-width: 768px) {
-  /* Canvas ocupă tot ecranul minus toolbar-ul de jos */
-  #cw { width:100vw; height:calc(100vh - 56px); flex:none; }
-
-  /* TOOLBAR → jos, orizontal, scrollabil */
-  #toolbar {
-    position:fixed; bottom:0; left:0; right:0;
-    width:100%; height:56px;
-    flex-direction:row; align-items:center;
-    border-right:none; border-top:1px solid var(--border);
-    padding:0 4px; gap:2px;
-    overflow-x:auto; overflow-y:hidden;
-    z-index:50;
-  }
-  #toolbar::-webkit-scrollbar { display:none; }
-  .logo { width:38px; height:38px; font-size:10px; margin:0 2px 0 0; flex-shrink:0; margin-bottom:0; }
-  .sep  { width:1px; height:30px; margin:0 2px; }
+  /* TOOLBAR → stânga, mai îngust, scrollabil vertical */
+  #toolbar { width:52px; padding:6px 0 12px; gap:1px; }
+  .logo { width:38px; height:38px; font-size:10px; }
   .cat  { display:none; }
   .coord-box { display:none; }
-  .tb   { width:48px; height:46px; flex-shrink:0; }
-  .sub .tb { width:48px; height:40px; }
+  .tb   { width:44px; height:44px; }
+  .tb svg { width:18px; height:18px; }
+  .tb-lbl { font-size:7px; }
+  .sub .tb { height:36px; }
 
-  /* Sub-meniuri → popup deasupra toolbar-ului */
+  /* Sub-meniuri → popup la dreapta toolbar-ului */
   .sub {
-    position:fixed; bottom:56px; left:0; right:0;
-    flex-direction:row; flex-wrap:wrap; justify-content:center;
-    background:var(--panel); border-top:1px solid var(--border2);
-    border-radius:0; padding:8px 6px; gap:4px;
-    width:100%; max-height:50vh; overflow-y:auto;
-    z-index:56; box-shadow:0 -4px 24px var(--shadow);
+    position:fixed; top:0; bottom:0; left:52px;
+    flex-direction:column; flex-wrap:nowrap;
+    background:var(--panel); border-right:1px solid var(--border2);
+    border-radius:0; padding:6px 4px; gap:2px;
+    width:auto; height:100%; overflow-y:auto;
+    z-index:56; box-shadow:4px 0 24px var(--shadow);
   }
+  .sub .tb { width:44px; }
 
   /* PROPS PANEL → slide-up overlay din jos */
   #props {
-    position:fixed; bottom:56px; left:0; right:0;
-    width:100% !important; height:55vh;
-    border-left:none; border-top:1px solid var(--border);
+    position:fixed; bottom:0; left:52px; right:0;
+    width:auto !important; height:55vh;
+    border-left:1px solid var(--border); border-top:1px solid var(--border);
     z-index:55; transform:translateY(0);
     transition:transform 0.25s ease !important;
   }
   #props.hidden {
-    width:100% !important; opacity:1 !important;
-    pointer-events:none !important; border-left:none;
+    width:auto !important; opacity:1 !important;
+    pointer-events:none !important;
     transform:translateY(100%);
   }
 
-  /* MT panel → overlay de la stânga */
-  #mt-panel { left:0; top:0; bottom:56px; height:auto; width:75vw; max-width:260px; }
+  /* MT panel → overlay lângă toolbar */
+  #mt-panel { left:52px; top:0; bottom:0; height:100vh; width:70vw; max-width:240px; }
 
-  /* Topbar → scrollabil, aliniat la stânga */
-  #topbar { left:8px; right:8px; transform:none; overflow-x:auto; flex-wrap:nowrap; }
+  /* Topbar → scrollabil */
+  #topbar { left:60px; right:8px; transform:none; overflow-x:auto; flex-wrap:nowrap; }
   #topbar::-webkit-scrollbar { display:none; }
 
   /* Auth user bar */
-  .auth-user-bar { left:8px; bottom:68px; }
+  .auth-user-bar { left:60px; }
 
   /* Auth screen */
   .auth-box { min-width:unset; width:90vw; padding:24px 16px; }
