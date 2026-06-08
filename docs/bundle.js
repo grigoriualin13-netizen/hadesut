@@ -9009,6 +9009,7 @@ C9 echipare+preluare+extensie: "...astfel: Din [CD], se va echipa circuit [CN] p
 C10a PT nou+preluare: "...astfel: Din TDJT a [PT nou] se va alimenta reteaua existenta, preluand circuitul [C1] de la stalpul [A] pana la stalpul [B] L=[X]m, conductor existent tip [..]. BRANSAMENTE."
 C10b PT nou+preluare+extensie: "...astfel: Din TDJT a [PT nou] se va alimenta reteaua existenta, preluand [C1] de la [A] la [B] L=[X]m cond.existent [..]. De la [B] se va extinde L=[X]m cu conductor tip [..] pe stalpi noi de tip [SC..]. BRANSAMENTE."
 C10c PT nou+echipare+preluare+extensie: "...astfel: Din TDJT a [PT nou] se va echipa circuit [CN] pe stalpi existenti cu cond.[..] L=[X]m pana la [Y], de unde se va prelua [C1] pana la [Z]. Din [Z] se va extinde L=[X]m pe stalpi noi [SC..]. BRANSAMENTE."
+C11 PTAb nou+cablu LES+preluare+inlocuire: "...pe joasa tensiune astfel: Din TDJT a [PTAb] se va poza cablu tip [NA2XBY..] L=[X]m pana la stalpul [Y], de unde se va prelua circuitul existent [C1] pana la stalpul [Z]. BRANSAMENTE." \u2014 6b: "Se va inlocui conductorul existent tip [..] cu conductor tip [NFA2X..] pe tronsonul stalpul [Y]-stalpul [Z]: L=[X]m." (sau pe tronsoane multiple daca e cazul, ca la 6b-A)
 
 TIPARE 6b:
 6b-A inlocuire tronsoane: "Se va inlocui conductorul existent [tip vechi] cu conductor tip [NFA2X..] pe urmatoarele tronsoane:
