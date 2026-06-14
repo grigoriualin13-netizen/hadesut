@@ -1921,16 +1921,38 @@
           pageH *= f;
         }
         const parser = new DOMParser();
-        const svgEl = parser.parseFromString(svgStr, "image/svg+xml").documentElement;
+        const svgDoc = parser.parseFromString(svgStr, "image/svg+xml");
+        const svgEl = svgDoc.documentElement;
+        const SVG_NS = "http://www.w3.org/2000/svg";
         svgEl.querySelectorAll("text, tspan").forEach((t) => {
           t.setAttribute("stroke", "none");
           t.removeAttribute("stroke-width");
           t.removeAttribute("stroke-linecap");
           t.removeAttribute("stroke-linejoin");
           t.removeAttribute("paint-order");
-          const ff = t.getAttribute("font-family");
-          if (ff && (ff.includes("JetBrains") || ff.includes("Barlow"))) {
-            t.setAttribute("font-family", "Arial, sans-serif");
+          const ff = t.getAttribute("font-family") || "";
+          if (ff.includes("JetBrains") || ff.includes("Barlow")) {
+            if (t.childElementCount === 0 && t.textContent.includes("\u0394")) {
+              const parts = t.textContent.split("\u0394");
+              t.textContent = "";
+              t.removeAttribute("font-family");
+              parts.forEach((part, i) => {
+                if (part) {
+                  const sp = svgDoc.createElementNS(SVG_NS, "tspan");
+                  sp.setAttribute("font-family", "Arial, sans-serif");
+                  sp.textContent = part;
+                  t.appendChild(sp);
+                }
+                if (i < parts.length - 1) {
+                  const sd = svgDoc.createElementNS(SVG_NS, "tspan");
+                  sd.setAttribute("font-family", "Symbol");
+                  sd.textContent = "D";
+                  t.appendChild(sd);
+                }
+              });
+            } else {
+              t.setAttribute("font-family", "Arial, sans-serif");
+            }
           }
         });
         const orient = pageW >= pageH ? "landscape" : "portrait";
