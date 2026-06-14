@@ -315,6 +315,12 @@ export function doExportPDF(customBounds) {
             t.setAttribute('font-family', 'Arial, sans-serif');
           }
         }
+        if (t.childElementCount === 0) {
+          t.textContent = t.textContent
+            .replace(/Ă/g, 'A').replace(/ă/g, 'a')
+            .replace(/Ș/g, 'S').replace(/ș/g, 's')
+            .replace(/Ț/g, 'T').replace(/ț/g, 't');
+        }
       });
       const orient = pageW >= pageH ? 'landscape' : 'portrait';
       const pdf = new jsPDF({ orientation: orient, unit: 'pt', format: [pageW, pageH], compress: true });

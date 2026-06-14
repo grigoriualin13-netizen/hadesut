@@ -1491,6 +1491,7 @@ export function generateVDTableSVG(startX, startY) {
   if (showIsc) cols.push({ label: 'Isc(kA)', w: 65, align: 'end' });
 
   const rowH = 18;
+  const headerH = 28;
   let tableW = cols.reduce((sum, c) => sum + c.w, 0), totalH = 0;
   let svg = `<g id="export-vd-tables" transform="translate(${startX}, ${startY})">`;
   const bgColor = S.lightMode ? '#ffffff' : '#0b1220';
@@ -1501,19 +1502,20 @@ export function generateVDTableSVG(startX, startY) {
   const sortedCircuits = Array.from(circuitGroups.keys()).sort();
   sortedCircuits.forEach(circ => {
     const rows = circuitGroups.get(circ); rows.sort((a, b) => b.data.duNod - a.data.duNod);
-    let tableH = (rows.length + 2) * rowH;
+    let tableH = headerH + (rows.length + 1) * rowH;
     svg += `<g transform="translate(0, ${totalH})"><rect x="0" y="0" width="${tableW}" height="${tableH}" fill="${bgColor}" stroke="${strokeColor}" stroke-width="1.5" rx="4"/>`;
-    svg += `<text x="8" y="14" font-family="JetBrains Mono, monospace" font-size="10" font-weight="bold" fill="${accentColor}">CALCUL CĂDERI DE TENSIUNE — Sursa: ${cdLabel} | Circuit: ${circ}</text>`;
+    svg += `<text x="8" y="11" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="bold" fill="${accentColor}">CALCUL CĂDERI DE TENSIUNE</text>`;
+    svg += `<text x="${tableW - 6}" y="22" font-family="JetBrains Mono, monospace" font-size="7.5" fill="${textColor}" text-anchor="end" opacity="0.8">Sursa: ${cdLabel} | Circuit: ${circ}</text>`;
     let currentX = 0;
-    svg += `<line x1="0" y1="${rowH}" x2="${tableW}" y2="${rowH}" stroke="${strokeColor}" stroke-width="1"/>`;
+    svg += `<line x1="0" y1="${headerH}" x2="${tableW}" y2="${headerH}" stroke="${strokeColor}" stroke-width="1"/>`;
     cols.forEach(c => {
       const tx = c.align === 'start' ? currentX + 6 : currentX + c.w - 6;
-      svg += `<text x="${tx}" y="${rowH + 13}" font-family="JetBrains Mono, monospace" font-size="9" font-weight="bold" fill="${textColor}" text-anchor="${c.align}">${c.label}</text>`;
+      svg += `<text x="${tx}" y="${headerH + 13}" font-family="JetBrains Mono, monospace" font-size="9" font-weight="bold" fill="${textColor}" text-anchor="${c.align}">${c.label}</text>`;
       currentX += c.w;
     });
-    svg += `<line x1="0" y1="${rowH * 2}" x2="${tableW}" y2="${rowH * 2}" stroke="${strokeColor}" stroke-width="1"/>`;
+    svg += `<line x1="0" y1="${headerH + rowH}" x2="${tableW}" y2="${headerH + rowH}" stroke="${strokeColor}" stroke-width="1"/>`;
     rows.forEach((r, i) => {
-      const y = rowH * (i + 2); let cx = 0;
+      const y = headerH + rowH * (i + 1); let cx = 0;
       svg += `<text x="${cx + 6}" y="${y + 13}" font-family="JetBrains Mono, monospace" font-size="9" fill="${textColor}" font-weight="bold">${r.data.label}</text>`; cx += cols[0].w;
       svg += `<text x="${cx + cols[1].w - 6}" y="${y + 13}" font-family="JetBrains Mono, monospace" font-size="9" fill="${textColor}" text-anchor="end">${r.data.L ? r.data.L.toFixed(0) : '-'}</text>`; cx += cols[1].w;
       svg += `<text x="${cx + cols[2].w - 6}" y="${y + 13}" font-family="JetBrains Mono, monospace" font-size="9" fill="${textColor}" text-anchor="end">${r.data.L_cumulat ? r.data.L_cumulat.toFixed(0) : '-'}</text>`; cx += cols[2].w;

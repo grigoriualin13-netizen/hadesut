@@ -1556,6 +1556,12 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
                 t.setAttribute('font-family', 'Arial, sans-serif');
               }
             }
+            if (t.childElementCount === 0) {
+              t.textContent = t.textContent
+                .replace(/Ă/g, 'A').replace(/ă/g, 'a')
+                .replace(/Ș/g, 'S').replace(/ș/g, 's')
+                .replace(/Ț/g, 'T').replace(/ț/g, 't');
+            }
           });
           var orient = pageW >= pageH ? 'landscape' : 'portrait';
           var pdf = new jsPDF({ orientation: orient, unit: 'pt', format: [pageW, pageH], compress: true });
