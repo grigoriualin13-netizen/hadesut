@@ -292,9 +292,6 @@ export function doExportPDF(customBounds) {
         if (ff && (ff.includes('JetBrains') || ff.includes('Barlow'))) {
           t.setAttribute('font-family', 'Arial, sans-serif');
         }
-        if (t.textContent.includes('Δ')) {
-          t.textContent = t.textContent.replace(/ΔU=/g, 'dU=');
-        }
       });
       const orient = pageW >= pageH ? 'landscape' : 'portrait';
       const pdf = new jsPDF({ orientation: orient, unit: 'pt', format: [pageW, pageH], compress: true });

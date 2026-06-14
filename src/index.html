@@ -1533,9 +1533,6 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
             if (ff && (ff.indexOf('JetBrains') !== -1 || ff.indexOf('Barlow') !== -1)) {
               t.setAttribute('font-family', 'Arial, sans-serif');
             }
-            if (t.textContent.indexOf('Δ') !== -1) {
-              t.textContent = t.textContent.replace(/ΔU=/g, 'dU=');
-            }
           });
           var orient = pageW >= pageH ? 'landscape' : 'portrait';
           var pdf = new jsPDF({ orientation: orient, unit: 'pt', format: [pageW, pageH], compress: true });
