@@ -1511,43 +1511,29 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
     // ══════════════════════════════════════════
     var _origExportPDF = window.doExportPDF;
     window.doExportPDF = function(customBounds) {
-      toast('Generez PDF...', 'ac');
-      setTimeout(function() {
+      toast('Generez PDF vectorial...', 'ac');
+      setTimeout(async function() {
         try {
           if (!window.jspdf) { toast('jsPDF indisponibil.', 'ac'); return; }
+          if (!window.svg2pdf) { toast('svg2pdf indisponibil.', 'ac'); return; }
           var jsPDF = window.jspdf.jsPDF;
           var r = buildExportSVG(true, customBounds);
           var PX_TO_PT = 0.75;
           var pageW = r.W * PX_TO_PT, pageH = r.H * PX_TO_PT;
           var MAX_PT = 5080;
           if (pageW > MAX_PT || pageH > MAX_PT) { var f = MAX_PT / Math.max(pageW, pageH); pageW *= f; pageH *= f; }
-          var SCALE = Math.min(4, 20000 / Math.max(r.W, r.H));
-          var canvas = document.createElement('canvas');
-          canvas.width = Math.round(r.W * SCALE); canvas.height = Math.round(r.H * SCALE);
-          var ctx = canvas.getContext('2d');
-          ctx.fillStyle = lightMode ? '#ffffff' : '#0b1220';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-          var img = new Image();
-          img.onload = function() {
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            var imgData = canvas.toDataURL('image/png');
-            var orient = pageW >= pageH ? 'landscape' : 'portrait';
-            var pdf = new jsPDF({ orientation: orient, unit: 'pt', format: [pageW, pageH], compress: true });
-            pdf.addImage(imgData, 'PNG', 0, 0, pageW, pageH);
-            var tot = 0; CN.forEach(function(c) { tot += parseFloat(c.length) || 0; });
-            pdf.setFontSize(5); pdf.setTextColor(150);
-            pdf.text('ElectroCAD Pro v12  |  (c) Grigoriu Alin-Florin  |  ' + new Date().toLocaleDateString('ro-RO') + '  |  ' + EL.length + ' elem  ' + CN.length + ' conn  ' + tot.toFixed(1) + 'm', 4, pageH - 3);
-
-            // Get PDF as binary and save via Tauri
-            var pdfBytes = pdf.output('arraybuffer');
-            tauriSaveBinary(new Uint8Array(pdfBytes), 'schema_electrica.pdf', [{name:'PDF',extensions:['pdf']}]).then(function(p) {
-              if (p) toast('PDF exportat: ' + p.split(/[/\\]/).pop(), 'ok');
-            }).catch(function(e) { console.error('PDF save err:', e); toast('Eroare PDF: ' + e, ''); });
-          };
-          img.onerror = function() { toast('Eroare randare SVG', ''); };
-          var blob = new Blob([r.svgStr], {type: 'image/svg+xml;charset=utf-8'});
-          img.src = URL.createObjectURL(blob);
+          var parser = new DOMParser();
+          var svgEl = parser.parseFromString(r.svgStr, 'image/svg+xml').documentElement;
+          var orient = pageW >= pageH ? 'landscape' : 'portrait';
+          var pdf = new jsPDF({ orientation: orient, unit: 'pt', format: [pageW, pageH], compress: true });
+          await window.svg2pdf(svgEl, pdf, { x: 0, y: 0, width: pageW, height: pageH });
+          var tot = 0; CN.forEach(function(c) { tot += parseFloat(c.length) || 0; });
+          pdf.setFontSize(5); pdf.setTextColor(150);
+          pdf.text('ElectroCAD Pro v12  |  (c) Grigoriu Alin-Florin  |  ' + new Date().toLocaleDateString('ro-RO') + '  |  ' + EL.length + ' elem  ' + CN.length + ' conn  ' + tot.toFixed(1) + 'm', 4, pageH - 3);
+          var pdfBytes = pdf.output('arraybuffer');
+          tauriSaveBinary(new Uint8Array(pdfBytes), 'schema_electrica.pdf', [{name:'PDF',extensions:['pdf']}]).then(function(p) {
+            if (p) toast('PDF vectorial exportat: ' + p.split(/[/\\]/).pop(), 'ok');
+          }).catch(function(e) { console.error('PDF save err:', e); toast('Eroare PDF: ' + e, ''); });
         } catch(e) { console.error('PDF err:', e); toast('Eroare PDF: ' + e, ''); }
       }, 50);
     };
