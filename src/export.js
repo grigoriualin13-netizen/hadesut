@@ -284,12 +284,8 @@ export function doExportPDF(customBounds) {
       const svgEl = parser.parseFromString(svgStr, 'image/svg+xml').documentElement;
       const orient = pageW >= pageH ? 'landscape' : 'portrait';
       const pdf = new jsPDF({ orientation: orient, unit: 'pt', format: [pageW, pageH], compress: true });
-      const _svg2pdfFn = typeof pdf.svg === 'function' ? ((el, p, o) => p.svg(el, o))
-                       : window.svg2pdf && typeof window.svg2pdf.svg2pdf === 'function' ? ((el, p, o) => window.svg2pdf.svg2pdf(el, p, o))
-                       : typeof window.svg2pdf === 'function' ? window.svg2pdf
-                       : null;
-      if (!_svg2pdfFn) { toast('svg2pdf indisponibil.', 'ac'); return; }
-      await _svg2pdfFn(svgEl, pdf, { x: 0, y: 0, width: pageW, height: pageH });
+      if (!window.svg2pdf || typeof window.svg2pdf.svg2pdf !== 'function') { toast('svg2pdf indisponibil.', 'ac'); return; }
+      await window.svg2pdf.svg2pdf(svgEl, pdf, { x: 0, y: 0, width: pageW, height: pageH });
       let tot = 0; S.CN.forEach(c => tot += parseFloat(c.length) || 0);
       pdf.setFontSize(5); pdf.setTextColor(150);
       pdf.text(`ElectroCAD Pro v12  |  (c) Grigoriu Alin-Florin  |  ${new Date().toLocaleDateString('ro-RO')}  |  ${S.EL.length} elem  ${S.CN.length} conn  ${tot.toFixed(1)}m`, 4, pageH - 3);

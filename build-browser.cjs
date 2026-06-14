@@ -39,7 +39,7 @@ fs.writeFileSync(path.join(docsDir, 'index.html'), html, 'utf8');
 
 // 4. Copy assets that are loaded at runtime (not bundled)
 console.log('[4/4] Copying runtime assets...');
-['fc_template.js', 'docx.min.js'].forEach(asset => {
+['fc_template.js', 'docx.min.js', 'svg2pdf.umd.min.js'].forEach(asset => {
   const src = path.join(srcDir, asset);
   if (fs.existsSync(src)) fs.copyFileSync(src, path.join(docsDir, asset));
 });

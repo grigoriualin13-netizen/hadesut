@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/svg2pdf.js/2.2.3/svg2pdf.umd.min.js"></script>
+<script src="svg2pdf.umd.min.js"></script>
 <script src="docx.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script src="fc_template.js"></script>
@@ -1525,12 +1525,8 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
           var svgEl = parser.parseFromString(r.svgStr, 'image/svg+xml').documentElement;
           var orient = pageW >= pageH ? 'landscape' : 'portrait';
           var pdf = new jsPDF({ orientation: orient, unit: 'pt', format: [pageW, pageH], compress: true });
-          var _svg2pdfFn = typeof pdf.svg === 'function' ? function(el, p, o) { return p.svg(el, o); }
-                        : window.svg2pdf && typeof window.svg2pdf.svg2pdf === 'function' ? function(el, p, o) { return window.svg2pdf.svg2pdf(el, p, o); }
-                        : typeof window.svg2pdf === 'function' ? window.svg2pdf
-                        : null;
-          if (!_svg2pdfFn) { toast('svg2pdf indisponibil.', 'ac'); return; }
-          await _svg2pdfFn(svgEl, pdf, { x: 0, y: 0, width: pageW, height: pageH });
+          if (!window.svg2pdf || typeof window.svg2pdf.svg2pdf !== 'function') { toast('svg2pdf indisponibil.', 'ac'); return; }
+          await window.svg2pdf.svg2pdf(svgEl, pdf, { x: 0, y: 0, width: pageW, height: pageH });
           var tot = 0; CN.forEach(function(c) { tot += parseFloat(c.length) || 0; });
           pdf.setFontSize(5); pdf.setTextColor(150);
           pdf.text('ElectroCAD Pro v12  |  (c) Grigoriu Alin-Florin  |  ' + new Date().toLocaleDateString('ro-RO') + '  |  ' + EL.length + ' elem  ' + CN.length + ' conn  ' + tot.toFixed(1) + 'm', 4, pageH - 3);
