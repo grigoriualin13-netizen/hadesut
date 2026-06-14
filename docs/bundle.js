@@ -1910,10 +1910,6 @@
           toast("jsPDF indisponibil.", "ac");
           return;
         }
-        if (!window.svg2pdf) {
-          toast("svg2pdf indisponibil.", "ac");
-          return;
-        }
         const { jsPDF } = window.jspdf;
         const { svgStr, W, H } = buildExportSVG(true, customBounds);
         const PX_TO_PT = 0.75;
@@ -1928,7 +1924,11 @@
         const svgEl = parser.parseFromString(svgStr, "image/svg+xml").documentElement;
         const orient = pageW >= pageH ? "landscape" : "portrait";
         const pdf = new jsPDF({ orientation: orient, unit: "pt", format: [pageW, pageH], compress: true });
-        await window.svg2pdf(svgEl, pdf, { x: 0, y: 0, width: pageW, height: pageH });
+        if (typeof pdf.svg !== "function") {
+          toast("svg2pdf plugin indisponibil.", "ac");
+          return;
+        }
+        await pdf.svg(svgEl, { x: 0, y: 0, width: pageW, height: pageH });
         let tot = 0;
         S.CN.forEach((c) => tot += parseFloat(c.length) || 0);
         pdf.setFontSize(5);
