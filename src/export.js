@@ -282,12 +282,19 @@ export function doExportPDF(customBounds) {
       if (pageW > MAX_PT || pageH > MAX_PT) { const f = MAX_PT / Math.max(pageW, pageH); pageW *= f; pageH *= f; }
       const parser = new DOMParser();
       const svgEl = parser.parseFromString(svgStr, 'image/svg+xml').documentElement;
-      svgEl.querySelectorAll('text').forEach(t => {
+      svgEl.querySelectorAll('text, tspan').forEach(t => {
         t.setAttribute('stroke', 'none');
         t.removeAttribute('stroke-width');
         t.removeAttribute('stroke-linecap');
         t.removeAttribute('stroke-linejoin');
         t.removeAttribute('paint-order');
+        const ff = t.getAttribute('font-family');
+        if (ff && (ff.includes('JetBrains') || ff.includes('Barlow'))) {
+          t.setAttribute('font-family', 'Arial, sans-serif');
+        }
+        if (t.textContent.includes('Δ')) {
+          t.textContent = t.textContent.replace(/ΔU=/g, 'dU=');
+        }
       });
       const orient = pageW >= pageH ? 'landscape' : 'portrait';
       const pdf = new jsPDF({ orientation: orient, unit: 'pt', format: [pageW, pageH], compress: true });
