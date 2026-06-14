@@ -1523,6 +1523,13 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
           if (pageW > MAX_PT || pageH > MAX_PT) { var f = MAX_PT / Math.max(pageW, pageH); pageW *= f; pageH *= f; }
           var parser = new DOMParser();
           var svgEl = parser.parseFromString(r.svgStr, 'image/svg+xml').documentElement;
+          svgEl.querySelectorAll('text').forEach(function(t) {
+            t.setAttribute('stroke', 'none');
+            t.removeAttribute('stroke-width');
+            t.removeAttribute('stroke-linecap');
+            t.removeAttribute('stroke-linejoin');
+            t.removeAttribute('paint-order');
+          });
           var orient = pageW >= pageH ? 'landscape' : 'portrait';
           var pdf = new jsPDF({ orientation: orient, unit: 'pt', format: [pageW, pageH], compress: true });
           if (!window.svg2pdf || typeof window.svg2pdf.svg2pdf !== 'function') { toast('svg2pdf indisponibil.', 'ac'); return; }

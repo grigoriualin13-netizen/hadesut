@@ -282,6 +282,13 @@ export function doExportPDF(customBounds) {
       if (pageW > MAX_PT || pageH > MAX_PT) { const f = MAX_PT / Math.max(pageW, pageH); pageW *= f; pageH *= f; }
       const parser = new DOMParser();
       const svgEl = parser.parseFromString(svgStr, 'image/svg+xml').documentElement;
+      svgEl.querySelectorAll('text').forEach(t => {
+        t.setAttribute('stroke', 'none');
+        t.removeAttribute('stroke-width');
+        t.removeAttribute('stroke-linecap');
+        t.removeAttribute('stroke-linejoin');
+        t.removeAttribute('paint-order');
+      });
       const orient = pageW >= pageH ? 'landscape' : 'portrait';
       const pdf = new jsPDF({ orientation: orient, unit: 'pt', format: [pageW, pageH], compress: true });
       if (!window.svg2pdf || typeof window.svg2pdf.svg2pdf !== 'function') { toast('svg2pdf indisponibil.', 'ac'); return; }
