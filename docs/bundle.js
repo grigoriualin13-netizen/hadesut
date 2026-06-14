@@ -1910,6 +1910,10 @@
           toast("jsPDF indisponibil.", "ac");
           return;
         }
+        if (!window.svg2pdf) {
+          toast("svg2pdf indisponibil.", "ac");
+          return;
+        }
         const { jsPDF } = window.jspdf;
         const { svgStr, W, H } = buildExportSVG(true, customBounds);
         const PX_TO_PT = 0.75;
@@ -1920,37 +1924,18 @@
           pageW *= f;
           pageH *= f;
         }
-        const SCALE = Math.min(4, 2e4 / Math.max(W, H));
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.round(W * SCALE);
-        canvas.height = Math.round(H * SCALE);
-        const ctx = canvas.getContext("2d");
-        ctx.fillStyle = S.lightMode ? "#ffffff" : "#0b1220";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        await new Promise((resolve, reject) => {
-          const img = new Image();
-          img.onload = () => {
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            resolve();
-          };
-          img.onerror = (e) => {
-            console.error("SVG render error", e);
-            reject(new Error("SVG render failed"));
-          };
-          const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
-          img.src = URL.createObjectURL(blob);
-        });
-        const imgData = canvas.toDataURL("image/png");
+        const parser = new DOMParser();
+        const svgEl = parser.parseFromString(svgStr, "image/svg+xml").documentElement;
         const orient = pageW >= pageH ? "landscape" : "portrait";
         const pdf = new jsPDF({ orientation: orient, unit: "pt", format: [pageW, pageH], compress: true });
-        pdf.addImage(imgData, "PNG", 0, 0, pageW, pageH);
+        await window.svg2pdf(svgEl, pdf, { x: 0, y: 0, width: pageW, height: pageH });
         let tot = 0;
         S.CN.forEach((c) => tot += parseFloat(c.length) || 0);
         pdf.setFontSize(5);
         pdf.setTextColor(150);
         pdf.text(`ElectroCAD Pro v12  |  (c) Grigoriu Alin-Florin  |  ${(/* @__PURE__ */ new Date()).toLocaleDateString("ro-RO")}  |  ${S.EL.length} elem  ${S.CN.length} conn  ${tot.toFixed(1)}m`, 4, pageH - 3);
         pdf.save("schema_electrica.pdf");
-        toast("\u2705 PDF exportat cu succes! Pagina custom-size, 300DPI echivalent.", "ok");
+        toast("\u2705 PDF Vectorial exportat!", "ok");
       } catch (err) {
         console.error("PDF error:", err);
         toast("Eroare PDF: " + err.message, "ac");
