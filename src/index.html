@@ -1521,10 +1521,12 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
           var pageW = r.W * PX_TO_PT, pageH = r.H * PX_TO_PT;
           var MAX_PT = 5080;
           if (pageW > MAX_PT || pageH > MAX_PT) { var f = MAX_PT / Math.max(pageW, pageH); pageW *= f; pageH *= f; }
+          var scaleX = pageW / r.W, scaleY = pageH / r.H;
           var parser = new DOMParser();
           var svgDoc = parser.parseFromString(r.svgStr, 'image/svg+xml');
           var svgEl = svgDoc.documentElement;
-          var SVG_NS = 'http://www.w3.org/2000/svg';
+          var mc = document.createElement('canvas').getContext('2d');
+          var deltaDraws = [];
           svgEl.querySelectorAll('text, tspan').forEach(function(t) {
             t.setAttribute('stroke', 'none');
             t.removeAttribute('stroke-width');
@@ -1534,23 +1536,22 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
             var ff = t.getAttribute('font-family') || '';
             if (ff.indexOf('JetBrains') !== -1 || ff.indexOf('Barlow') !== -1) {
               if (t.childElementCount === 0 && t.textContent.indexOf('Δ') !== -1) {
+                var fsPx = parseFloat(t.getAttribute('font-size')) || 8.5;
+                var svgTx = parseFloat(t.getAttribute('x')) || 0;
+                var svgTy = parseFloat(t.getAttribute('y')) || 0;
+                var anchor = t.getAttribute('text-anchor') || 'start';
+                var fill = t.getAttribute('fill') || '#000000';
                 var parts = t.textContent.split('Δ');
-                t.textContent = '';
-                t.removeAttribute('font-family');
-                parts.forEach(function(part, i) {
-                  if (part) {
-                    var sp = svgDoc.createElementNS(SVG_NS, 'tspan');
-                    sp.setAttribute('font-family', 'Arial, sans-serif');
-                    sp.textContent = part;
-                    t.appendChild(sp);
-                  }
-                  if (i < parts.length - 1) {
-                    var sd = svgDoc.createElementNS(SVG_NS, 'tspan');
-                    sd.setAttribute('font-family', 'Symbol');
-                    sd.textContent = 'D';
-                    t.appendChild(sd);
-                  }
-                });
+                var before = parts[0], after = parts.slice(1).join('');
+                mc.font = 'bold ' + fsPx + 'px Arial';
+                var bw = mc.measureText(before).width;
+                var dw = mc.measureText('D').width;
+                var aw = mc.measureText(after).width;
+                var tw = bw + dw + aw;
+                var startX = anchor === 'middle' ? svgTx - tw / 2 : anchor === 'end' ? svgTx - tw : svgTx;
+                deltaDraws.push({ x: (startX + bw - r.vX) * scaleX, y: (svgTy - r.vY) * scaleY, fsPt: fsPx * scaleX, fill: fill });
+                t.textContent = before + ' ' + after;
+                t.setAttribute('font-family', 'Arial, sans-serif');
               } else {
                 t.setAttribute('font-family', 'Arial, sans-serif');
               }
@@ -1560,6 +1561,13 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
           var pdf = new jsPDF({ orientation: orient, unit: 'pt', format: [pageW, pageH], compress: true });
           if (!window.svg2pdf || typeof window.svg2pdf.svg2pdf !== 'function') { toast('svg2pdf indisponibil.', 'ac'); return; }
           await window.svg2pdf.svg2pdf(svgEl, pdf, { x: 0, y: 0, width: pageW, height: pageH });
+          deltaDraws.forEach(function(d) {
+            var hex = d.fill.replace('#', '');
+            pdf.setFont('Symbol', 'normal');
+            pdf.setFontSize(d.fsPt);
+            pdf.setTextColor(parseInt(hex.slice(0,2),16), parseInt(hex.slice(2,4),16), parseInt(hex.slice(4,6),16));
+            pdf.text('D', d.x, d.y);
+          });
           var tot = 0; CN.forEach(function(c) { tot += parseFloat(c.length) || 0; });
           pdf.setFontSize(5); pdf.setTextColor(150);
           pdf.text('ElectroCAD Pro v12  |  (c) Grigoriu Alin-Florin  |  ' + new Date().toLocaleDateString('ro-RO') + '  |  ' + EL.length + ' elem  ' + CN.length + ' conn  ' + tot.toFixed(1) + 'm', 4, pageH - 3);

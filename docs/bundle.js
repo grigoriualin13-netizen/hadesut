@@ -1911,7 +1911,7 @@
           return;
         }
         const { jsPDF } = window.jspdf;
-        const { svgStr, W, H } = buildExportSVG(true, customBounds);
+        const { svgStr, W, H, vX, vY } = buildExportSVG(true, customBounds);
         const PX_TO_PT = 0.75;
         let pageW = W * PX_TO_PT, pageH = H * PX_TO_PT;
         const MAX_PT = 5080;
@@ -1920,10 +1920,12 @@
           pageW *= f;
           pageH *= f;
         }
+        const scaleX = pageW / W, scaleY = pageH / H;
         const parser = new DOMParser();
         const svgDoc = parser.parseFromString(svgStr, "image/svg+xml");
         const svgEl = svgDoc.documentElement;
-        const SVG_NS = "http://www.w3.org/2000/svg";
+        const mc = document.createElement("canvas").getContext("2d");
+        const deltaDraws = [];
         svgEl.querySelectorAll("text, tspan").forEach((t) => {
           t.setAttribute("stroke", "none");
           t.removeAttribute("stroke-width");
@@ -1933,23 +1935,22 @@
           const ff = t.getAttribute("font-family") || "";
           if (ff.includes("JetBrains") || ff.includes("Barlow")) {
             if (t.childElementCount === 0 && t.textContent.includes("\u0394")) {
+              const fsPx = parseFloat(t.getAttribute("font-size")) || 8.5;
+              const svgTx = parseFloat(t.getAttribute("x")) || 0;
+              const svgTy = parseFloat(t.getAttribute("y")) || 0;
+              const anchor = t.getAttribute("text-anchor") || "start";
+              const fill = t.getAttribute("fill") || "#000000";
               const parts = t.textContent.split("\u0394");
-              t.textContent = "";
-              t.removeAttribute("font-family");
-              parts.forEach((part, i) => {
-                if (part) {
-                  const sp = svgDoc.createElementNS(SVG_NS, "tspan");
-                  sp.setAttribute("font-family", "Arial, sans-serif");
-                  sp.textContent = part;
-                  t.appendChild(sp);
-                }
-                if (i < parts.length - 1) {
-                  const sd = svgDoc.createElementNS(SVG_NS, "tspan");
-                  sd.setAttribute("font-family", "Symbol");
-                  sd.textContent = "D";
-                  t.appendChild(sd);
-                }
-              });
+              const before = parts[0], after = parts.slice(1).join("");
+              mc.font = `bold ${fsPx}px Arial`;
+              const bw = mc.measureText(before).width;
+              const dw = mc.measureText("D").width;
+              const aw = mc.measureText(after).width;
+              const tw = bw + dw + aw;
+              const startX = anchor === "middle" ? svgTx - tw / 2 : anchor === "end" ? svgTx - tw : svgTx;
+              deltaDraws.push({ x: (startX + bw - vX) * scaleX, y: (svgTy - vY) * scaleY, fsPt: fsPx * scaleX, fill });
+              t.textContent = before + "\xA0" + after;
+              t.setAttribute("font-family", "Arial, sans-serif");
             } else {
               t.setAttribute("font-family", "Arial, sans-serif");
             }
@@ -1962,6 +1963,13 @@
           return;
         }
         await window.svg2pdf.svg2pdf(svgEl, pdf, { x: 0, y: 0, width: pageW, height: pageH });
+        deltaDraws.forEach((d) => {
+          const hex = d.fill.replace("#", "");
+          pdf.setFont("Symbol", "normal");
+          pdf.setFontSize(d.fsPt);
+          pdf.setTextColor(parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16));
+          pdf.text("D", d.x, d.y);
+        });
         let tot = 0;
         S.CN.forEach((c) => tot += parseFloat(c.length) || 0);
         pdf.setFontSize(5);
