@@ -586,8 +586,8 @@
         break;
       }
       case "firida_gen": {
-        const nIn = el.inputs || 2;
-        const nOut = el.outputs || 4;
+        const nIn = el.inputs ?? 2;
+        const nOut = el.outputs ?? 4;
         const BW = Math.max(nIn, nOut) * 60 + 40;
         const BH = 280, BX = -BW / 2, BY = -BH / 2;
         const f = el.fuses || new Array(nIn + nOut).fill(true);
@@ -900,7 +900,7 @@
     if (t === "firida_e3_0") return 180;
     if (t === "firida_e2_4_det") return 250;
     if (t === "firida_gen") {
-      const n = typeof el !== "string" ? Math.max(el.inputs || 2, el.outputs || 4) : 4;
+      const n = typeof el !== "string" ? Math.max(el.inputs ?? 2, el.outputs ?? 4) : 4;
       return n * 60 + 40;
     }
     if (t.startsWith("cd")) return 130;
@@ -4042,8 +4042,8 @@ ${(r * 0.1).toFixed(4)}
           numIn = 2;
           numOut = 4;
         } else if (el.type === "firida_gen") {
-          numIn = el.inputs || 2;
-          numOut = el.outputs || 4;
+          numIn = el.inputs ?? 2;
+          numOut = el.outputs ?? 4;
         }
         const btnS = "padding:2px 10px;border-radius:4px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;font-size:13px;font-weight:700;line-height:1";
         let counterHtml = "";
@@ -5607,8 +5607,8 @@ ${(r * 0.1).toFixed(4)}
   function adjustFiridaCircuits(elId, type, delta) {
     const el = S.EL.find((e) => e.id === elId);
     if (!el || el.type !== "firida_gen") return;
-    const nIn = el.inputs || 2;
-    const nOut = el.outputs || 4;
+    const nIn = el.inputs ?? 2;
+    const nOut = el.outputs ?? 4;
     if (!el.fuses) el.fuses = new Array(nIn + nOut).fill(true);
     if (type === "in" && delta > 0 && nIn < 6) {
       el.fuses.splice(nIn, 0, true);
@@ -5816,6 +5816,12 @@ ${(r * 0.1).toFixed(4)}
     if (S.pendType === "firida_e2_4") el.fuses = new Array(6).fill(true);
     if (S.pendType === "firida_e3_4") el.fuses = new Array(7).fill(true);
     if (S.pendType === "firida_e3_0") el.fuses = new Array(3).fill(true);
+    if (S.pendType === "firida_gen") {
+      el.fuses = new Array(6).fill(true);
+      el.inputs = 2;
+      el.outputs = 4;
+      el.scale = 0.5;
+    }
     if (S.pendType === "ptab_1t") el.fuses = new Array(10).fill(true);
     if (S.pendType === "ptab_2t") el.fuses = new Array(21).fill(true);
     if (S.pendType === "cd4") el.fuses = new Array(5).fill(true);
