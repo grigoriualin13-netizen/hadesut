@@ -214,7 +214,7 @@ export function updateProps() {
       const f = el.fuses || []; let numIn = 0, numOut = 0;
       if (el.type === 'firida_e2_4') { numIn = 2; numOut = 4; } else if (el.type === 'firida_e3_4') { numIn = 3; numOut = 4; } else if (el.type === 'firida_e3_0') { numIn = 3; numOut = 0; }
       else if (el.type === 'firida_e2_4_det') { numIn = 2; numOut = 4; }
-      else if (el.type === 'firida_gen') { numIn = el.inputs || 2; numOut = el.outputs || 4; }
+      else if (el.type === 'firida_gen') { numIn = el.inputs ?? 2; numOut = el.outputs ?? 4; }
       const btnS = 'padding:2px 10px;border-radius:4px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;font-size:13px;font-weight:700;line-height:1';
       let counterHtml = '';
       if (el.type === 'firida_gen') {
@@ -1559,8 +1559,8 @@ export function setFiridaRating(elId, idx, value) {
 export function adjustFiridaCircuits(elId, type, delta) {
   const el = S.EL.find(e => e.id === elId);
   if (!el || el.type !== 'firida_gen') return;
-  const nIn = el.inputs || 2;
-  const nOut = el.outputs || 4;
+  const nIn = el.inputs ?? 2;
+  const nOut = el.outputs ?? 4;
   if (!el.fuses) el.fuses = new Array(nIn + nOut).fill(true);
   if (type === 'in' && delta > 0 && nIn < 6) {
     el.fuses.splice(nIn, 0, true);

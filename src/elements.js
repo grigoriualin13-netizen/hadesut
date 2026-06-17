@@ -159,8 +159,8 @@ export function sym(el) {
     break;
   }
   case 'firida_gen': {
-    const nIn = el.inputs || 2;
-    const nOut = el.outputs || 4;
+    const nIn = el.inputs ?? 2;
+    const nOut = el.outputs ?? 4;
     const BW = Math.max(nIn, nOut) * 60 + 40;
     const BH = 280, BX = -BW/2, BY = -BH/2;
     const f = el.fuses || new Array(nIn + nOut).fill(true);
@@ -349,7 +349,7 @@ export function symW(el) {
   if (t === 'circle') return (typeof el !== 'string' && el.r) ? el.r * 2 : 100;
   if (t === 'ptab_mono') { const n = (typeof el !== 'string' && el.celule) ? el.celule.length : 4; return n * 72 + 40; }
   if (t === 'trafo') return 110; if (t === 'firida_e2_4') return 140; if (t === 'firida_e3_4') return 180; if (t === 'firida_e3_0') return 180; if (t === 'firida_e2_4_det') return 250;
-  if (t === 'firida_gen') { const n = typeof el !== 'string' ? Math.max(el.inputs||2, el.outputs||4) : 4; return n * 60 + 40; }
+  if (t === 'firida_gen') { const n = typeof el !== 'string' ? Math.max(el.inputs??2, el.outputs??4) : 4; return n * 60 + 40; }
   if (t.startsWith('cd')) return 130; if (t === 'meter') return 70; if (t === 'stalp_cs') return 64; if (t.startsWith('stalp_')) return 48;
   if (t === 'separator') return 104; if (t === 'separator_mt') return 108; if (t === 'manson') return 76; if (t === 'priza_pamant') return 50;
   if (t === 'bara_mt') return 220; if (t === 'celula_linie_mt') return 70; if (t === 'celula_trafo_mt') return 80;

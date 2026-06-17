@@ -106,6 +106,7 @@ export function addElem(x, y) {
   if (S.pendType === 'firida_e2_4') el.fuses = new Array(6).fill(true);
   if (S.pendType === 'firida_e3_4') el.fuses = new Array(7).fill(true);
   if (S.pendType === 'firida_e3_0') el.fuses = new Array(3).fill(true);
+  if (S.pendType === 'firida_gen') { el.fuses = new Array(6).fill(true); el.inputs = 2; el.outputs = 4; el.scale = 0.5; }
   if (S.pendType === 'ptab_1t') el.fuses = new Array(10).fill(true);
   if (S.pendType === 'ptab_2t') el.fuses = new Array(21).fill(true);
   if (S.pendType === 'cd4') el.fuses = new Array(5).fill(true);
