@@ -1,6 +1,7 @@
 // fs-ai.js — Generare fișă de soluție via Groq / Gemini (separat de fs-module.js)
-import { S }     from './state.js';
-import { toast } from './utils.js';
+import { S }                from './state.js';
+import { toast }            from './utils.js';
+import { getCloudFunctions } from './auth.js';
 
 const GROQ_KEY_LS    = 'electrocad_groq_key';
 const GEMINI_KEY_LS  = 'electrocad_gemini_key';
@@ -292,7 +293,9 @@ TIPARE 6b:
 
 async function loadSystemPrompt() {
   try {
-    const { data, error } = await window.supabase
+    const db = getCloudFunctions().supaClient;
+    if (!db) return HARDCODED_SYSTEM_PROMPT;
+    const { data, error } = await db
       .from('fs_templates')
       .select('section, code, name, content, sort_order')
       .eq('enabled', true)

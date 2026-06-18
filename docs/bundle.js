@@ -8767,6 +8767,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
   // src/fs-ai.js
   init_state();
   init_utils();
+  init_auth();
   var GROQ_KEY_LS = "electrocad_groq_key";
   var GEMINI_KEY_LS = "electrocad_gemini_key";
   var PROVIDER_LS = "electrocad_ai_provider";
@@ -9035,7 +9036,9 @@ Total: [X]m."
 6b-D inlocuire tot circuitul: "Se va inlocui conductorul existent tip [..] cu conductor tip [NFA2X..] pe circuitul [C1] de la [CD] pana la stalpul [X], L=[X]m total."`;
   async function loadSystemPrompt() {
     try {
-      const { data, error } = await window.supabase.from("fs_templates").select("section, code, name, content, sort_order").eq("enabled", true).order("sort_order");
+      const db = getCloudFunctions().supaClient;
+      if (!db) return HARDCODED_SYSTEM_PROMPT;
+      const { data, error } = await db.from("fs_templates").select("section, code, name, content, sort_order").eq("enabled", true).order("sort_order");
       if (error || !data || !data.length) return HARDCODED_SYSTEM_PROMPT;
       const get = (sec) => data.filter((r) => r.section === sec).sort((a, b) => a.sort_order - b.sort_order);
       const intro = get("intro")[0]?.content || "";
@@ -9140,6 +9143,10 @@ R\u0103spunde DOAR cu JSON valid, f\u0103r\u0103 text \xEEn afara JSON-ului.`;
 
   // src/fs-templates-editor.js
   init_utils();
+  init_auth();
+  function _db() {
+    return getCloudFunctions().supaClient;
+  }
   var DEFAULT_TEMPLATES = [
     {
       section: "intro",
@@ -9315,7 +9322,7 @@ REGULI:
     document.getElementById("fst-modal").classList.remove("show");
   }
   async function _loadTemplates() {
-    const { data, error } = await window.supabase.from("fs_templates").select("*").order("sort_order");
+    const { data, error } = await _db().from("fs_templates").select("*").order("sort_order");
     if (error) {
       toast("Eroare la \xEEnc\u0103rcarea template-urilor: " + error.message, "err");
       return;
@@ -9328,7 +9335,7 @@ REGULI:
     _renderList();
   }
   async function _seedDefaults() {
-    const { error } = await window.supabase.from("fs_templates").insert(DEFAULT_TEMPLATES);
+    const { error } = await _db().from("fs_templates").insert(DEFAULT_TEMPLATES);
     if (error) toast("Eroare seed template-uri: " + error.message, "err");
     else toast("Template-uri default \xEEnc\u0103rcate!", "ok");
   }
@@ -9382,10 +9389,10 @@ REGULI:
     }
     let error;
     if (typeof _selected.id === "string" && _selected.id.startsWith("new-")) {
-      const { error: err } = await window.supabase.from("fs_templates").insert({ ...payload, section: _selected.section, sort_order: _selected.sort_order });
+      const { error: err } = await _db().from("fs_templates").insert({ ...payload, section: _selected.section, sort_order: _selected.sort_order });
       error = err;
     } else {
-      const { error: err } = await window.supabase.from("fs_templates").update(payload).eq("id", _selected.id);
+      const { error: err } = await _db().from("fs_templates").update(payload).eq("id", _selected.id);
       error = err;
     }
     if (error) {
@@ -9400,7 +9407,7 @@ REGULI:
   async function fstDelete() {
     if (!_selected) return;
     if (!confirm(`\u0218tergi tiparul "${_selected.code || _selected.name}"? Ac\u021Biunea e ireversibil\u0103.`)) return;
-    const { error } = await window.supabase.from("fs_templates").delete().eq("id", _selected.id);
+    const { error } = await _db().from("fs_templates").delete().eq("id", _selected.id);
     if (error) {
       toast("Eroare la \u0219tergere: " + error.message, "err");
       return;

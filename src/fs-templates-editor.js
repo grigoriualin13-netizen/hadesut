@@ -1,5 +1,8 @@
 // fs-templates-editor.js — Editor template-uri Fișă de Soluție (admin only)
 import { toast } from './utils.js';
+import { getCloudFunctions } from './auth.js';
+
+function _db() { return getCloudFunctions().supaClient; }
 
 // ── Template-uri default (seed la prima deschidere) ──────────────────────────
 export const DEFAULT_TEMPLATES = [
@@ -127,7 +130,7 @@ export function closeFSTemplatesEditor() {
 
 // ── Load + Seed ───────────────────────────────────────────────────────────────
 async function _loadTemplates() {
-  const { data, error } = await window.supabase
+  const { data, error } = await _db()
     .from('fs_templates')
     .select('*')
     .order('sort_order');
@@ -147,7 +150,7 @@ async function _loadTemplates() {
 }
 
 async function _seedDefaults() {
-  const { error } = await window.supabase
+  const { error } = await _db()
     .from('fs_templates')
     .insert(DEFAULT_TEMPLATES);
   if (error) toast('Eroare seed template-uri: ' + error.message, 'err');
@@ -210,12 +213,12 @@ export async function fstSave() {
 
   let error;
   if (typeof _selected.id === 'string' && _selected.id.startsWith('new-')) {
-    const { error: err } = await window.supabase
+    const { error: err } = await _db()
       .from('fs_templates')
       .insert({ ...payload, section: _selected.section, sort_order: _selected.sort_order });
     error = err;
   } else {
-    const { error: err } = await window.supabase
+    const { error: err } = await _db()
       .from('fs_templates')
       .update(payload)
       .eq('id', _selected.id);
@@ -234,7 +237,7 @@ export async function fstDelete() {
   if (!_selected) return;
   if (!confirm(`Ștergi tiparul "${_selected.code || _selected.name}"? Acțiunea e ireversibilă.`)) return;
 
-  const { error } = await window.supabase
+  const { error } = await _db()
     .from('fs_templates')
     .delete()
     .eq('id', _selected.id);
