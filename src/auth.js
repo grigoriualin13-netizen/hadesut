@@ -147,6 +147,10 @@ export function updateUserBar() {
   } else {
     bar.style.display = 'none';
     emailEl.textContent = '';
+    const adminBtn = document.getElementById('admin-btn');
+    if (adminBtn) adminBtn.style.display = 'none';
+    const fstBtn = document.getElementById('btn-fs-templates');
+    if (fstBtn) fstBtn.style.display = 'none';
   }
 }
 
@@ -158,6 +162,7 @@ export function authLogout() {
     currentProfile = null;
     updateUserBar();
     closeAdminPanel();
+    window.closeFSTemplatesEditor?.();
     showAuthScreen();
   });
 }
@@ -180,6 +185,8 @@ export function checkUserApproval() {
     currentProfile = { approved: true, is_admin: true, display_name: 'Admin' };
     const adminBtn = document.getElementById('admin-btn');
     if (adminBtn) adminBtn.style.display = '';
+    const fstBtn = document.getElementById('btn-fs-templates');
+    if (fstBtn) fstBtn.style.display = '';
     return Promise.resolve(true);
   }
   return supaClient.from('profiles')
@@ -205,6 +212,8 @@ export function checkUserApproval() {
       if (currentProfile.is_admin) {
         const adminBtn = document.getElementById('admin-btn');
         if (adminBtn) adminBtn.style.display = '';
+        const fstBtn = document.getElementById('btn-fs-templates');
+        if (fstBtn) fstBtn.style.display = '';
       }
       return currentProfile.approved;
     }).catch(e => { console.error('Approval check failed:', e); return false; });
