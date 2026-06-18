@@ -50,6 +50,10 @@ import {
   copyPreviewField, copyAllPreview, generateFS
 } from './fs-module.js';
 import { toggleAIPanel, generateFSWithAI, fsAiProviderChange } from './fs-ai.js';
+import {
+  openFSTemplatesEditor, closeFSTemplatesEditor,
+  fstSelectTemplate, fstSave, fstDelete, fstNewTemplate,
+} from './fs-templates-editor.js';
 import './prosumator.js'; // side-effect: sets window.runProsumator etc.
 import { openImportXLS } from './import-xls.js';
 import { openSagMT, closeSagMT, runSagMT, copySagMT, exportSagCalcDetails, toggleSagOverlay, renderSagLayer } from './sag-mt.js';
@@ -391,3 +395,11 @@ window.generateFS       = generateFS;
 window.toggleAIPanel     = toggleAIPanel;
 window.generateFSWithAI  = generateFSWithAI;
 window.fsAiProviderChange = fsAiProviderChange;
+
+// FS Templates Editor (admin only)
+window.openFSTemplatesEditor  = openFSTemplatesEditor;
+window.closeFSTemplatesEditor = closeFSTemplatesEditor;
+window.fstSelectTemplate      = fstSelectTemplate;
+window.fstSave                = fstSave;
+window.fstDelete              = fstDelete;
+window.fstNewTemplate         = fstNewTemplate;
