@@ -2463,6 +2463,10 @@ ${(r * 0.1).toFixed(4)}
     } else {
       bar.style.display = "none";
       emailEl.textContent = "";
+      const adminBtn = document.getElementById("admin-btn");
+      if (adminBtn) adminBtn.style.display = "none";
+      const fstBtn = document.getElementById("btn-fs-templates");
+      if (fstBtn) fstBtn.style.display = "none";
     }
   }
   function authLogout() {
@@ -2473,6 +2477,7 @@ ${(r * 0.1).toFixed(4)}
       currentProfile = null;
       updateUserBar();
       closeAdminPanel();
+      window.closeFSTemplatesEditor?.();
       showAuthScreen();
     });
   }
@@ -2492,6 +2497,8 @@ ${(r * 0.1).toFixed(4)}
       currentProfile = { approved: true, is_admin: true, display_name: "Admin" };
       const adminBtn = document.getElementById("admin-btn");
       if (adminBtn) adminBtn.style.display = "";
+      const fstBtn = document.getElementById("btn-fs-templates");
+      if (fstBtn) fstBtn.style.display = "";
       return Promise.resolve(true);
     }
     return supaClient.from("profiles").select("approved, is_admin, display_name").eq("id", currentUser.id).single().then((res) => {
@@ -2513,6 +2520,8 @@ ${(r * 0.1).toFixed(4)}
       if (currentProfile.is_admin) {
         const adminBtn = document.getElementById("admin-btn");
         if (adminBtn) adminBtn.style.display = "";
+        const fstBtn = document.getElementById("btn-fs-templates");
+        if (fstBtn) fstBtn.style.display = "";
       }
       return currentProfile.approved;
     }).catch((e) => {
@@ -8984,39 +8993,7 @@ Din ${isFirida ? "" : "stalpul "}${srcLabel} se vor realiza ${brans.length} bran
     const text = textPart?.text || "{}";
     return JSON.parse(text);
   }
-  async function generateFSWithAI() {
-    const prov = document.getElementById("fs-ai-provider")?.value || localStorage.getItem(PROVIDER_LS) || "groq";
-    let key;
-    if (prov === "gemini") {
-      const inp = document.getElementById("fs-ai-gemini-key");
-      key = inp?.value?.trim() || localStorage.getItem(GEMINI_KEY_LS) || "";
-      if (!key) {
-        toast("Introduce\u021Bi cheia API Gemini!", "err");
-        return;
-      }
-      localStorage.setItem(GEMINI_KEY_LS, key);
-    } else {
-      const inp = document.getElementById("fs-ai-key");
-      key = inp?.value?.trim() || localStorage.getItem(GROQ_KEY_LS) || "";
-      if (!key) {
-        toast("Introduce\u021Bi cheia API Groq!", "err");
-        return;
-      }
-      localStorage.setItem(GROQ_KEY_LS, key);
-    }
-    if (typeof window.previewFS === "function") {
-      try {
-        window.previewFS();
-      } catch (_) {
-      }
-    }
-    const getDraft = (id) => document.getElementById(id)?.value?.trim() || "";
-    const draftRacordare = getDraft("fs-preview-racordare");
-    const draftIntarire = getDraft("fs-preview-intarire");
-    const draftRetea = getDraft("fs-preview-retea");
-    const infoRetea = document.getElementById("fs-info-retea")?.value?.trim() || "";
-    const schemaSummary = buildSchemaSummary();
-    const systemPrompt = `Expert tehnic JT Rom\xE2nia (Delgaz Grid). Corectezi draft-ul fa\u021B\u0103 de schema electric\u0103 [EXISTENT]/[NOU] \u0219i rescrii dac\u0103 e gre\u0219it.
+  var HARDCODED_SYSTEM_PROMPT = `Expert tehnic JT Rom\xE2nia (Delgaz Grid). Corectezi draft-ul fa\u021B\u0103 de schema electric\u0103 [EXISTENT]/[NOU] \u0219i rescrii dac\u0103 e gre\u0219it.
 
 REGULI:
 - Sec.5=NUMAI [EXISTENT]: PT, circuite existente tip/lungime cumulat\u0103. Sec.6a=NUMAI [NOU]: circuit proiectat, stalpi, BMPT. Sec.6b=NUMAI \xEEnt\u0103rire; lips\u0103\u2192exact: NU ESTE CAZUL
@@ -9056,6 +9033,60 @@ Total: [X]m."
 6b-B circuit paralel: "Se va echipa circuit nou [CN] in paralel cu [C1] pe traseul [A]-[B] cu conductor tip [..] L=[X]m pe stalpi existenti."
 6b-C inlocuire+extensie: "Se va inlocui conductorul existent pe tronsonul [A]-[B] L=[X]m. De la [B] se va extinde cu [cond.] L=[X]m pe stalpi noi [SC..]."
 6b-D inlocuire tot circuitul: "Se va inlocui conductorul existent tip [..] cu conductor tip [NFA2X..] pe circuitul [C1] de la [CD] pana la stalpul [X], L=[X]m total."`;
+  async function loadSystemPrompt() {
+    try {
+      const { data, error } = await window.supabase.from("fs_templates").select("section, code, name, content, sort_order").eq("enabled", true).order("sort_order");
+      if (error || !data || !data.length) return HARDCODED_SYSTEM_PROMPT;
+      const get = (sec) => data.filter((r) => r.section === sec).sort((a, b) => a.sort_order - b.sort_order);
+      const intro = get("intro")[0]?.content || "";
+      const bransamente = get("bransamente")[0]?.content || "";
+      const t6a = get("6a").map((t) => `${t.code} ${t.name}: ${t.content}`).join("\n");
+      const t6b = get("6b").map((t) => `${t.code} ${t.name}: ${t.content}`).join("\n");
+      return [
+        intro,
+        bransamente,
+        'TIPARE 6a \u2014 alege tiparul potrivit cu schema (toate incep cu "Alimentarea cu energie electrica a obiectivului se va realiza"):',
+        t6a,
+        "TIPARE 6b:",
+        t6b
+      ].join("\n\n");
+    } catch (_) {
+      return HARDCODED_SYSTEM_PROMPT;
+    }
+  }
+  async function generateFSWithAI() {
+    const prov = document.getElementById("fs-ai-provider")?.value || localStorage.getItem(PROVIDER_LS) || "groq";
+    let key;
+    if (prov === "gemini") {
+      const inp = document.getElementById("fs-ai-gemini-key");
+      key = inp?.value?.trim() || localStorage.getItem(GEMINI_KEY_LS) || "";
+      if (!key) {
+        toast("Introduce\u021Bi cheia API Gemini!", "err");
+        return;
+      }
+      localStorage.setItem(GEMINI_KEY_LS, key);
+    } else {
+      const inp = document.getElementById("fs-ai-key");
+      key = inp?.value?.trim() || localStorage.getItem(GROQ_KEY_LS) || "";
+      if (!key) {
+        toast("Introduce\u021Bi cheia API Groq!", "err");
+        return;
+      }
+      localStorage.setItem(GROQ_KEY_LS, key);
+    }
+    if (typeof window.previewFS === "function") {
+      try {
+        window.previewFS();
+      } catch (_) {
+      }
+    }
+    const getDraft = (id) => document.getElementById(id)?.value?.trim() || "";
+    const draftRacordare = getDraft("fs-preview-racordare");
+    const draftIntarire = getDraft("fs-preview-intarire");
+    const draftRetea = getDraft("fs-preview-retea");
+    const infoRetea = document.getElementById("fs-info-retea")?.value?.trim() || "";
+    const schemaSummary = buildSchemaSummary();
+    const systemPrompt = await loadSystemPrompt();
     const userPrompt = `TEXT DRAFT (generat automat de aplica\u021Bie \u2014 tipar corect, posibile erori):
 
 6a. Solu\u021Bia de Racordare (draft):
@@ -9105,6 +9136,311 @@ R\u0103spunde DOAR cu JSON valid, f\u0103r\u0103 text \xEEn afara JSON-ului.`;
         btn.textContent = "\u{1F916} GENEREAZ\u0102 CU AI";
       }
     }
+  }
+
+  // src/fs-templates-editor.js
+  init_utils();
+  var DEFAULT_TEMPLATES = [
+    {
+      section: "intro",
+      code: null,
+      name: "Introducere + Reguli Generale",
+      sort_order: 0,
+      enabled: true,
+      content: `Expert tehnic JT Rom\xE2nia (Delgaz Grid). Corectezi draft-ul fa\u021B\u0103 de schema electric\u0103 [EXISTENT]/[NOU] \u0219i rescrii dac\u0103 e gre\u0219it.
+
+REGULI:
+- Sec.5=NUMAI [EXISTENT]: PT, circuite existente tip/lungime cumulat\u0103. Sec.6a=NUMAI [NOU]: circuit proiectat, stalpi, BMPT. Sec.6b=NUMAI \xEEnt\u0103rire; lips\u0103\u2192exact: NU ESTE CAZUL
+- [NOU pe stalpi EXISTEN\u021AI]=echipare circuit; [NOU pe stalpi NOI]=extensie/prelungire
+- Denumiri: NFA2X, NA2XBY, NYY, BMPT, PT, CD, LEA, LES, mmp. Lips\u0103\u2192[DE COMPLETAT]
+- Locatie BMPT: citeste campul "BMPT se monteaza:" din schema \u2014 respecta-l exact`
+    },
+    {
+      section: "bransamente",
+      code: null,
+      name: "Regula Universal\u0103 Bransamente",
+      sort_order: 1,
+      enabled: true,
+      content: `BRANSAMENTE (universal): Adauga "Bransamente:" la finalul 6a daca exista in schema. Grupeaza pe stalp/firida sursa:
+- 1 bransament: "Din stalpul [X] se va realiza 1 bransament cu conductor tip [..] L=[X]m pana la un [BMPT] montat [locatie]."
+- N>1 din acelasi stalp: "Din stalpul [X] se vor realiza [N] bransamente astfel:\\n- conductor tip [..] L=[X]m pana la [BMPT1] montat [loc].\\n- conductor tip [..] L=[X]m pana la [BMPT2] montat [loc]."
+- Stalpi diferiti: descrie fiecare stalp separat. Fara bransamente\u2192nu adauga sectiunea.`
+    },
+    {
+      section: "6a",
+      code: "C1",
+      name: "bransament simplu",
+      sort_order: 10,
+      enabled: true,
+      content: `"...pe joasa tensiune din stalpul [X], circuit nr.[N], zona de post [PT], printr-un bransament cu conductor tip [..] L=[X]m pana la un [BMPT] montat [loc]."`
+    },
+    {
+      section: "6a",
+      code: "C2",
+      name: "stalpi noi",
+      sort_order: 11,
+      enabled: true,
+      content: `"...pe joasa tensiune astfel: Din [CD a PT], se va realiza circuit [CN] pe stalpi noi cu conductor tip [..] L=[X]m pana la stalpul [Y]. BRANSAMENTE."`
+    },
+    {
+      section: "6a",
+      code: "C3",
+      name: "stalpi existenti",
+      sort_order: 12,
+      enabled: true,
+      content: `"...astfel: Din [CD a PT], se va echipa circuit [CN] pe stalpi existenti comuni cu circuit [C1] cu conductor tip [..] L=[X]m pana la stalpul [Y]. BRANSAMENTE."`
+    },
+    {
+      section: "6a",
+      code: "C4",
+      name: "existenti+extensie noi",
+      sort_order: 13,
+      enabled: true,
+      content: `"...astfel: Din [CD], se va echipa circuit [CN] pe stalpi existenti comuni cu [C1] cu [cond.] L=[X]m pana la [Y]. Din [Y] se va extinde L=[X]m cu conductor tip [..] pe stalpi noi de tip [SC..]. BRANSAMENTE."`
+    },
+    {
+      section: "6a",
+      code: "C5",
+      name: "extindere de la stalp existent",
+      sort_order: 14,
+      enabled: true,
+      content: `"...prin extinderea circuitului [C1] existent de la stalpul [X] L=[X]m cu conductor tip [..] pe stalpi noi de tip [SC..]. BRANSAMENTE."`
+    },
+    {
+      section: "6a",
+      code: "C6",
+      name: "LEA\u2192LES firida",
+      sort_order: 15,
+      enabled: true,
+      content: `"...prin extinderea retelei de tip LEA ([cond.existent]), circuit [C1], din stalpul [X] se va poza cablu tip [NA2XBY..] L=[X]m pana la o [FG] proiectata pe soclu de beton. BRANSAMENTE."`
+    },
+    {
+      section: "6a",
+      code: "C7",
+      name: "mansonare",
+      sort_order: 16,
+      enabled: true,
+      content: `"...astfel: Se va mansona cablul existent dintre [FG1] si [FG2] cu cablu tip [NA2XBY..] L=[X]m pana la o [FG] proiectata la limita de proprietate. BRANSAMENTE."`
+    },
+    {
+      section: "6a",
+      code: "C8",
+      name: "baza+rezerva",
+      sort_order: 17,
+      enabled: true,
+      content: `"...astfel:\\nAlimentare de baza: din [stalp/FG], circuit [C1], se va poza [cond.] L=[X]m pana la [FG] pe soclu.\\nAlimentare de rezerva: din [stalp/FG], circuit [C2], se va poza [cond.] L=[X]m pana la [FG] pe soclu. BRANSAMENTE."`
+    },
+    {
+      section: "6a",
+      code: "C9",
+      name: "echipare+preluare+extensie",
+      sort_order: 18,
+      enabled: true,
+      content: `"...astfel: Din [CD], se va echipa circuit [CN] pe stalpi existenti comuni cu [C1] cu [cond.] L=[X]m pana la stalpul [Y], din care se va prelua circuitul existent [C1] pana la stalpul [Z]. Din [Z] se va extinde L=[X]m cu conductor tip [..] pe stalpi noi de tip [SC..]. BRANSAMENTE."`
+    },
+    {
+      section: "6a",
+      code: "C10a",
+      name: "PT nou+preluare",
+      sort_order: 19,
+      enabled: true,
+      content: `"...astfel: Din TDJT a [PT nou] se va alimenta reteaua existenta, preluand circuitul [C1] de la stalpul [A] pana la stalpul [B] L=[X]m, conductor existent tip [..]. BRANSAMENTE."`
+    },
+    {
+      section: "6a",
+      code: "C10b",
+      name: "PT nou+preluare+extensie",
+      sort_order: 20,
+      enabled: true,
+      content: `"...astfel: Din TDJT a [PT nou] se va alimenta reteaua existenta, preluand [C1] de la [A] la [B] L=[X]m cond.existent [..]. De la [B] se va extinde L=[X]m cu conductor tip [..] pe stalpi noi de tip [SC..]. BRANSAMENTE."`
+    },
+    {
+      section: "6a",
+      code: "C10c",
+      name: "PT nou+echipare+preluare+extensie",
+      sort_order: 21,
+      enabled: true,
+      content: `"...astfel: Din TDJT a [PT nou] se va echipa circuit [CN] pe stalpi existenti cu cond.[..] L=[X]m pana la [Y], de unde se va prelua [C1] pana la [Z]. Din [Z] se va extinde L=[X]m pe stalpi noi [SC..]. BRANSAMENTE."`
+    },
+    {
+      section: "6a",
+      code: "C11",
+      name: "PTAb nou+cablu LES+preluare+inlocuire",
+      sort_order: 22,
+      enabled: true,
+      content: `"...pe joasa tensiune astfel: Din TDJT a [PTAb] se va poza cablu tip [NA2XBY..] L=[X]m pana la stalpul [Y], de unde se va prelua circuitul existent [C1] pana la stalpul [Z]. BRANSAMENTE." \u2014 6b: "Se va inlocui conductorul existent tip [..] cu conductor tip [NFA2X..] pe tronsonul stalpul [Y]-stalpul [Z]: L=[X]m." (sau pe tronsoane multiple daca e cazul, ca la 6b-A)`
+    },
+    {
+      section: "6b",
+      code: "6b-A",
+      name: "inlocuire tronsoane",
+      sort_order: 30,
+      enabled: true,
+      content: `"Se va inlocui conductorul existent [tip vechi] cu conductor tip [NFA2X..] pe urmatoarele tronsoane:\\n- stalpul [A]-stalpul [B]: L=[X]m\\n...\\nTotal: [X]m."`
+    },
+    {
+      section: "6b",
+      code: "6b-B",
+      name: "circuit paralel",
+      sort_order: 31,
+      enabled: true,
+      content: `"Se va echipa circuit nou [CN] in paralel cu [C1] pe traseul [A]-[B] cu conductor tip [..] L=[X]m pe stalpi existenti."`
+    },
+    {
+      section: "6b",
+      code: "6b-C",
+      name: "inlocuire+extensie",
+      sort_order: 32,
+      enabled: true,
+      content: `"Se va inlocui conductorul existent pe tronsonul [A]-[B] L=[X]m. De la [B] se va extinde cu [cond.] L=[X]m pe stalpi noi [SC..]."`
+    },
+    {
+      section: "6b",
+      code: "6b-D",
+      name: "inlocuire tot circuitul",
+      sort_order: 33,
+      enabled: true,
+      content: `"Se va inlocui conductorul existent tip [..] cu conductor tip [NFA2X..] pe circuitul [C1] de la [CD] pana la stalpul [X], L=[X]m total."`
+    }
+  ];
+  var _templates = [];
+  var _selected = null;
+  async function openFSTemplatesEditor() {
+    document.getElementById("fst-overlay").classList.add("show");
+    document.getElementById("fst-modal").classList.add("show");
+    await _loadTemplates();
+  }
+  function closeFSTemplatesEditor() {
+    document.getElementById("fst-overlay").classList.remove("show");
+    document.getElementById("fst-modal").classList.remove("show");
+  }
+  async function _loadTemplates() {
+    const { data, error } = await window.supabase.from("fs_templates").select("*").order("sort_order");
+    if (error) {
+      toast("Eroare la \xEEnc\u0103rcarea template-urilor: " + error.message, "err");
+      return;
+    }
+    if (!data || data.length === 0) {
+      await _seedDefaults();
+      return _loadTemplates();
+    }
+    _templates = data;
+    _renderList();
+  }
+  async function _seedDefaults() {
+    const { error } = await window.supabase.from("fs_templates").insert(DEFAULT_TEMPLATES);
+    if (error) toast("Eroare seed template-uri: " + error.message, "err");
+    else toast("Template-uri default \xEEnc\u0103rcate!", "ok");
+  }
+  function _renderList() {
+    const list = document.getElementById("fst-list");
+    if (!list) return;
+    const sections = [
+      { key: "intro", label: "Reguli Generale" },
+      { key: "bransamente", label: "Bransamente" },
+      { key: "6a", label: "6a \u2014 Tipare Racordare" },
+      { key: "6b", label: "6b \u2014 Tipare \xCEnt\u0103rire" }
+    ];
+    list.innerHTML = sections.map((sec) => {
+      const items = _templates.filter((t) => t.section === sec.key);
+      const itemsHtml = items.map((t) => `
+      <div class="fst-item${_selected && t.id === _selected.id ? " fst-active" : ""}${!t.enabled ? " fst-disabled" : ""}"
+           onclick="fstSelectTemplate('${t.id}')">
+        ${t.code ? `<span class="fst-code">${t.code}</span>` : ""}
+        <span class="fst-name">${t.name}</span>
+        ${!t.enabled ? '<span class="fst-badge">OFF</span>' : ""}
+      </div>`).join("");
+      return `<div class="fst-sec-hdr">${sec.label}</div>${itemsHtml}`;
+    }).join("");
+  }
+  function fstSelectTemplate(id) {
+    _selected = _templates.find((t) => t.id === id) || null;
+    if (!_selected) return;
+    _renderList();
+    _v("fst-field-code", _selected.code || "");
+    _v("fst-field-name", _selected.name || "");
+    _v("fst-field-content", _selected.content || "");
+    document.getElementById("fst-field-enabled").checked = _selected.enabled;
+    const canDel = _selected.section === "6a" || _selected.section === "6b";
+    document.getElementById("fst-btn-delete").style.display = canDel ? "" : "none";
+  }
+  async function fstSave() {
+    if (!_selected) {
+      toast("Selecteaz\u0103 un tipar mai \xEEnt\xE2i.", "err");
+      return;
+    }
+    const payload = {
+      code: _g("fst-field-code").trim() || null,
+      name: _g("fst-field-name").trim(),
+      content: _g("fst-field-content").trim(),
+      enabled: document.getElementById("fst-field-enabled").checked,
+      updated_at: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    if (!payload.name) {
+      toast("Numele nu poate fi gol.", "err");
+      return;
+    }
+    let error;
+    if (typeof _selected.id === "string" && _selected.id.startsWith("new-")) {
+      const { error: err } = await window.supabase.from("fs_templates").insert({ ...payload, section: _selected.section, sort_order: _selected.sort_order });
+      error = err;
+    } else {
+      const { error: err } = await window.supabase.from("fs_templates").update(payload).eq("id", _selected.id);
+      error = err;
+    }
+    if (error) {
+      toast("Eroare la salvare: " + error.message, "err");
+      return;
+    }
+    toast("Salvat!", "ok");
+    _selected = null;
+    _clearEditor();
+    await _loadTemplates();
+  }
+  async function fstDelete() {
+    if (!_selected) return;
+    if (!confirm(`\u0218tergi tiparul "${_selected.code || _selected.name}"? Ac\u021Biunea e ireversibil\u0103.`)) return;
+    const { error } = await window.supabase.from("fs_templates").delete().eq("id", _selected.id);
+    if (error) {
+      toast("Eroare la \u0219tergere: " + error.message, "err");
+      return;
+    }
+    toast("Tipar \u0219ters.", "ok");
+    _selected = null;
+    _clearEditor();
+    await _loadTemplates();
+  }
+  function fstNewTemplate(section) {
+    const inSection = _templates.filter((t) => t.section === section);
+    const maxOrder = inSection.reduce((m, t) => Math.max(m, t.sort_order), 0);
+    _selected = {
+      id: "new-" + Date.now(),
+      section,
+      code: "",
+      name: "",
+      content: "",
+      enabled: true,
+      sort_order: maxOrder + 1
+    };
+    _renderList();
+    _clearEditor();
+    document.getElementById("fst-field-enabled").checked = true;
+    document.getElementById("fst-btn-delete").style.display = "none";
+    document.getElementById("fst-field-code").focus();
+  }
+  function _v(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  }
+  function _g(id) {
+    return document.getElementById(id)?.value || "";
+  }
+  function _clearEditor() {
+    _v("fst-field-code", "");
+    _v("fst-field-name", "");
+    _v("fst-field-content", "");
+    document.getElementById("fst-field-enabled").checked = true;
+    document.getElementById("fst-btn-delete").style.display = "none";
   }
 
   // src/prosumator.js
@@ -12373,4 +12709,10 @@ Deschidere max. admis\u0103 de consol\u0103: ${L_max_cons.toFixed(0)} m` : "") +
   window.toggleAIPanel = toggleAIPanel;
   window.generateFSWithAI = generateFSWithAI;
   window.fsAiProviderChange = fsAiProviderChange;
+  window.openFSTemplatesEditor = openFSTemplatesEditor;
+  window.closeFSTemplatesEditor = closeFSTemplatesEditor;
+  window.fstSelectTemplate = fstSelectTemplate;
+  window.fstSave = fstSave;
+  window.fstDelete = fstDelete;
+  window.fstNewTemplate = fstNewTemplate;
 })();

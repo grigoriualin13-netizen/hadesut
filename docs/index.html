@@ -457,6 +457,46 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
   #admin-panel { min-width:unset; width:90vw; }
 }
 
+/* ── FS Templates Editor ─────────────────────────────────────────────────── */
+#fst-overlay{position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.5);display:none}
+#fst-overlay.show{display:block}
+#fst-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10002;
+  width:900px;max-width:95vw;height:640px;max-height:90vh;
+  background:var(--panel);border:1px solid var(--border2);border-radius:16px;
+  display:none;flex-direction:column;overflow:hidden;box-shadow:0 12px 48px var(--shadow)}
+#fst-modal.show{display:flex}
+.fst-body{display:flex;flex:1;overflow:hidden}
+.fst-left{width:220px;min-width:180px;border-right:1px solid var(--border);overflow-y:auto;padding:8px 0}
+.fst-right{flex:1;padding:16px 20px;display:flex;flex-direction:column;gap:10px;overflow-y:auto}
+.fst-sec-hdr{padding:6px 12px 2px;font-size:9px;font-weight:800;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.08em;margin-top:6px}
+.fst-item{padding:6px 14px;cursor:pointer;font-size:11px;color:var(--text2);
+  display:flex;align-items:center;gap:6px;transition:background .1s}
+.fst-item:hover{background:var(--bg3)}
+.fst-active{background:var(--bg3)!important;color:var(--accent);border-left:2px solid var(--accent)}
+.fst-disabled{opacity:.45}
+.fst-code{font-weight:700;color:var(--accent);min-width:36px;font-size:10px;font-family:'JetBrains Mono',monospace}
+.fst-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fst-badge{font-size:8px;background:var(--danger);color:#fff;padding:1px 5px;border-radius:3px;flex-shrink:0}
+.fst-field-row{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.fst-field-row label{font-size:10px;color:var(--text3);min-width:54px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.fst-field-row input[type=text]{flex:1;height:28px;border:1px solid var(--border);
+  border-radius:6px;background:var(--bg3);color:var(--text1);padding:0 8px;
+  font-size:11px;font-family:'JetBrains Mono',monospace}
+.fst-content-wrap{display:flex;flex-direction:column;gap:6px;flex:1;min-height:0}
+.fst-content-wrap label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+#fst-field-content{flex:1;min-height:160px;resize:vertical;border:1px solid var(--border);
+  border-radius:6px;background:var(--bg3);color:var(--text1);padding:8px;
+  font-size:11px;font-family:'JetBrains Mono',monospace;line-height:1.5}
+.fst-actions{display:flex;gap:8px;align-items:center;flex-shrink:0;padding-top:2px}
+.fst-actions button{height:28px;padding:0 14px;border-radius:6px;border:1px solid var(--border);
+  background:var(--bg3);color:var(--text2);font-size:10px;cursor:pointer;
+  font-family:'JetBrains Mono',monospace;font-weight:600;transition:all .15s}
+.fst-actions button:hover{border-color:var(--accent);color:var(--accent)}
+#fst-btn-save{margin-left:auto;background:var(--accent);color:#000;border-color:var(--accent)}
+#fst-btn-save:hover{opacity:.85}
+#fst-btn-delete{color:var(--danger);border-color:rgba(255,80,80,.4)}
+#fst-btn-delete:hover{background:rgba(255,80,80,.1);border-color:var(--danger)}
 </style>
 </head>
 <body oncontextmenu="return false;">
@@ -1749,6 +1789,7 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
 <div id="user-bar" class="auth-user-bar" style="display:none">
   <span class="user-email" id="user-email-display"></span>
   <button id="admin-btn" onclick="openAdminPanel()" style="display:none;color:var(--accent);border-color:rgba(0,207,255,.3)">ADMIN</button>
+  <button id="btn-fs-templates" onclick="openFSTemplatesEditor()" style="display:none;color:var(--accent);border-color:rgba(0,207,255,.3)">📋 TEMPLATE FS</button>
   <button onclick="authLogout()">DECONECTARE</button>
 </div>
 
@@ -1760,6 +1801,44 @@ table.lgt td{padding:3px 8px;border-bottom:1px solid var(--border);color:var(--t
     <button class="adm-close" onclick="closeAdminPanel()">✕</button>
   </div>
   <div class="adm-body" id="admin-body">
+  </div>
+</div>
+
+<!-- FS TEMPLATES EDITOR -->
+<div id="fst-overlay" onclick="closeFSTemplatesEditor()"></div>
+<div id="fst-modal">
+  <div class="adm-header">
+    <span class="adm-title">📋 Template-uri Fișă de Soluție</span>
+    <button class="adm-close" onclick="closeFSTemplatesEditor()">✕</button>
+  </div>
+  <div class="fst-body">
+    <div class="fst-left">
+      <div id="fst-list"></div>
+    </div>
+    <div class="fst-right">
+      <div class="fst-field-row">
+        <label>Cod</label>
+        <input id="fst-field-code" type="text" placeholder="C1, C2, 6b-A...">
+      </div>
+      <div class="fst-field-row">
+        <label>Nume</label>
+        <input id="fst-field-name" type="text" placeholder="bransament simplu">
+      </div>
+      <div class="fst-field-row">
+        <label>Activ</label>
+        <input id="fst-field-enabled" type="checkbox" checked>
+      </div>
+      <div class="fst-content-wrap">
+        <label>Conținut</label>
+        <textarea id="fst-field-content" placeholder="Textul tiparului trimis la AI..."></textarea>
+      </div>
+      <div class="fst-actions">
+        <button onclick="fstNewTemplate('6a')">+ Tipar 6a</button>
+        <button onclick="fstNewTemplate('6b')">+ Tipar 6b</button>
+        <button id="fst-btn-delete" onclick="fstDelete()" style="display:none">🗑 Șterge</button>
+        <button id="fst-btn-save" onclick="fstSave()">Salvează</button>
+      </div>
+    </div>
   </div>
 </div>
 
