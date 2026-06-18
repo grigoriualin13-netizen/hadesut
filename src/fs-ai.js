@@ -254,37 +254,8 @@ async function _callGemini(systemPrompt, userPrompt, key) {
   return JSON.parse(text);
 }
 
-// ── Main generate function ────────────────────────────────────────────────────
-export async function generateFSWithAI() {
-  const prov = document.getElementById('fs-ai-provider')?.value ||
-               localStorage.getItem(PROVIDER_LS) || 'groq';
-
-  let key;
-  if (prov === 'gemini') {
-    const inp = document.getElementById('fs-ai-gemini-key');
-    key = inp?.value?.trim() || localStorage.getItem(GEMINI_KEY_LS) || '';
-    if (!key) { toast('Introduceți cheia API Gemini!', 'err'); return; }
-    localStorage.setItem(GEMINI_KEY_LS, key);
-  } else {
-    const inp = document.getElementById('fs-ai-key');
-    key = inp?.value?.trim() || localStorage.getItem(GROQ_KEY_LS) || '';
-    if (!key) { toast('Introduceți cheia API Groq!', 'err'); return; }
-    localStorage.setItem(GROQ_KEY_LS, key);
-  }
-
-  // Step 1: run existing algorithm for a draft with the correct format/style
-  if (typeof window.previewFS === 'function') {
-    try { window.previewFS(); } catch (_) {}
-  }
-  const getDraft = id => document.getElementById(id)?.value?.trim() || '';
-  const draftRacordare = getDraft('fs-preview-racordare');
-  const draftIntarire  = getDraft('fs-preview-intarire');
-  const draftRetea     = getDraft('fs-preview-retea');
-
-  const infoRetea     = document.getElementById('fs-info-retea')?.value?.trim() || '';
-  const schemaSummary = buildSchemaSummary();
-
-  const systemPrompt =
+// ── System prompt hardcodat (fallback când Supabase e inaccesibil) ───────────
+const HARDCODED_SYSTEM_PROMPT =
 `Expert tehnic JT România (Delgaz Grid). Corectezi draft-ul față de schema electrică [EXISTENT]/[NOU] și rescrii dacă e greșit.
 
 REGULI:
@@ -319,6 +290,69 @@ TIPARE 6b:
 6b-C inlocuire+extensie: "Se va inlocui conductorul existent pe tronsonul [A]-[B] L=[X]m. De la [B] se va extinde cu [cond.] L=[X]m pe stalpi noi [SC..]."
 6b-D inlocuire tot circuitul: "Se va inlocui conductorul existent tip [..] cu conductor tip [NFA2X..] pe circuitul [C1] de la [CD] pana la stalpul [X], L=[X]m total."`;
 
+async function loadSystemPrompt() {
+  try {
+    const { data, error } = await window.supabase
+      .from('fs_templates')
+      .select('section, code, name, content, sort_order')
+      .eq('enabled', true)
+      .order('sort_order');
+
+    if (error || !data || !data.length) return HARDCODED_SYSTEM_PROMPT;
+
+    const get = sec => data
+      .filter(r => r.section === sec)
+      .sort((a, b) => a.sort_order - b.sort_order);
+
+    const intro       = get('intro')[0]?.content       || '';
+    const bransamente = get('bransamente')[0]?.content || '';
+    const t6a = get('6a').map(t => `${t.code} ${t.name}: ${t.content}`).join('\n');
+    const t6b = get('6b').map(t => `${t.code} ${t.name}: ${t.content}`).join('\n');
+
+    return [
+      intro,
+      bransamente,
+      'TIPARE 6a — alege tiparul potrivit cu schema (toate incep cu "Alimentarea cu energie electrica a obiectivului se va realiza"):',
+      t6a,
+      'TIPARE 6b:',
+      t6b,
+    ].join('\n\n');
+  } catch (_) {
+    return HARDCODED_SYSTEM_PROMPT;
+  }
+}
+
+// ── Main generate function ────────────────────────────────────────────────────
+export async function generateFSWithAI() {
+  const prov = document.getElementById('fs-ai-provider')?.value ||
+               localStorage.getItem(PROVIDER_LS) || 'groq';
+
+  let key;
+  if (prov === 'gemini') {
+    const inp = document.getElementById('fs-ai-gemini-key');
+    key = inp?.value?.trim() || localStorage.getItem(GEMINI_KEY_LS) || '';
+    if (!key) { toast('Introduceți cheia API Gemini!', 'err'); return; }
+    localStorage.setItem(GEMINI_KEY_LS, key);
+  } else {
+    const inp = document.getElementById('fs-ai-key');
+    key = inp?.value?.trim() || localStorage.getItem(GROQ_KEY_LS) || '';
+    if (!key) { toast('Introduceți cheia API Groq!', 'err'); return; }
+    localStorage.setItem(GROQ_KEY_LS, key);
+  }
+
+  // Step 1: run existing algorithm for a draft with the correct format/style
+  if (typeof window.previewFS === 'function') {
+    try { window.previewFS(); } catch (_) {}
+  }
+  const getDraft = id => document.getElementById(id)?.value?.trim() || '';
+  const draftRacordare = getDraft('fs-preview-racordare');
+  const draftIntarire  = getDraft('fs-preview-intarire');
+  const draftRetea     = getDraft('fs-preview-retea');
+
+  const infoRetea     = document.getElementById('fs-info-retea')?.value?.trim() || '';
+  const schemaSummary = buildSchemaSummary();
+
+  const systemPrompt = await loadSystemPrompt();
 
   const userPrompt =
 `TEXT DRAFT (generat automat de aplicație — tipar corect, posibile erori):
